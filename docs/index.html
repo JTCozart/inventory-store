@@ -7,6 +7,7 @@
   <meta name="description" content="Track equipment checkouts, consumable stock, and activity across your team. Runs as a Windows service on any PC on your network." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -25,7 +26,7 @@
     a { color: var(--blue); text-decoration: none; }
     a:hover { text-decoration: underline; }
 
-    /* ── Nav ── */
+    /* Nav */
     nav {
       display: flex; align-items: center; justify-content: space-between;
       padding: 1rem 2rem; border-bottom: 1px solid var(--border);
@@ -51,7 +52,7 @@
     }
     .btn-nav:hover { background: var(--blue-d); }
 
-    /* ── Hero ── */
+    /* Hero */
     .hero {
       text-align: center; padding: 6rem 2rem 5rem;
       background: linear-gradient(160deg, #eff6ff 0%, #fff 60%);
@@ -81,11 +82,11 @@
     .btn-secondary {
       background: #fff; color: var(--dark); padding: .75rem 1.75rem;
       border-radius: 10px; font-weight: 600; font-size: 1rem;
-      border: 1.5px solid var(--border);
+      border: 1.5px solid var(--border); display: inline-flex; align-items: center; gap: .5rem;
     }
     .btn-secondary:hover { border-color: var(--blue); text-decoration: none; }
 
-    /* ── UI preview ── */
+    /* UI preview */
     .ui-preview {
       max-width: 900px; margin: 4rem auto 0;
       background: var(--light); border-radius: var(--radius);
@@ -106,6 +107,7 @@
       color: #adb5bd; font-size: .8rem; padding: .4rem .6rem;
       border-radius: 6px; display: flex; align-items: center; gap: .5rem;
     }
+    .ui-sidebar-item i { width: 14px; text-align: center; }
     .ui-sidebar-item.active { background: rgba(37,99,235,.85); color: #fff; }
     .ui-content { display: flex; flex-direction: column; gap: .75rem; }
     .ui-stat-row { display: flex; gap: .75rem; }
@@ -113,7 +115,10 @@
       flex: 1; background: #fff; border-radius: 8px; padding: .75rem;
       border: 1px solid var(--border); display: flex; align-items: center; gap: .6rem;
     }
-    .ui-stat-icon { width: 32px; height: 32px; border-radius: 6px; flex-shrink: 0; }
+    .ui-stat-icon {
+      width: 32px; height: 32px; border-radius: 6px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; font-size: .9rem;
+    }
     .ui-stat-val { font-weight: 700; font-size: 1.1rem; }
     .ui-stat-lbl { font-size: .7rem; color: var(--gray); text-transform: uppercase; letter-spacing: .05em; }
     .ui-card { background: #fff; border-radius: 8px; border: 1px solid var(--border); overflow: hidden; }
@@ -127,14 +132,14 @@
     .badge-yellow { background: #fef9c3; color: #854d0e; }
     .badge-red { background: #fee2e2; color: #991b1b; }
 
-    /* ── Sections ── */
+    /* Sections */
     section { padding: 5rem 2rem; }
     .container { max-width: 1100px; margin: 0 auto; }
     .section-tag { color: var(--blue); font-size: .8rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; margin-bottom: .75rem; }
     h2 { font-size: clamp(1.6rem, 3vw, 2.25rem); font-weight: 800; margin-bottom: 1rem; }
     .section-sub { color: var(--gray); font-size: 1.05rem; max-width: 560px; margin-bottom: 3rem; }
 
-    /* ── Features ── */
+    /* Features */
     .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; }
     .feature-card {
       border: 1.5px solid var(--border); border-radius: var(--radius);
@@ -145,12 +150,12 @@
       width: 44px; height: 44px; border-radius: 10px;
       background: #eff6ff; color: var(--blue);
       display: flex; align-items: center; justify-content: center;
-      font-size: 1.3rem; margin-bottom: 1rem;
+      font-size: 1.2rem; margin-bottom: 1rem;
     }
     .feature-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: .4rem; }
     .feature-card p { font-size: .9rem; color: var(--gray); }
 
-    /* ── How it works ── */
+    /* How it works */
     .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 2rem; }
     .step { text-align: center; }
     .step-num {
@@ -162,14 +167,14 @@
     .step h3 { font-weight: 700; margin-bottom: .4rem; }
     .step p { color: var(--gray); font-size: .9rem; }
 
-    /* ── CTA ── */
+    /* CTA */
     .cta-section {
       background: var(--dark); color: #fff; text-align: center; padding: 5rem 2rem;
     }
     .cta-section h2 { color: #fff; margin-bottom: 1rem; }
     .cta-section p { color: #94a3b8; max-width: 480px; margin: 0 auto 2rem; }
 
-    /* ── Footer ── */
+    /* Footer */
     footer {
       border-top: 1px solid var(--border); padding: 2rem;
       display: flex; justify-content: space-between; align-items: center;
@@ -195,8 +200,10 @@
   <div class="nav-links">
     <a href="#features">Features</a>
     <a href="#how-it-works">How it works</a>
-    <a href="https://github.com/jtczrt/inventory-tracker" target="_blank">GitHub</a>
-    <a href="https://github.com/jtczrt/inventory-tracker/releases/latest" class="btn-nav">Download</a>
+    <a href="https://github.com/JTCozart/inventory-tracker" target="_blank">GitHub</a>
+    <a href="https://github.com/JTCozart/inventory-tracker/releases/latest" class="btn-nav">
+      <i class="fa-solid fa-download"></i> Download
+    </a>
   </div>
 </nav>
 
@@ -204,12 +211,14 @@
 <section class="hero">
   <div class="hero-tag">Free &amp; Open Source &nbsp;·&nbsp; Self-Hosted</div>
   <h1>Inventory management<br><span>built for your team</span></h1>
-  <p>Track equipment checkouts, consumable stock, and team activity. Runs as a Windows service — no cloud subscription required.</p>
+  <p>Track equipment checkouts, consumable stock, and team activity. Runs as a Windows service with no cloud subscription required.</p>
   <div class="hero-cta">
-    <a href="https://github.com/jtczrt/inventory-tracker/releases/latest" class="btn-primary">
-      ⬇ Download Installer
+    <a href="https://github.com/JTCozart/inventory-tracker/releases/latest" class="btn-primary">
+      <i class="fa-solid fa-download"></i> Download Installer
     </a>
-    <a href="https://github.com/jtczrt/inventory-tracker" class="btn-secondary">View on GitHub</a>
+    <a href="https://github.com/JTCozart/inventory-tracker" class="btn-secondary">
+      <i class="fa-brands fa-github"></i> View on GitHub
+    </a>
   </div>
 
   <!-- UI mock -->
@@ -225,43 +234,43 @@
           <div class="it-badge" style="width:24px;height:24px;font-size:.65rem;border-radius:5px">IT</div>
           Inventory
         </div>
-        <div class="ui-sidebar-item active">📊 Dashboard</div>
-        <div class="ui-sidebar-item">📦 Inventory</div>
-        <div class="ui-sidebar-item">📈 Reports</div>
-        <div class="ui-sidebar-item">⚙️ Settings</div>
+        <div class="ui-sidebar-item active"><i class="fa-solid fa-gauge"></i> Dashboard</div>
+        <div class="ui-sidebar-item"><i class="fa-solid fa-boxes-stacked"></i> Inventory</div>
+        <div class="ui-sidebar-item"><i class="fa-solid fa-chart-line"></i> Reports</div>
+        <div class="ui-sidebar-item"><i class="fa-solid fa-gear"></i> Settings</div>
       </div>
       <div class="ui-content">
         <div class="ui-stat-row">
           <div class="ui-stat">
-            <div class="ui-stat-icon" style="background:#eff6ff"></div>
+            <div class="ui-stat-icon" style="background:#eff6ff;color:#2563eb"><i class="fa-solid fa-boxes-stacked"></i></div>
             <div><div class="ui-stat-val">142</div><div class="ui-stat-lbl">Items</div></div>
           </div>
           <div class="ui-stat">
-            <div class="ui-stat-icon" style="background:#f0fdf4"></div>
+            <div class="ui-stat-icon" style="background:#f0fdf4;color:#16a34a"><i class="fa-solid fa-layer-group"></i></div>
             <div><div class="ui-stat-val">891</div><div class="ui-stat-lbl">In Stock</div></div>
           </div>
           <div class="ui-stat">
-            <div class="ui-stat-icon" style="background:#fffbeb"></div>
+            <div class="ui-stat-icon" style="background:#fffbeb;color:#d97706"><i class="fa-solid fa-triangle-exclamation"></i></div>
             <div><div class="ui-stat-val">3</div><div class="ui-stat-lbl">Low Stock</div></div>
           </div>
           <div class="ui-stat">
-            <div class="ui-stat-icon" style="background:#eff6ff"></div>
+            <div class="ui-stat-icon" style="background:#eff6ff;color:#2563eb"><i class="fa-solid fa-box-arrow-up"></i></div>
             <div><div class="ui-stat-val">7</div><div class="ui-stat-lbl">Checked Out</div></div>
           </div>
         </div>
         <div class="ui-card">
-          <div class="ui-card-hdr">Active Checkouts</div>
+          <div class="ui-card-hdr"><i class="fa-solid fa-box-open" style="margin-right:.35rem"></i>Active Checkouts</div>
           <table class="ui-table">
-            <tr><td><strong>DSLR Camera</strong></td><td>Sarah K.</td><td class="text-end">1</td><td><span class="badge badge-green">1 day</span></td></tr>
-            <tr><td><strong>Tripod — Heavy Duty</strong></td><td>Marcus T.</td><td class="text-end">2</td><td><span class="badge badge-yellow">9 days</span></td></tr>
-            <tr><td><strong>Laptop — Dell XPS</strong></td><td>Jordan L.</td><td class="text-end">1</td><td><span class="badge badge-green">3 days</span></td></tr>
+            <tr><td><strong>DSLR Camera</strong></td><td>Sarah K.</td><td>1</td><td><span class="badge badge-green">1 day</span></td></tr>
+            <tr><td><strong>Tripod: Heavy Duty</strong></td><td>Marcus T.</td><td>2</td><td><span class="badge badge-yellow">9 days</span></td></tr>
+            <tr><td><strong>Laptop: Dell XPS</strong></td><td>Jordan L.</td><td>1</td><td><span class="badge badge-green">3 days</span></td></tr>
           </table>
         </div>
         <div class="ui-card">
-          <div class="ui-card-hdr">Low Stock</div>
+          <div class="ui-card-hdr"><i class="fa-solid fa-triangle-exclamation" style="margin-right:.35rem;color:#d97706"></i>Low Stock</div>
           <table class="ui-table">
-            <tr><td><strong>AA Batteries (4-pack)</strong></td><td></td><td><span class="badge badge-red">2 left</span></td><td class="text-end" style="color:#94a3b8;font-size:.7rem">Min: 5</td></tr>
-            <tr><td><strong>HDMI Cable 2m</strong></td><td></td><td><span class="badge badge-red">1 left</span></td><td class="text-end" style="color:#94a3b8;font-size:.7rem">Min: 3</td></tr>
+            <tr><td><strong>AA Batteries (4-pack)</strong></td><td></td><td><span class="badge badge-red">2 left</span></td><td style="color:#94a3b8;font-size:.7rem">Min: 5</td></tr>
+            <tr><td><strong>HDMI Cable 2m</strong></td><td></td><td><span class="badge badge-red">1 left</span></td><td style="color:#94a3b8;font-size:.7rem">Min: 3</td></tr>
           </table>
         </div>
       </div>
@@ -277,47 +286,47 @@
     <p class="section-sub">No bloat, no subscriptions. Just a fast, local web app that gets out of the way.</p>
     <div class="features-grid">
       <div class="feature-card">
-        <div class="feature-icon">🔄</div>
+        <div class="feature-icon"><i class="fa-solid fa-arrows-rotate"></i></div>
         <h3>Checkout tracking</h3>
         <p>Check reusable items in and out by person. See who has what, for how long, and flag overdue items automatically.</p>
       </div>
       <div class="feature-card">
-        <div class="feature-icon">📦</div>
+        <div class="feature-icon"><i class="fa-solid fa-box"></i></div>
         <h3>Consumable stock</h3>
         <p>Track quantities of supplies that are consumed and restocked. Low-stock alerts keep you ahead of shortages.</p>
       </div>
       <div class="feature-card">
-        <div class="feature-icon">📷</div>
+        <div class="feature-icon"><i class="fa-solid fa-camera"></i></div>
         <h3>Barcode scanning</h3>
         <p>Scan barcodes with any device camera, or type SKUs manually. Print barcode labels directly from the app.</p>
       </div>
       <div class="feature-card">
-        <div class="feature-icon">📊</div>
+        <div class="feature-icon"><i class="fa-solid fa-chart-bar"></i></div>
         <h3>Reports</h3>
         <p>Stock levels, active checkouts, lost items, take-inventory sheets, and a full activity log with date filtering.</p>
       </div>
       <div class="feature-card">
-        <div class="feature-icon">🌐</div>
+        <div class="feature-icon"><i class="fa-solid fa-globe"></i></div>
         <h3>Remote access</h3>
-        <p>Expose the web UI via Cloudflare Tunnel or LocalTunnel. Staff can access inventory from anywhere — no VPN needed.</p>
+        <p>Expose the web UI via Cloudflare Tunnel or LocalTunnel. Staff can access inventory from anywhere with no VPN needed.</p>
       </div>
       <div class="feature-card">
-        <div class="feature-icon">👥</div>
+        <div class="feature-icon"><i class="fa-solid fa-users"></i></div>
         <h3>Multi-user roles</h3>
         <p>Admin, Manager, and Viewer roles. Admins manage users and settings; Viewers get read-only access.</p>
       </div>
       <div class="feature-card">
-        <div class="feature-icon">🖥️</div>
+        <div class="feature-icon"><i class="fa-solid fa-desktop"></i></div>
         <h3>Windows service</h3>
         <p>Runs silently in the background, starts at boot. A system tray companion shows status and lets you open the UI instantly.</p>
       </div>
       <div class="feature-card">
-        <div class="feature-icon">🔒</div>
+        <div class="feature-icon"><i class="fa-solid fa-lock"></i></div>
         <h3>Self-hosted &amp; private</h3>
         <p>Your data stays on your machine. No cloud accounts, no telemetry, no subscriptions.</p>
       </div>
       <div class="feature-card">
-        <div class="feature-icon">⚡</div>
+        <div class="feature-icon"><i class="fa-solid fa-bolt"></i></div>
         <h3>Fast installer</h3>
         <p>Download one .exe and you're done. The installer registers the service, sets up the tray icon, and launches immediately.</p>
       </div>
@@ -360,24 +369,24 @@
 <section class="cta-section">
   <h2>Ready to get started?</h2>
   <p>Free, open source, and runs entirely on your hardware. No accounts, no limits.</p>
-  <a href="https://github.com/jtczrt/inventory-tracker/releases/latest" class="btn-primary" style="display:inline-flex">
-    ⬇ Download Inventory Tracker
+  <a href="https://github.com/JTCozart/inventory-tracker/releases/latest" class="btn-primary" style="display:inline-flex">
+    <i class="fa-solid fa-download"></i> Download Inventory Tracker
   </a>
 </section>
 
 <footer>
   <div>
-    <div class="nav-brand" style="display:flex;align-items:center;gap:.5rem;margin-bottom:.25rem">
+    <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.25rem">
       <div class="it-badge" style="width:24px;height:24px;font-size:.65rem;border-radius:5px">IT</div>
       <strong style="color:#0f172a">Inventory Tracker</strong>
     </div>
-    <span>MIT License · &copy; 2026 Jake Cozart</span>
+    <span>MIT License &middot; &copy; 2026 Jake Cozart</span>
   </div>
   <div style="display:flex;gap:1.5rem">
-    <a href="https://github.com/jtczrt/inventory-tracker">GitHub</a>
-    <a href="https://github.com/jtczrt/inventory-tracker/releases">Releases</a>
-    <a href="https://github.com/jtczrt/inventory-tracker/issues">Issues</a>
-    <a href="../NOTICES.html">Notices</a>
+    <a href="https://github.com/JTCozart/inventory-tracker"><i class="fa-brands fa-github"></i> GitHub</a>
+    <a href="https://github.com/JTCozart/inventory-tracker/releases"><i class="fa-solid fa-tag"></i> Releases</a>
+    <a href="https://github.com/JTCozart/inventory-tracker/issues"><i class="fa-solid fa-circle-exclamation"></i> Issues</a>
+    <a href="../NOTICES.html"><i class="fa-solid fa-file-lines"></i> Notices</a>
   </div>
 </footer>
 

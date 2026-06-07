@@ -2,7 +2,7 @@
 
 A self-hosted inventory management system for small teams. Runs as a Windows service with a web UI accessible from any device on your network.
 
-[![Release](https://img.shields.io/github/v/release/jtczrt/inventory-tracker?label=latest)](https://github.com/jtczrt/inventory-tracker/releases/latest)
+[![Release](https://img.shields.io/github/v/release/JTCozart/inventory-tracker?label=latest)](https://github.com/JTCozart/inventory-tracker/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 ---
@@ -25,7 +25,7 @@ A self-hosted inventory management system for small teams. Runs as a Windows ser
 
 ### Using the installer (recommended)
 
-1. Download `InventoryTracker-Setup-<version>.exe` from the [latest release](https://github.com/jtczrt/inventory-tracker/releases/latest)
+1. Download `InventoryTracker-Setup-<version>.exe` from the [latest release](https://github.com/JTCozart/inventory-tracker/releases/latest)
 2. Run the installer as Administrator
 3. The installer:
    - Installs the web server as a Windows service (auto-starts at boot)
