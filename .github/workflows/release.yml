@@ -1,0 +1,83 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9].[0-9][0-9][0-9][0-9]'
+
+jobs:
+  build-installer:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Parse version from tag
+        id: ver
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"   # e.g. v20260606.1430
+          $ver = $tag.TrimStart('v')        # e.g. 20260606.1430
+          echo "TAG=$tag"     >> $env:GITHUB_OUTPUT
+          echo "VERSION=$ver" >> $env:GITHUB_OUTPUT
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        run: dotnet restore InventoryTracker.sln
+
+      - name: Generate icon
+        shell: pwsh
+        run: pwsh tools/New-Icon.ps1
+
+      - name: Publish service (InventoryTracker.App)
+        shell: pwsh
+        run: |
+          dotnet publish src/InventoryTracker.App/InventoryTracker.App.csproj `
+            -c Release -r win-x64 --self-contained true `
+            -p:PublishSingleFile=true `
+            -p:IncludeNativeLibrariesForSelfExtract=true `
+            -p:Version="${{ steps.ver.outputs.VERSION }}" `
+            -o publish/app
+
+      - name: Publish tray companion (InventoryTracker.Tray)
+        shell: pwsh
+        run: |
+          dotnet publish src/InventoryTracker.Tray/InventoryTracker.Tray.csproj `
+            -c Release -r win-x64 --self-contained true `
+            -p:PublishSingleFile=true `
+            -p:IncludeNativeLibrariesForSelfExtract=true `
+            -p:Version="${{ steps.ver.outputs.VERSION }}" `
+            -o publish/tray
+
+      - name: Install Inno Setup
+        shell: pwsh
+        run: choco install innosetup -y --no-progress
+
+      - name: Build installer
+        shell: pwsh
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          & $iscc /DAppVersion="${{ steps.ver.outputs.VERSION }}" installer\setup.iss
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "Inventory Tracker ${{ steps.ver.outputs.VERSION }}"
+          body: |
+            ## Inventory Tracker ${{ steps.ver.outputs.VERSION }}
+
+            ### Installation
+            1. Download and run `InventoryTracker-Setup-${{ steps.ver.outputs.VERSION }}.exe`
+            2. The installer registers the Windows service and starts it automatically
+            3. A tray icon appears at login — double-click to open the web UI
+
+            The web interface is available at **http://localhost:5050** after installation.
+          files: installer/Output/InventoryTracker-Setup-*.exe
+          generate_release_notes: false

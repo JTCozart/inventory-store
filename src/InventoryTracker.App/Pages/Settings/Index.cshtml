@@ -1,0 +1,597 @@
+@page
+@model InventoryTracker.App.Pages.Settings.IndexModel
+@using InventoryTracker.Domain.Enums
+@using InventoryTracker.App.Services
+@{
+    ViewData["Title"] = "Settings";
+    ViewData["ActivePage"] = "Settings";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0">Settings</h1>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.SuccessMessage))
+{
+    <div class="alert alert-success alert-dismissible fade show">
+        @Model.SuccessMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (!string.IsNullOrEmpty(Model.ErrorMessage))
+{
+    <div class="alert alert-danger alert-dismissible fade show">
+        @Model.ErrorMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<ul class="nav nav-tabs mb-4">
+    <li class="nav-item">
+        <a class="nav-link @(Model.Tab == "account" ? "active" : "")" href="/Settings?tab=account">
+            <i class="bi bi-person me-1"></i> My Account
+        </a>
+    </li>
+    @if (User.IsInRole("Admin"))
+    {
+        <li class="nav-item">
+            <a class="nav-link @(Model.Tab == "users" ? "active" : "")" href="/Settings?tab=users">
+                <i class="bi bi-people me-1"></i> User Management
+            </a>
+        </li>
+    }
+    @if (User.IsInRole("Admin"))
+    {
+        <li class="nav-item">
+            <a class="nav-link @(Model.Tab == "tunnel" ? "active" : "")" href="/Settings?tab=tunnel">
+                <i class="bi bi-cloud me-1"></i> Remote Access
+            </a>
+        </li>
+    }
+    <li class="nav-item">
+        <a class="nav-link @(Model.Tab == "info" ? "active" : "")" href="/Settings?tab=info">
+            <i class="bi bi-info-circle me-1"></i> App Info
+        </a>
+    </li>
+</ul>
+
+@if (Model.Tab == "account")
+{
+    <div class="row g-4" style="max-width: 520px;">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header fw-semibold">Change Password</div>
+                <div class="card-body">
+                    <form method="post" asp-page-handler="ChangePassword">
+                        <div class="mb-3">
+                            <label class="form-label">Current Password</label>
+                            <input name="CurrentPassword" class="form-control" type="password" required />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">New Password</label>
+                            <input name="NewPassword" class="form-control" type="password" minlength="8" required />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Confirm Password</label>
+                            <input name="ConfirmPassword" class="form-control" type="password" required />
+                        </div>
+                        <button type="submit" class="btn btn-primary">Update Password</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (Model.Tab == "users" && User.IsInRole("Admin"))
+{
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0">User Accounts</h5>
+        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addUserModal">
+            <i class="bi bi-person-plus me-1"></i> Add User
+        </button>
+    </div>
+
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Status</th>
+                        <th>Last Login</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var user in Model.Users)
+                    {
+                        <tr class="@(!user.IsActive ? "table-secondary text-muted" : "")">
+                            <td>
+                                <div class="fw-semibold">@user.DisplayName</div>
+                                @if (user.DisplayName != user.Username)
+                                {
+                                    <div class="text-muted small">@user.Username</div>
+                                }
+                            </td>
+                            <td class="small">@(user.Email ?? "—")</td>
+                            <td>
+                                <span class="badge @(user.Role == UserRole.Admin ? "bg-danger" : user.Role == UserRole.Manager ? "bg-warning text-dark" : "bg-secondary")">
+                                    @user.Role
+                                </span>
+                            </td>
+                            <td>
+                                @if (user.IsActive)
+                                {
+                                    <span class="badge bg-success">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">Suspended</span>
+                                }
+                            </td>
+                            <td class="small text-muted">
+                                @(user.LastLoginAt.HasValue ? user.LastLoginAt.Value.ToLocalTime().ToString("MMM d, yyyy h:mm tt") : "Never")
+                            </td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-outline-secondary me-1"
+                                        onclick="openEditModal(@user.Id, '@user.Username', '@(user.FirstName ?? "")', '@(user.LastName ?? "")', '@(user.Email ?? "")', @((int)user.Role), @user.IsActive.ToString().ToLower())"
+                                        title="Edit">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                @if (user.Role != UserRole.Admin)
+                                {
+                                    <form method="post" asp-page-handler="ToggleSuspend" class="d-inline me-1"
+                                          onsubmit="return confirm('@(user.IsActive ? $"Suspend {user.Username}? They will be unable to log in." : $"Reactivate {user.Username}?")')">
+                                        <input type="hidden" name="userId" value="@user.Id" />
+                                        <input type="hidden" name="suspend" value="@user.IsActive.ToString().ToLower()" />
+                                        <button type="submit" class="btn btn-sm @(user.IsActive ? "btn-outline-warning" : "btn-outline-success")"
+                                                title="@(user.IsActive ? "Suspend" : "Reactivate")">
+                                            <i class="bi @(user.IsActive ? "bi-pause-circle" : "bi-play-circle")"></i>
+                                        </button>
+                                    </form>
+                                    <form method="post" asp-page-handler="DeleteUser" class="d-inline"
+                                          onsubmit="return confirm('Permanently delete @user.Username? This cannot be undone.')">
+                                        <input type="hidden" name="userId" value="@user.Id" />
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="modal fade" id="addUserModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add User</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="post" asp-page-handler="AddUser">
+                    <div class="modal-body">
+                        <div class="row g-2 mb-3">
+                            <div class="col">
+                                <label class="form-label">First Name</label>
+                                <input name="Add.FirstName" class="form-control" autocomplete="off" />
+                            </div>
+                            <div class="col">
+                                <label class="form-label">Last Name</label>
+                                <input name="Add.LastName" class="form-control" autocomplete="off" />
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Username <span class="text-danger">*</span></label>
+                            <input name="Add.Username" class="form-control" required minlength="3" maxlength="100" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Email <span class="text-muted small">(optional)</span></label>
+                            <input name="Add.Email" class="form-control" type="email" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Password <span class="text-danger">*</span></label>
+                            <input name="Add.Password" class="form-control" type="password" required minlength="8" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Role</label>
+                            <select name="Add.Role" class="form-select">
+                                <option value="2">Viewer</option>
+                                <option value="1">Manager</option>
+                                <option value="0">Admin</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Create User</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="editUserModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit User — <span id="editModalUsername"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="post" asp-page-handler="EditUser">
+                    <input type="hidden" name="Edit.UserId" id="editUserId" />
+                    <div class="modal-body">
+                        <div class="row g-2 mb-3">
+                            <div class="col">
+                                <label class="form-label">First Name</label>
+                                <input name="Edit.FirstName" id="editFirstName" class="form-control" />
+                            </div>
+                            <div class="col">
+                                <label class="form-label">Last Name</label>
+                                <input name="Edit.LastName" id="editLastName" class="form-control" />
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Email <span class="text-muted small">(optional)</span></label>
+                            <input name="Edit.Email" id="editEmail" class="form-control" type="email" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Role</label>
+                            <select name="Edit.Role" id="editRole" class="form-select">
+                                <option value="2">Viewer</option>
+                                <option value="1">Manager</option>
+                                <option value="0">Admin</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">
+                                New Password
+                                <span class="text-muted small">(leave blank to keep current)</span>
+                            </label>
+                            <input name="Edit.NewPassword" class="form-control" type="password" minlength="8"
+                                   placeholder="Leave blank to keep unchanged" />
+                        </div>
+                        <div class="form-check">
+                            <input name="Edit.IsActive" id="editIsActive" class="form-check-input" type="checkbox" value="true" />
+                            <label class="form-check-label" for="editIsActive">Active (uncheck to suspend)</label>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+}
+
+@if (Model.Tab == "tunnel" && User.IsInRole("Admin"))
+{
+    var isStopped = Model.TunnelState is TunnelService.TunnelState.Stopped or TunnelService.TunnelState.Error;
+    var isRunning = Model.TunnelState == TunnelService.TunnelState.Running;
+    var badgeCss  = isRunning ? "bg-success" : Model.TunnelState == TunnelService.TunnelState.Error ? "bg-danger" : "bg-secondary";
+    var as0 = string.IsNullOrEmpty(Model.SavedAutostart);
+    var asQ = Model.SavedAutostart == "quick";
+    var asL = Model.SavedAutostart == "localtunnel";
+    var asN = Model.SavedAutostart == "named";
+
+    <div class="row g-4">
+
+        <div class="col-lg-5">
+            <div class="card">
+                <div class="card-header fw-semibold d-flex align-items-center justify-content-between">
+                    <span><i class="bi bi-cloud me-2"></i>Remote Access</span>
+                    <span id="tunnel-badge" class="badge @badgeCss">@Model.TunnelState</span>
+                </div>
+                <div class="card-body">
+
+                    <div id="tunnel-url-section" class="@(!isRunning ? "d-none" : "") mb-3">
+                        <div class="fw-semibold small mb-1">Public URL</div>
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <a id="tunnel-url-link" href="@Model.TunnelPublicUrl" target="_blank"
+                               class="text-break small">@Model.TunnelPublicUrl</a>
+                            <button class="btn btn-sm btn-outline-secondary flex-shrink-0"
+                                    onclick="navigator.clipboard.writeText(document.getElementById('tunnel-url-link').textContent)"
+                                    title="Copy URL">
+                                <i class="bi bi-clipboard"></i>
+                            </button>
+                        </div>
+                        <div id="qr-container" class="text-center"></div>
+                    </div>
+
+                    <div id="tunnel-error" class="@(Model.TunnelState != TunnelService.TunnelState.Error ? "d-none" : "") alert alert-danger small py-2 mb-3">@Model.TunnelError</div>
+
+                    <div id="tunnel-controls"
+                         data-lt-subdomain="@Model.SavedLtSubdomain"
+                         data-named-token="@(string.IsNullOrWhiteSpace(Model.SavedTunnelToken) ? "" : "1")"
+                         data-named-url="@Model.SavedTunnelUrl"
+                         data-saved-token="@Model.SavedTunnelToken">
+                        @if (isStopped)
+                        {
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-sm btn-primary" onclick="startTunnel('quick')">
+                                    <i class="bi bi-lightning me-1"></i> Quick Tunnel
+                                    <span class="text-white-50 ms-1 small">random URL</span>
+                                </button>
+                                @if (!string.IsNullOrWhiteSpace(Model.SavedLtSubdomain))
+                                {
+                                    <button class="btn btn-sm btn-success" onclick="startTunnel('localtunnel')">
+                                        <i class="bi bi-link-45deg me-1"></i> @(Model.SavedLtSubdomain + ".loca.lt")
+                                    </button>
+                                }
+                                @if (false) // named tunnel removed
+                                {
+                                    <button class="btn btn-sm btn-outline-primary d-none" onclick="startTunnel('named')">
+                                    </button>
+                                }
+                            </div>
+                        }
+                        else if (isRunning)
+                        {
+                            <button class="btn btn-sm btn-danger w-100" onclick="stopTunnel()">
+                                <i class="bi bi-stop-fill me-1"></i> Stop Tunnel
+                            </button>
+                        }
+                        else
+                        {
+                            <button class="btn btn-sm btn-secondary w-100" disabled>
+                                <span class="spinner-border spinner-border-sm me-1"></span>
+                                @Model.TunnelState…
+                            </button>
+                        }
+                    </div>
+
+                    <div class="form-text mt-2">
+                        Tunnels provide HTTPS remote access and enable the camera barcode scanner from any device.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-7">
+            <div class="accordion" id="tunnelAccordion">
+
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button @(string.IsNullOrWhiteSpace(Model.SavedLtSubdomain) ? "collapsed" : "")"
+                                type="button" data-bs-toggle="collapse" data-bs-target="#lt-section">
+                            <i class="bi bi-link-45deg me-2 text-success"></i>
+                            localtunnel <span class="text-muted ms-2 small">free persistent subdomain</span>
+                        </button>
+                    </h2>
+                    <div id="lt-section" class="accordion-collapse collapse @(!string.IsNullOrWhiteSpace(Model.SavedLtSubdomain) ? "show" : "")">
+                        <div class="accordion-body">
+                            <form method="post" asp-page-handler="SaveTunnelConfig">
+                                <div class="input-group input-group-sm mb-2">
+                                    <span class="input-group-text">https://</span>
+                                    <input name="ltSubdomain" class="form-control"
+                                           value="@Model.SavedLtSubdomain"
+                                           placeholder="inventorytracker" />
+                                    <span class="input-group-text">.loca.lt</span>
+                                </div>
+                                <div class="form-text mb-2">
+                                    No account needed. Subdomain is first-come-first-served.<br/>
+                                    First-time visitors need to bypass the loca.lt landing page once.
+                                </div>
+                                <input type="hidden" name="tunnelToken" value="@Model.SavedTunnelToken" />
+                                <input type="hidden" name="tunnelUrl" value="@Model.SavedTunnelUrl" />
+                                <input type="hidden" name="autostart" value="@Model.SavedAutostart" />
+                                <button type="submit" class="btn btn-sm btn-primary">Save</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button"
+                                data-bs-toggle="collapse" data-bs-target="#autostart-section">
+                            <i class="bi bi-play-circle me-2"></i>
+                            Auto-start
+                        </button>
+                    </h2>
+                    <div id="autostart-section" class="accordion-collapse collapse">
+                        <div class="accordion-body">
+                            <form method="post" asp-page-handler="SaveTunnelConfig">
+                                <select name="autostart" class="form-select form-select-sm mb-2">
+                                    <option value="" selected="@as0">Disabled</option>
+                                    <option value="quick" selected="@asQ">Quick Tunnel (random URL)</option>
+                                    <option value="localtunnel" selected="@asL">localtunnel (loca.lt)</option>
+                                </select>
+                                <input type="hidden" name="tunnelToken"  value="@Model.SavedTunnelToken" />
+                                <input type="hidden" name="tunnelUrl"    value="@Model.SavedTunnelUrl" />
+                                <input type="hidden" name="ltSubdomain"  value="@Model.SavedLtSubdomain" />
+                                <button type="submit" class="btn btn-sm btn-primary">Save</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+}
+
+@if (Model.Tab == "info")
+{
+    <div class="card" style="max-width: 520px;">
+        <div class="card-header fw-semibold">Application Info</div>
+        <div class="card-body">
+            <dl class="row mb-0">
+                <dt class="col-5">Version</dt>
+                <dd class="col-7">1.0.0</dd>
+                <dt class="col-5">Local URL</dt>
+                <dd class="col-7">
+                    <a href="http://localhost:5050" target="_blank">http://localhost:5050</a>
+                </dd>
+                <dt class="col-5">Network URL</dt>
+                <dd class="col-7">
+                    <a href="http://@Model.LocalIpAddress:5050" target="_blank">
+                        http://@Model.LocalIpAddress:5050
+                    </a>
+                </dd>
+                <dt class="col-5">Database</dt>
+                <dd class="col-7 text-break small">@System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "InventoryTracker", "inventory.db")</dd>
+            </dl>
+        </div>
+    </div>
+}
+
+@section Scripts {
+@if (Model.Tab == "tunnel")
+{
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<script>
+(function () {
+    var pollTimer  = null;
+    var lastUrl    = null;
+    var controls   = document.getElementById('tunnel-controls');
+    var ltSub      = controls ? controls.dataset.ltSubdomain  : '';
+    var namedToken = controls ? controls.dataset.namedToken   : '';
+    var savedToken = controls ? controls.dataset.savedToken   : '';
+    var namedUrl   = controls ? controls.dataset.namedUrl     : '';
+
+    // ── Public API called by inline onclick attributes ────────────────
+    window.startTunnel = function (mode) {
+        var apiUrl, body, headers = {};
+        if (mode === 'named') {
+            apiUrl = '/api/tunnel/start-named';
+            body   = JSON.stringify({ token: savedToken, publicUrl: namedUrl });
+            headers['Content-Type'] = 'application/json';
+        } else if (mode === 'localtunnel') {
+            apiUrl = '/api/tunnel/start-localtunnel';
+            body   = JSON.stringify({ subdomain: ltSub });
+            headers['Content-Type'] = 'application/json';
+        } else {
+            apiUrl = '/api/tunnel/start-quick';
+        }
+        renderControls('Starting');
+        fetch(apiUrl, { method: 'POST', headers: headers, body: body || null, credentials: 'include' })
+            .then(function () { startPolling(); });
+    };
+
+    window.stopTunnel = function () {
+        renderControls('Stopping');
+        fetch('/api/tunnel/stop', { method: 'POST', credentials: 'include' })
+            .then(function () { startPolling(); });
+    };
+
+    function startPolling() {
+        if (pollTimer) clearInterval(pollTimer);
+        pollTimer = setInterval(pollStatus, 1200);
+        pollStatus();
+    }
+
+    function pollStatus() {
+        fetch('/api/tunnel/status', { credentials: 'include' })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                updateUI(data);
+                if (data.state === 'Running' || data.state === 'Stopped' || data.state === 'Error') {
+                    clearInterval(pollTimer);
+                    pollTimer = null;
+                }
+            });
+    }
+
+    function updateUI(data) {
+        // Badge
+        var badge = document.getElementById('tunnel-badge');
+        if (badge) {
+            badge.textContent = data.state;
+            badge.className   = 'badge ' + (data.state === 'Running' ? 'bg-success' : data.state === 'Error' ? 'bg-danger' : 'bg-secondary');
+        }
+
+        // Error message
+        var errEl = document.getElementById('tunnel-error');
+        if (errEl) {
+            errEl.textContent = data.error || '';
+            errEl.classList.toggle('d-none', data.state !== 'Error');
+        }
+
+        // URL + QR
+        var urlSection  = document.getElementById('tunnel-url-section');
+        var urlLink     = document.getElementById('tunnel-url-link');
+        var qrContainer = document.getElementById('qr-container');
+        if (data.state === 'Running' && data.url) {
+            if (urlSection) urlSection.classList.remove('d-none');
+            if (urlLink)    { urlLink.href = data.url; urlLink.textContent = data.url; }
+            if (qrContainer && data.url !== lastUrl && typeof QRCode !== 'undefined') {
+                lastUrl = data.url;
+                qrContainer.innerHTML = '';
+                var canvas = document.createElement('canvas');
+                qrContainer.appendChild(canvas);
+                QRCode.toCanvas(canvas, data.url, { width: 180, margin: 1 });
+            }
+        } else {
+            if (urlSection) urlSection.classList.add('d-none');
+        }
+
+        // Buttons
+        renderControls(data.state);
+    }
+
+    function renderControls(state) {
+        if (!controls) return;
+        var html = '';
+        if (state === 'Stopped' || state === 'Error') {
+            html += '<div class="d-grid gap-2">';
+            html += '<button class="btn btn-sm btn-primary" onclick="startTunnel(\'quick\')">'
+                  + '<i class="bi bi-lightning me-1"></i> Quick Tunnel '
+                  + '<span class="text-white-50 small">random URL</span></button>';
+            if (ltSub) {
+                html += '<button class="btn btn-sm btn-success" onclick="startTunnel(\'localtunnel\')">'
+                      + '<i class="bi bi-link-45deg me-1"></i> ' + ltSub + '.loca.lt</button>';
+            }
+            html += '</div>';
+        } else if (state === 'Running') {
+            html = '<button class="btn btn-sm btn-danger w-100" onclick="stopTunnel()">'
+                 + '<i class="bi bi-stop-fill me-1"></i> Stop Tunnel</button>';
+        } else {
+            html = '<button class="btn btn-sm btn-secondary w-100" disabled>'
+                 + '<span class="spinner-border spinner-border-sm me-1"></span>'
+                 + state + '…</button>';
+        }
+        controls.innerHTML = html;
+    }
+
+    // On page load: if mid-transition or already running, sync state
+    var initialState = '@Model.TunnelState';
+    if (initialState === 'Downloading' || initialState === 'Starting') {
+        startPolling();
+    } else if (initialState === 'Running') {
+        @if (Model.TunnelPublicUrl != null) {
+            <text>
+            if (typeof QRCode !== 'undefined') {
+                var c = document.createElement('canvas');
+                var qrc = document.getElementById('qr-container');
+                if (qrc) { qrc.appendChild(c); QRCode.toCanvas(c, '@Model.TunnelPublicUrl', { width: 180, margin: 1 }); }
+            }
+            </text>
+        }
+    }
+})();
+</script>
+}
+
+<script>
+function openEditModal(id, username, firstName, lastName, email, role, isActive) {
+    document.getElementById('editUserId').value = id;
+    document.getElementById('editModalUsername').textContent = username;
+    document.getElementById('editFirstName').value = firstName;
+    document.getElementById('editLastName').value = lastName;
+    document.getElementById('editEmail').value = email;
+    document.getElementById('editRole').value = role;
+    document.getElementById('editIsActive').checked = isActive;
+    new bootstrap.Modal(document.getElementById('editUserModal')).show();
+}
+</script>
+}

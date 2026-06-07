@@ -1,0 +1,304 @@
+:root {
+    --sidebar-width: 240px;
+    --sidebar-bg: #1e2530;
+    --sidebar-text: #adb5bd;
+    --sidebar-active: #fff;
+    --sidebar-hover-bg: rgba(255,255,255,0.08);
+    --sidebar-active-bg: rgba(13,110,253,0.85);
+    --topbar-height: 50px;
+}
+
+html, body {
+    height: 100%;
+    margin: 0;
+    font-size: 14px;
+}
+
+@media (min-width: 768px) {
+    html { font-size: 15px; }
+}
+
+/* ── App shell ───────────────────────────────── */
+
+#app-wrapper {
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* ── Sidebar ─────────────────────────────────── */
+
+#sidebar {
+    width: var(--sidebar-width);
+    height: 100vh;
+    background: var(--sidebar-bg);
+    color: var(--sidebar-text);
+    flex-shrink: 0;
+    overflow-y: auto;
+    transition: transform 0.25s ease;
+    z-index: 1040;
+}
+
+.sidebar-brand { color: #fff !important; }
+.sidebar-divider { border-color: rgba(255,255,255,0.1); }
+
+#sidebar .nav-item {
+    display: flex;
+    flex-direction: column;
+}
+
+#sidebar .nav-link {
+    color: var(--sidebar-text);
+    border-radius: 6px;
+    padding: 0.55rem 0.75rem;
+    font-size: 0.875rem;
+    transition: background 0.15s, color 0.15s;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+#sidebar .nav-link:hover {
+    background: var(--sidebar-hover-bg);
+    color: #fff;
+}
+
+#sidebar .nav-link.active {
+    background: var(--sidebar-active-bg);
+    color: var(--sidebar-active);
+}
+
+.sidebar-user { color: var(--sidebar-text); font-size: 0.85rem; }
+.sidebar-logout { color: var(--sidebar-text); font-size: 0.8rem; }
+.sidebar-logout:hover { color: #fff; }
+.sidebar-close { color: var(--sidebar-text); border: none; background: none; }
+
+/* ── Overlay (mobile) ────────────────────────── */
+
+#sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 1039;
+}
+
+#sidebar-overlay.active { display: block; }
+
+/* ── Mobile: sidebar off-canvas ─────────────── */
+
+@media (max-width: 991.98px) {
+    #sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        transform: translateX(-100%);
+    }
+
+    #sidebar.open {
+        transform: translateX(0);
+    }
+
+    #content-wrapper {
+        width: 100%;
+    }
+}
+
+/* ── Desktop: sidebar always visible ────────── */
+
+@media (min-width: 992px) {
+    #topbar { display: none !important; }
+}
+
+/* ── Top bar (mobile only) ───────────────────── */
+
+#topbar {
+    background: var(--sidebar-bg);
+    height: var(--topbar-height);
+    flex-shrink: 0;
+}
+
+/* ── Content wrapper ─────────────────────────── */
+
+#content-wrapper {
+    flex-grow: 1;
+    overflow-y: auto;
+    background: #f4f6f9;
+    min-width: 0;
+}
+
+/* ── Barcode scanner (@zxing/library) ───────────────────────────────────────
+   We own the <video> element — ZXing reads the raw MediaStream for detection.
+   CSS rotation corrects the portrait camera stream to appear landscape.
+   JS sets:  video.width = DISPLAY_H,  video.height = containerWidth
+             video.top   = (DISPLAY_H - containerWidth) / 2
+             video.left  = (containerWidth - DISPLAY_H) / 2
+   Then transform: rotate(-90deg) visually makes it landscape W × DISPLAY_H. ── */
+
+.scanner-viewport {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+    background: #000;
+    border-radius: 6px;
+    /* height set by JS to DISPLAY_H */
+}
+
+.scanner-viewport video {
+    position: absolute;
+    /* top:50% + left:50% + translate(-50%,-50%) centres the element,
+       then rotate(-90deg) corrects portrait→landscape orientation.
+       JS only sets width and height. */
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-90deg);
+    transform-origin: center center;
+    object-fit: cover;
+}
+
+/* Red aiming line overlay */
+.scanner-aim {
+    position: absolute;
+    top: 50%;
+    left: 8%;
+    right: 8%;
+    height: 2px;
+    background: rgba(220, 38, 38, 0.9);
+    transform: translateY(-50%);
+    box-shadow: 0 0 8px rgba(220, 38, 38, 0.6);
+    pointer-events: none;
+    border-radius: 1px;
+}
+
+.scanner-aim::before,
+.scanner-aim::after {
+    content: '';
+    position: absolute;
+    width: 2px;
+    height: 20px;
+    background: rgba(220, 38, 38, 0.9);
+    top: -9px;
+}
+.scanner-aim::before { left: 0; }
+.scanner-aim::after  { right: 0; }
+
+/* ── Stat cards ──────────────────────────────── */
+
+.stat-card {
+    background: #fff;
+    border-radius: 8px;
+    padding: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,.06);
+}
+
+.stat-icon { font-size: 2rem; line-height: 1; }
+.stat-value { font-size: 1.75rem; font-weight: 700; line-height: 1; }
+.stat-label {
+    font-size: 0.78rem;
+    color: #6c757d;
+    margin-top: 2px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+/* ── Cards ───────────────────────────────────── */
+
+.card {
+    box-shadow: 0 1px 3px rgba(0,0,0,.06);
+    border: 1px solid rgba(0,0,0,.08);
+}
+
+.activity-item:last-child { border-bottom: none !important; }
+.min-vh-100 { min-height: 100vh; }
+
+/* ── Reports / Print ────────────────────────���────────────────────────────── */
+
+.print-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem; display: none; }
+
+/* Take inventory fill-in boxes */
+.print-input-box {
+    border-bottom: 1px solid #888;
+    min-height: 20px;
+    width: 80px;
+}
+.print-input-box.wide { width: 100%; }
+
+/* Barcode grid */
+.barcode-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+
+@media (max-width: 768px) {
+    .barcode-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+.barcode-card {
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    padding: 10px;
+    text-align: center;
+    background: #fff;
+}
+
+.barcode-name     { font-weight: 700; font-size: 0.85rem; margin-bottom: 2px; }
+.barcode-location { font-size: 0.75rem; color: #6c757d; margin-bottom: 4px; }
+.barcode-svg      { max-width: 100%; height: auto; display: block; margin: 4px auto; }
+.barcode-sku      { font-size: 0.75rem; color: #6c757d; font-family: monospace; margin-top: 2px; }
+
+@media print {
+    .no-print           { display: none !important; }
+    .print-title        { display: block !important; }
+    #sidebar            { display: none !important; }
+    #topbar             { display: none !important; }
+    #content-wrapper    { margin-left: 0 !important; width: 100% !important; }
+    #app-wrapper        { display: block !important; }
+    .card               { border: 1px solid #dee2e6 !important; box-shadow: none !important; }
+    .barcode-grid       { grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    .barcode-card       { break-inside: avoid; }
+    .take-inventory-table td, .take-inventory-table th { font-size: 0.8rem; padding: 4px 6px; }
+}
+
+/* ── Sortable table headers ──────────────────── */
+
+th.sortable { cursor: pointer; user-select: none; white-space: nowrap; }
+th.sortable::after { content: ' ↕'; color: #adb5bd; font-size: .75em; }
+th.sort-asc::after  { content: ' ↑'; color: #0d6efd; }
+th.sort-desc::after { content: ' ↓'; color: #0d6efd; }
+
+/* ── Barcode scanner ─────────────────────────── */
+
+#scanner-video {
+    width: 100%;
+    max-height: 240px;
+    object-fit: cover;
+    border-radius: 6px;
+    background: #000;
+}
+
+#scanner-overlay {
+    position: relative;
+}
+
+#scanner-overlay::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 10%;
+    right: 10%;
+    height: 2px;
+    background: rgba(13,110,253,0.7);
+    box-shadow: 0 0 8px rgba(13,110,253,0.6);
+    transform: translateY(-50%);
+    pointer-events: none;
+}
+
+#barcode-result {
+    font-family: monospace;
+    font-size: 1.1rem;
+    letter-spacing: 0.05em;
+}

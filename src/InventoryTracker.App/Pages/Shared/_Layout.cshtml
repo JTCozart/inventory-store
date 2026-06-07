@@ -1,0 +1,200 @@
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Inventory Tracker</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" />
+</head>
+<body>
+@if (User.Identity?.IsAuthenticated == true)
+{
+    <div id="app-wrapper">
+        <nav id="sidebar">
+            <div class="sidebar-inner d-flex flex-column h-100 p-3">
+                <div class="d-flex align-items-center justify-content-between mb-4">
+                    <a href="/" class="sidebar-brand d-flex align-items-center text-decoration-none">
+                        <i class="bi bi-box-seam me-2 fs-4"></i>
+                        <span class="fs-5 fw-semibold">Inventory</span>
+                    </a>
+                    <button class="btn btn-link sidebar-close d-lg-none p-0" id="sidebarClose" aria-label="Close menu">
+                        <i class="bi bi-x-lg text-white fs-5"></i>
+                    </button>
+                </div>
+                <hr class="sidebar-divider" />
+                <ul class="nav nav-pills flex-column mb-auto">
+                    <li class="nav-item">
+                        <a href="/" class="nav-link @(ViewData["ActivePage"]?.ToString() == "Dashboard" ? "active" : "")">
+                            <i class="bi bi-speedometer2 me-2"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/Inventory" class="nav-link @(ViewData["ActivePage"]?.ToString() == "Inventory" ? "active" : "")">
+                            <i class="bi bi-boxes me-2"></i> Inventory
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/Reports" class="nav-link @(ViewData["ActivePage"]?.ToString() == "Reports" ? "active" : "")">
+                            <i class="bi bi-bar-chart me-2"></i> Reports
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/Settings" class="nav-link @(ViewData["ActivePage"]?.ToString() == "Settings" ? "active" : "")">
+                            <i class="bi bi-sliders me-2"></i> Settings
+                        </a>
+                    </li>
+                </ul>
+                <hr class="sidebar-divider" />
+                <div class="sidebar-user d-flex align-items-center">
+                    <i class="bi bi-person-circle me-2 fs-5"></i>
+                    <div class="flex-grow-1 small">
+                        <div class="fw-semibold">@User.Identity.Name</div>
+                        <form method="post" asp-page="/Auth/Logout" class="d-inline">
+                            <button type="submit" class="btn btn-link p-0 text-decoration-none sidebar-logout">
+                                <i class="bi bi-box-arrow-left me-1"></i>Logout
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <div id="sidebar-overlay" class="d-lg-none"></div>
+
+        <div id="content-wrapper" class="d-flex flex-column">
+            <header id="topbar" class="d-flex align-items-center px-3 py-2 d-lg-none">
+                <button class="btn btn-link p-0 me-3" id="sidebarToggle" aria-label="Open menu">
+                    <i class="bi bi-list fs-4 text-white"></i>
+                </button>
+                <span class="text-white fw-semibold">Inventory Tracker</span>
+            </header>
+            <main class="flex-grow-1 p-3 p-md-4">
+                @RenderBody()
+            </main>
+            <footer class="py-2 px-4 text-muted small border-top">
+                Inventory Tracker &copy; @DateTime.Now.Year
+            </footer>
+        </div>
+    </div>
+}
+else
+{
+    <main class="container-fluid">
+        @RenderBody()
+    </main>
+}
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="~/js/site.js"></script>
+@if (User.Identity?.IsAuthenticated == true)
+{
+    <text>
+    <input type="hidden" id="af-token" value="@Antiforgery.GetAndStoreTokens(Context).RequestToken">
+
+    <!-- Global item detail modal -->
+    <div class="modal fade" id="itemDetailModal" tabindex="-1">
+      <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header">
+            <div>
+              <span class="fw-semibold fs-5" id="modal-item-name">Loading...</span>
+              <span id="modal-type-badge" class="badge ms-2"></span>
+              <span id="modal-stock-badge" class="badge bg-warning text-dark ms-1 d-none">Low Stock</span>
+            </div>
+            <div class="d-flex gap-2 align-items-center ms-auto">
+              <button id="btn-switch-edit" class="btn btn-sm btn-outline-primary d-none" onclick="showEditMode()">
+                <i class="bi bi-pencil me-1"></i>Edit
+              </button>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+          </div>
+          <div id="modal-view-body" class="modal-body">
+            <div id="modal-alert" class="alert d-none mb-3" role="alert"></div>
+            <div id="modal-loading" class="text-center py-4">
+              <div class="spinner-border text-primary" role="status"></div>
+            </div>
+            <div id="modal-content" class="d-none">
+              <div class="row g-2 mb-4 text-center">
+                <div class="col"><div class="border rounded p-2"><div class="fw-bold fs-4" id="modal-stat-qty">-</div><div class="text-muted small">Total Qty</div></div></div>
+                <div class="col" id="stat-available-col"><div class="border rounded p-2"><div class="fw-bold fs-4 text-success" id="modal-stat-available">-</div><div class="text-muted small">Available</div></div></div>
+                <div class="col" id="stat-out-col"><div class="border rounded p-2"><div class="fw-bold fs-4 text-warning" id="modal-stat-out">-</div><div class="text-muted small">Checked Out</div></div></div>
+                <div class="col" id="stat-lost-col"><div class="border rounded p-2"><div class="fw-bold fs-4 text-danger" id="modal-stat-lost">-</div><div class="text-muted small">Lost</div></div></div>
+                <div class="col"><div class="border rounded p-2"><div class="fw-bold fs-4 text-muted" id="modal-stat-min">-</div><div class="text-muted small">Min Qty</div></div></div>
+              </div>
+              <dl class="row mb-3">
+                <dt class="col-sm-3">Location</dt><dd class="col-sm-9" id="modal-detail-location">-</dd>
+                <dt class="col-sm-3">SKU</dt><dd class="col-sm-9" id="modal-detail-sku">-</dd>
+                <dt class="col-sm-3 d-none" id="lbl-desc">Description</dt><dd class="col-sm-9 d-none" id="modal-detail-desc"></dd>
+                <dt class="col-sm-3 d-none text-warning" id="lbl-warn"><i class="bi bi-exclamation-triangle me-1"></i>Scan Warning</dt>
+                <dd class="col-sm-9 d-none" id="modal-detail-warn"></dd>
+              </dl>
+              <hr>
+              <div id="actions-reusable" class="d-none">
+                <h6 class="fw-semibold mb-3">Check Out</h6>
+                <div class="row g-2 mb-1 align-items-end">
+                  <div class="col"><label class="form-label small mb-1">Checked Out By</label><input type="text" id="co-by" class="form-control form-control-sm" placeholder="Person's name"></div>
+                  <div class="col-2"><label class="form-label small mb-1">Qty</label><input type="number" id="co-qty" class="form-control form-control-sm" value="1" min="1"></div>
+                  <div class="col"><label class="form-label small mb-1">Notes</label><input type="text" id="co-notes" class="form-control form-control-sm" placeholder="Optional"></div>
+                  <div class="col-auto"><button class="btn btn-sm btn-primary" onclick="handleCheckOut()"><i class="bi bi-box-arrow-up-right me-1"></i>Check Out</button></div>
+                </div>
+                <div class="mb-4"></div>
+                <h6 class="fw-semibold mb-2">Active Checkouts</h6>
+                <div id="active-checkouts-list"></div>
+              </div>
+              <div id="actions-consumable" class="d-none">
+                <div class="row g-4">
+                  <div class="col-md-6">
+                    <h6 class="fw-semibold mb-2">Consume</h6>
+                    <div class="d-flex gap-2 align-items-center">
+                      <input type="number" id="consume-qty" class="form-control form-control-sm" style="width:90px" value="1" min="1">
+                      <input type="text" id="consume-notes" class="form-control form-control-sm" placeholder="Notes (optional)">
+                      <button class="btn btn-sm btn-warning" onclick="handleConsume()"><i class="bi bi-dash-circle me-1"></i>Consume</button>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <h6 class="fw-semibold mb-2">Restock</h6>
+                    <div class="d-flex gap-2 align-items-center">
+                      <input type="number" id="restock-qty-c" class="form-control form-control-sm" style="width:90px" value="1" min="1">
+                      <input type="text" id="restock-notes-c" class="form-control form-control-sm" placeholder="Notes (optional)">
+                      <button class="btn btn-sm btn-success" onclick="handleRestock('c')"><i class="bi bi-plus-circle me-1"></i>Restock</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div id="modal-edit-body" class="modal-body d-none">
+            <div id="edit-alert" class="alert d-none mb-3" role="alert"></div>
+            <form id="edit-form">
+              <input type="hidden" id="edit-id">
+              <div class="row g-3">
+                <div class="col-12"><label class="form-label fw-semibold">Name <span class="text-danger">*</span></label><input type="text" id="edit-name" class="form-control" required maxlength="200"></div>
+                <div class="col-sm-6"><label class="form-label fw-semibold">Type</label><div id="edit-type-display"></div><p class="text-muted small mb-0">Cannot be changed after creation.</p></div>
+                <div class="col-sm-3"><label class="form-label fw-semibold">Quantity <span class="text-danger">*</span></label><input type="number" id="edit-quantity" class="form-control" required min="0"></div>
+                <div class="col-sm-3"><label class="form-label fw-semibold">Min Qty</label><input type="number" id="edit-min-qty" class="form-control" min="0" value="0"></div>
+                <div class="col-sm-6"><label class="form-label fw-semibold">Location</label><input type="text" id="edit-location" class="form-control" placeholder="Optional"></div>
+                <div class="col-sm-6"><label class="form-label fw-semibold">SKU</label><input type="text" id="edit-sku" class="form-control" placeholder="Optional"></div>
+                <div class="col-12"><label class="form-label fw-semibold"><i class="bi bi-exclamation-triangle text-warning me-1"></i>Scan Warning</label><textarea id="edit-scan-warning" class="form-control" rows="2" maxlength="500" placeholder="Shown when item is scanned (optional)"></textarea></div>
+                <div class="col-12"><label class="form-label fw-semibold">Description</label><textarea id="edit-description" class="form-control" rows="3" placeholder="Optional"></textarea></div>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer d-none" id="modal-view-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          </div>
+          <div class="modal-footer d-none" id="modal-edit-footer">
+            <button type="button" class="btn btn-secondary" onclick="showViewMode()">Cancel</button>
+            <button type="button" class="btn btn-primary" onclick="handleSaveEdit()"><i class="bi bi-check-lg me-1"></i>Save Changes</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script src="~/js/inventory-detail.js"></script>
+    </text>
+}
+@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

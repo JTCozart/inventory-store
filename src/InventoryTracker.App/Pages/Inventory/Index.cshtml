@@ -1,0 +1,172 @@
+@page
+@model InventoryTracker.App.Pages.Inventory.IndexModel
+@{
+    ViewData["Title"] = "Inventory";
+    ViewData["ActivePage"] = "Inventory";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0">Inventory</h1>
+    <a href="/Inventory/Create" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-1"></i> Add Item
+    </a>
+</div>
+
+<div class="card mb-3">
+    <div class="card-body py-2">
+        <form method="get" class="d-flex gap-2">
+            <input type="search" name="q" value="@Model.Query" class="form-control"
+                   placeholder="Search by name, SKU, location..." />
+            <button type="submit" class="btn btn-outline-secondary">
+                <i class="bi bi-search"></i>
+            </button>
+            @if (!string.IsNullOrEmpty(Model.Query))
+            {
+                <a href="/Inventory" class="btn btn-outline-secondary"><i class="bi bi-x"></i></a>
+            }
+        </form>
+    </div>
+</div>
+
+@if (!Model.Items.Any())
+{
+    <div class="text-center py-5 text-muted">
+        <i class="bi bi-inbox display-4"></i>
+        <p class="mt-2">No items found. <a href="/Inventory/Create">Add your first item.</a></p>
+    </div>
+}
+else
+{
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="sortable">Name</th>
+                        <th class="sortable">Type</th>
+                        <th class="sortable">SKU</th>
+                        <th class="sortable">Location</th>
+                        <th class="text-end sortable">Qty</th>
+                        <th class="text-end sortable">Available</th>
+                        <th class="text-end sortable">Min</th>
+                        <th class="sortable">Status</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.Items)
+                    {
+                        <tr class="inventory-row" data-item-id="@item.Id" style="cursor:pointer">
+                            <td class="fw-semibold">@item.Name</td>
+                            <td>
+                                @if (item.ItemType == InventoryTracker.Domain.Enums.ItemType.Reusable)
+                                {
+                                    <span class="badge bg-info">Reusable</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">Consumable</span>
+                                }
+                            </td>
+                            <td class="text-muted small">@(item.SKU ?? "-")</td>
+                            <td class="text-muted small">@(item.Location ?? "-")</td>
+                            <td class="text-end">@item.Quantity</td>
+                            <td class="text-end">@item.AvailableQuantity</td>
+                            <td class="text-end text-muted">@item.MinimumQuantity</td>
+                            <td>
+                                @if (item.IsLowStock)
+                                {
+                                    <span class="badge bg-warning text-dark">Low Stock</span>
+                                }
+                                else if (item.LostCount > 0)
+                                {
+                                    <span class="badge bg-danger">Lost</span>
+                                }
+                                else if (item.CheckedOutCount > 0)
+                                {
+                                    <span class="badge bg-info text-dark">Out</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-success">OK</span>
+                                }
+                            </td>
+                            <td class="text-end" onclick="event.stopPropagation()">
+                                <button type="button" class="btn btn-sm btn-outline-danger"
+                                        onclick="confirmDelete(@item.Id, '@item.Name.Replace("'", "\\'")')"
+                                        title="Delete @item.Name"
+                                        aria-label="Delete @item.Name">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="text-muted small mt-2">Showing @Model.Items.Count() items</div>
+}
+
+<!-- Delete confirmation modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Delete Item</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Delete <strong id="deleteItemName"></strong>? This cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="post" asp-page-handler="Delete" id="deleteForm">
+                    <input type="hidden" name="id" id="deleteItemId" />
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+(function () {
+    var table = document.querySelector('.table');
+    if (!table) return;
+    var headers = Array.from(table.querySelectorAll('thead th'));
+    var sortState = { col: -1, asc: true };
+
+    headers.forEach(function (th, i) {
+        if (!th.classList.contains('sortable')) return;
+        th.addEventListener('click', function () {
+            if (sortState.col === i) { sortState.asc = !sortState.asc; }
+            else { sortState.col = i; sortState.asc = true; }
+            headers.forEach(function (h) { h.classList.remove('sort-asc', 'sort-desc'); });
+            th.classList.add(sortState.asc ? 'sort-asc' : 'sort-desc');
+            var tbody = table.querySelector('tbody');
+            var rows = Array.from(tbody.querySelectorAll('tr'));
+            rows.sort(function (a, b) {
+                var aVal = (a.cells[i] ? a.cells[i].textContent.trim() : '');
+                var bVal = (b.cells[i] ? b.cells[i].textContent.trim() : '');
+                var aNum = parseFloat(aVal), bNum = parseFloat(bVal);
+                if (!isNaN(aNum) && !isNaN(bNum)) return sortState.asc ? aNum - bNum : bNum - aNum;
+                return sortState.asc ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+            });
+            rows.forEach(function (row) { tbody.appendChild(row); });
+        });
+    });
+})();
+
+function confirmDelete(id, name) {
+    document.getElementById('deleteItemId').value = id;
+    document.getElementById('deleteItemName').textContent = name;
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+@if (Model.Open.HasValue)
+{
+    <text>document.addEventListener('DOMContentLoaded', () => openItemModal(@Model.Open.Value));</text>
+}
+</script>
+}

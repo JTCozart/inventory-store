@@ -1,0 +1,108 @@
+@page
+@model InventoryTracker.App.Pages.Inventory.CreateModel
+@using InventoryTracker.Domain.Enums
+@{
+    ViewData["Title"] = "Add Item";
+    ViewData["ActivePage"] = "Inventory";
+}
+
+<div class="d-flex align-items-center mb-4">
+    <a href="/Inventory" class="btn btn-sm btn-outline-secondary me-3"><i class="bi bi-arrow-left"></i></a>
+    <h1 class="h3 mb-0">Add Inventory Item</h1>
+</div>
+
+<div class="card" style="max-width: 620px;">
+    <div class="card-body">
+        <form method="post">
+            <div class="row g-3">
+                <div class="col-12">
+                    <label asp-for="Input.Name" class="form-label">Name <span class="text-danger">*</span></label>
+                    <input asp-for="Input.Name" class="form-control" />
+                    <span asp-validation-for="Input.Name" class="text-danger small"></span>
+                </div>
+                <div class="col-12">
+                    <label class="form-label">Item Type <span class="text-danger">*</span></label>
+                    <div class="d-flex gap-3">
+                        <div class="form-check">
+                            <input asp-for="Input.ItemType" class="form-check-input" type="radio"
+                                   value="@ItemType.Consumable" id="typeConsumable" />
+                            <label class="form-check-label" for="typeConsumable">
+                                <i class="bi bi-box me-1"></i>Consumable
+                                <div class="text-muted small">Stock is depleted when used</div>
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input asp-for="Input.ItemType" class="form-check-input" type="radio"
+                                   value="@ItemType.Reusable" id="typeReusable" />
+                            <label class="form-check-label" for="typeReusable">
+                                <i class="bi bi-arrow-repeat me-1"></i>Reusable
+                                <div class="text-muted small">Checked out and returned</div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="Input.Quantity" class="form-label">Quantity <span class="text-danger">*</span></label>
+                    <input asp-for="Input.Quantity" class="form-control" type="number" min="0" />
+                    <span asp-validation-for="Input.Quantity" class="text-danger small"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="Input.MinimumQuantity" class="form-label">
+                        Minimum Quantity <span class="text-muted small">(alert threshold)</span>
+                    </label>
+                    <input asp-for="Input.MinimumQuantity" class="form-control" type="number" min="0" />
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="Input.SKU" class="form-label">SKU / Barcode</label>
+                    <div class="input-group">
+                        <input asp-for="Input.SKU" id="sku-input" class="form-control" placeholder="Scan or type" />
+                        <button type="button" class="btn btn-outline-secondary" id="sku-scan-btn" title="Scan barcode">
+                            <i class="bi bi-upc-scan"></i>
+                        </button>
+                    </div>
+                    <div id="sku-scanner-area" class="mt-2 d-none">
+                        <div id="sku-scanner-viewport" class="scanner-viewport">
+                            <video id="sku-scanner-video" autoplay muted playsinline></video>
+                            <div class="scanner-aim"></div>
+                        </div>
+                        <div class="d-flex gap-2 mt-1">
+                            <small class="text-muted flex-grow-1" id="sku-scan-hint">Align barcode with the red line</small>
+                            <button type="button" class="btn btn-sm btn-outline-danger" id="sku-scan-cancel">Cancel</button>
+                        </div>
+                    </div>
+                    <input type="file" id="sku-capture-input" accept="image/*" capture="environment" class="d-none" />
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="Input.Location" class="form-label">Location</label>
+                    <input asp-for="Input.Location" class="form-control" placeholder="e.g. Shelf A3, Bin 12" />
+                </div>
+                <div class="col-12">
+                    <label asp-for="Input.ScanWarning" class="form-label">
+                        Scan Warning <span class="text-muted small">(shown when this item is scanned)</span>
+                    </label>
+                    <input asp-for="Input.ScanWarning" class="form-control"
+                           placeholder="e.g. Requires PPE, Handle with care" />
+                </div>
+                <div class="col-12">
+                    <label asp-for="Input.Description" class="form-label">Description</label>
+                    <textarea asp-for="Input.Description" class="form-control" rows="3"></textarea>
+                </div>
+                <div class="col-12 d-flex gap-2 pt-2">
+                    <button type="submit" class="btn btn-primary">Save Item</button>
+                    <a href="/Inventory" class="btn btn-outline-secondary">Cancel</a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+@await Html.PartialAsync("_SkuScannerScript")
+
+@section Scripts {
+<script src="https://cdn.jsdelivr.net/npm/@@zxing/library@@0.21.3/umd/index.min.js"></script>
+<script>
+initSkuScanner('sku-input', 'sku-scan-btn', 'sku-scan-cancel', 'sku-scanner-area',
+               'sku-scanner-viewport', 'sku-scanner-video',
+               'sku-capture-input', 'sku-scan-hint');
+</script>
+}

@@ -1,0 +1,520 @@
+@page
+@model InventoryTracker.App.Pages.Reports.IndexModel
+@using InventoryTracker.Domain.Enums
+@{
+    ViewData["Title"] = "Reports";
+    ViewData["ActivePage"] = "Reports";
+    var genTime   = DateTime.UtcNow;
+    var tStock    = Model.Tab == "stock"     ? "active" : string.Empty;
+    var tCheckout = Model.Tab == "checkout"  ? "active" : string.Empty;
+    var tLost     = Model.Tab == "lost"      ? "active" : string.Empty;
+    var tInventory= Model.Tab == "inventory" ? "active" : string.Empty;
+    var tBarcodes = Model.Tab == "barcodes"  ? "active" : string.Empty;
+    var tActivity = Model.Tab == "activity"  ? "active" : string.Empty;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4 no-print">
+    <h1 class="h3 mb-0">Reports</h1>
+    <button class="btn btn-sm btn-outline-secondary" onclick="window.print()">
+        <i class="bi bi-printer me-1"></i> Print
+    </button>
+</div>
+
+<ul class="nav nav-tabs mb-4 no-print">
+    <li class="nav-item"><a class="nav-link @tStock"     href="/Reports?tab=stock">    <i class="bi bi-bar-chart me-1"></i>Stock Levels</a></li>
+    <li class="nav-item"><a class="nav-link @tCheckout"  href="/Reports?tab=checkout"> <i class="bi bi-box-arrow-up-right me-1"></i>Checked Out</a></li>
+    <li class="nav-item"><a class="nav-link @tLost"      href="/Reports?tab=lost">     <i class="bi bi-x-circle me-1"></i>Lost Items</a></li>
+    <li class="nav-item"><a class="nav-link @tInventory" href="/Reports?tab=inventory"><i class="bi bi-clipboard-check me-1"></i>Take Inventory</a></li>
+    <li class="nav-item"><a class="nav-link @tBarcodes"  href="/Reports?tab=barcodes"> <i class="bi bi-upc me-1"></i>Barcode Sheet</a></li>
+    <li class="nav-item"><a class="nav-link @tActivity"  href="/Reports?tab=activity"> <i class="bi bi-clock-history me-1"></i>Activity Log</a></li>
+</ul>
+
+@if (Model.Tab == "stock" && Model.StockReport is not null)
+{
+    <div class="print-title d-none">Stock Levels Report - @Model.StockReport.GeneratedAt.ToLocalTime().ToString("MMM d, yyyy")</div>
+    <div class="row g-3 mb-4 no-print">
+        <div class="col-sm-4"><div class="card text-center p-3"><div class="display-6 fw-bold text-primary">@Model.StockReport.TotalItems</div><div class="text-muted small">Total Items</div></div></div>
+        <div class="col-sm-4"><div class="card text-center p-3"><div class="display-6 fw-bold text-success">@Model.StockReport.TotalQuantity</div><div class="text-muted small">Total Quantity</div></div></div>
+        <div class="col-sm-4"><div class="card text-center p-3"><div class="display-6 fw-bold text-warning">@Model.StockReport.LowStockCount</div><div class="text-muted small">Low Stock</div></div></div>
+    </div>
+
+    <div class="d-flex gap-2 mb-3 align-items-center flex-wrap no-print">
+        <input type="search" id="f-stock-q" class="form-control form-control-sm" style="max-width:260px"
+               placeholder="Search name, SKU, location...">
+        <select id="f-stock-type" class="form-select form-select-sm" style="max-width:150px">
+            <option value="">All Types</option>
+            <option value="Reusable">Reusable</option>
+            <option value="Consumable">Consumable</option>
+        </select>
+        <div class="form-check mb-0">
+            <input class="form-check-input" type="checkbox" id="f-stock-low">
+            <label class="form-check-label small" for="f-stock-low">Low Stock Only</label>
+        </div>
+        <span class="text-muted small ms-auto" id="f-stock-count"></span>
+    </div>
+
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-sm mb-0" id="stock-table">
+                <thead class="table-light">
+                    <tr><th>Name</th><th>Type</th><th>SKU</th><th>Location</th><th class="text-end">Total Qty</th><th class="text-end">Available</th><th class="text-end">Out</th><th class="text-end">Lost</th><th>Status</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.StockReport.AllItems)
+                    {
+                        <tr class="@(item.IsLowStock ? "table-warning" : string.Empty)"
+                            data-type="@item.ItemType"
+                            data-low="@item.IsLowStock.ToString().ToLower()"
+                            data-search="@item.Name @(item.SKU ?? "") @(item.Location ?? "")">
+                            <td class="fw-semibold">@item.Name</td>
+                            <td><span class="badge @(item.ItemType == ItemType.Reusable ? "bg-info" : "bg-secondary")">@item.ItemType</span></td>
+                            <td class="text-muted small">@(item.SKU ?? "-")</td>
+                            <td class="text-muted small">@(item.Location ?? "-")</td>
+                            <td class="text-end">@item.Quantity</td>
+                            <td class="text-end fw-semibold @(item.IsLowStock ? "text-danger" : "text-success")">@item.AvailableQuantity</td>
+                            <td class="text-end text-warning">@(item.CheckedOutCount > 0 ? item.CheckedOutCount.ToString() : "-")</td>
+                            <td class="text-end text-danger">@(item.LostCount > 0 ? item.LostCount.ToString() : "-")</td>
+                            <td><span class="@(item.IsLowStock ? "badge bg-warning text-dark" : "badge bg-success")">@(item.IsLowStock ? "Low Stock" : "OK")</span></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@if (Model.Tab == "checkout" && Model.CheckedOut is not null)
+{
+    <div class="print-title d-none">Checked Out Items - @Model.CheckedOut.GeneratedAt.ToLocalTime().ToString("MMM d, yyyy")</div>
+    <div class="alert @(Model.CheckedOut.TotalCheckedOut == 0 ? "alert-success" : "alert-warning") mb-4">
+        @if (Model.CheckedOut.TotalCheckedOut == 0)
+        {
+            <text><i class="bi bi-check-circle me-1"></i> <strong>All clear</strong>: no items currently checked out.</text>
+        }
+        else
+        {
+            <text><i class="bi bi-exclamation-triangle me-1"></i> <strong>@Model.CheckedOut.TotalCheckedOut items</strong> currently checked out across @Model.CheckedOut.Items.Count() records.</text>
+        }
+    </div>
+    @if (Model.CheckedOut.Items.Any())
+    {
+        <div class="d-flex gap-2 mb-3 align-items-center flex-wrap no-print">
+            <input type="search" id="f-co-q" class="form-control form-control-sm" style="max-width:280px"
+                   placeholder="Search item or person...">
+            <div class="form-check mb-0">
+                <input class="form-check-input" type="checkbox" id="f-co-overdue">
+                <label class="form-check-label small" for="f-co-overdue">Overdue Only (&gt;7 days)</label>
+            </div>
+            <span class="text-muted small ms-auto" id="f-co-count"></span>
+        </div>
+        <div class="card">
+            <div class="table-responsive">
+                <table class="table table-sm mb-0" id="checkout-table">
+                    <thead class="table-light">
+                        <tr><th>Item</th><th>Location</th><th>SKU</th><th>Checked Out By</th><th class="text-end">Qty</th><th>Date Out</th><th class="text-end">Days Out <span class="text-muted fw-normal" style="font-size:.75rem">(>7 = overdue)</span></th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in Model.CheckedOut.Items)
+                        {
+                            <tr class="@(row.DaysOut > 7 ? "table-warning" : string.Empty)"
+                                data-overdue="@((row.DaysOut > 7).ToString().ToLower())"
+                                data-search="@row.ItemName @row.CheckedOutBy @(row.ItemLocation ?? "") @(row.SKU ?? "")">
+                                <td class="fw-semibold">@row.ItemName</td>
+                                <td class="text-muted small">@(row.ItemLocation ?? "-")</td>
+                                <td class="text-muted small">@(row.SKU ?? "-")</td>
+                                <td>@row.CheckedOutBy</td>
+                                <td class="text-end">@row.Quantity</td>
+                                <td class="small">@row.CheckedOutAt.ToLocalTime().ToString("MMM d, yyyy")</td>
+                                <td class="@(row.DaysOut > 7 ? "text-end text-warning fw-bold" : "text-end")">@row.DaysOut</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+}
+
+@if (Model.Tab == "lost" && Model.LostItems is not null)
+{
+    <div class="print-title d-none">Lost Items Report - @Model.LostItems.GeneratedAt.ToLocalTime().ToString("MMM d, yyyy")</div>
+    <div class="alert @(Model.LostItems.TotalLost == 0 ? "alert-success" : "alert-danger") mb-4">
+        @if (Model.LostItems.TotalLost == 0)
+        {
+            <text><i class="bi bi-check-circle me-1"></i> <strong>No lost items recorded.</strong></text>
+        }
+        else
+        {
+            <text><i class="bi bi-x-circle me-1"></i> <strong>@Model.LostItems.TotalLost items</strong> marked as lost.</text>
+        }
+    </div>
+    @if (Model.LostItems.Items.Any())
+    {
+        <div class="d-flex gap-2 mb-3 align-items-center flex-wrap no-print">
+            <input type="search" id="f-lost-q" class="form-control form-control-sm" style="max-width:280px"
+                   placeholder="Search item or person...">
+            <span class="text-muted small ms-auto" id="f-lost-count"></span>
+        </div>
+        <div class="card">
+            <div class="table-responsive">
+                <table class="table table-sm mb-0" id="lost-table">
+                    <thead class="table-light">
+                        <tr><th>Item</th><th>Location</th><th>Last With</th><th class="text-end">Qty</th><th>Date Lost</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in Model.LostItems.Items)
+                        {
+                            <tr data-search="@row.ItemName @row.LastCheckedOutBy @(row.ItemLocation ?? "")">
+                                <td class="fw-semibold">@row.ItemName</td>
+                                <td class="text-muted small">@(row.ItemLocation ?? "-")</td>
+                                <td>@row.LastCheckedOutBy</td>
+                                <td class="text-end text-danger fw-bold">@row.Quantity</td>
+                                <td class="small">@row.LostAt.ToLocalTime().ToString("MMM d, yyyy")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+}
+
+@if (Model.Tab == "inventory" && Model.TakeInventory is not null)
+{
+    var invLocations = Model.TakeInventory.Items
+        .Select(i => i.Location).Where(l => !string.IsNullOrEmpty(l))
+        .Distinct().OrderBy(l => l).ToList();
+
+    <div class="print-title">Take Inventory - @Model.TakeInventory.GeneratedAt.ToLocalTime().ToString("MMM d, yyyy h:mm tt")</div>
+    <p class="text-muted small no-print">Print this page and walk the warehouse to confirm quantities.</p>
+
+    <div class="d-flex gap-2 mb-3 align-items-center flex-wrap no-print">
+        <input type="search" id="f-inv-q" class="form-control form-control-sm" style="max-width:250px"
+               placeholder="Search name or SKU...">
+        <select id="f-inv-type" class="form-select form-select-sm" style="max-width:150px">
+            <option value="">All Types</option>
+            <option value="Reusable">Reusable</option>
+            <option value="Consumable">Consumable</option>
+        </select>
+        @if (invLocations.Any())
+        {
+            <select id="f-inv-location" class="form-select form-select-sm" style="max-width:180px">
+                <option value="">All Locations</option>
+                @foreach (var loc in invLocations)
+                {
+                    <option value="@loc">@loc</option>
+                }
+            </select>
+        }
+        <span class="text-muted small ms-auto" id="f-inv-count"></span>
+    </div>
+
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-sm mb-0 take-inventory-table" id="inventory-table">
+                <thead class="table-light">
+                    <tr>
+                        <th>Item Name</th><th>SKU</th><th>Location</th><th>Type</th>
+                        <th class="text-end">Expected</th><th class="text-end">Available</th>
+                        <th class="text-end">Out</th><th class="text-end">Lost</th>
+                        <th style="width:120px">Actual Count</th><th style="width:160px">Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in Model.TakeInventory.Items)
+                    {
+                        <tr data-type="@row.ItemType"
+                            data-location="@(row.Location ?? "")"
+                            data-search="@row.Name @(row.SKU ?? "") @(row.Location ?? "")">
+                            <td class="fw-semibold">@row.Name</td>
+                            <td class="text-muted small">@(row.SKU ?? "-")</td>
+                            <td class="text-muted small">@(row.Location ?? "-")</td>
+                            <td><span class="badge @(row.ItemType == "Reusable" ? "bg-info" : "bg-secondary") small">@row.ItemType</span></td>
+                            <td class="text-end">@row.ExpectedQuantity</td>
+                            <td class="text-end">@row.AvailableQuantity</td>
+                            <td class="text-end">@(row.CheckedOutCount > 0 ? row.CheckedOutCount.ToString() : "-")</td>
+                            <td class="text-end">@(row.LostCount > 0 ? row.LostCount.ToString() : "-")</td>
+                            <td><div class="print-input-box"></div></td>
+                            <td><div class="print-input-box wide"></div></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <p class="text-muted small mt-3 no-print" id="f-inv-count-bottom">Total: @Model.TakeInventory.Items.Count() items</p>
+}
+
+@if (Model.Tab == "barcodes")
+{
+    var barcodeLocations = Model.BarcodeItems
+        .Select(i => i.Location).Where(l => !string.IsNullOrEmpty(l))
+        .Distinct().OrderBy(l => l).ToList();
+
+    <div class="print-title">Barcode Sheet - @genTime.ToLocalTime().ToString("MMM d, yyyy")</div>
+    @if (!Model.BarcodeItems.Any())
+    {
+        <div class="alert alert-info">
+            No items have SKUs assigned. <a href="/Inventory">Add SKUs to inventory items</a> to generate barcodes.
+        </div>
+    }
+    else
+    {
+        <div class="d-flex gap-2 mb-3 align-items-center flex-wrap no-print">
+            <input type="search" id="f-bc-q" class="form-control form-control-sm" style="max-width:220px"
+                   placeholder="Search name or SKU...">
+            @if (barcodeLocations.Any())
+            {
+                <select id="f-bc-location" class="form-select form-select-sm" style="max-width:180px">
+                    <option value="">All Locations</option>
+                    @foreach (var loc in barcodeLocations)
+                    {
+                        <option value="@loc">@loc</option>
+                    }
+                </select>
+            }
+            <span class="text-muted small ms-auto" id="f-bc-count"></span>
+        </div>
+        <div id="barcode-grid" class="barcode-grid">
+            @foreach (var item in Model.BarcodeItems)
+            {
+                <div class="barcode-card"
+                     data-name="@item.Name"
+                     data-sku-val="@(item.SKU ?? "")"
+                     data-location="@(item.Location ?? "")">
+                    <div class="barcode-name">@item.Name</div>
+                    @if (!string.IsNullOrEmpty(item.Location))
+                    {
+                        <div class="barcode-location">@item.Location</div>
+                    }
+                    <svg class="barcode-svg" data-sku="@item.SKU" data-name="@item.Name"></svg>
+                    <div class="barcode-sku">@item.SKU</div>
+                </div>
+            }
+        </div>
+        <script src="https://cdn.jsdelivr.net/npm/jsbarcode@@3.11.6/dist/JsBarcode.all.min.js"></script>
+        <script src="~/js/barcodes.js"></script>
+    }
+}
+
+@if (Model.Tab == "activity")
+{
+    var activityActions = Model.ActivityLogs
+        .Select(l => l.Action).Distinct().OrderBy(a => a).ToList();
+
+    var fromVal = Model.ActivityFrom?.ToString("yyyy-MM-ddTHH:mm") ?? string.Empty;
+    var toVal   = Model.ActivityTo?.ToString("yyyy-MM-ddTHH:mm")   ?? string.Empty;
+
+    <div class="print-title d-none">Activity Log - @genTime.ToLocalTime().ToString("MMM d, yyyy")</div>
+
+    <form method="get" class="card card-body py-2 mb-3 no-print">
+        <input type="hidden" name="tab" value="activity" />
+        <div class="d-flex gap-3 align-items-end flex-wrap">
+            <div>
+                <label class="form-label small mb-1">From</label>
+                <input type="datetime-local" name="from" class="form-control form-control-sm" value="@fromVal" />
+            </div>
+            <div>
+                <label class="form-label small mb-1">To</label>
+                <input type="datetime-local" name="to" class="form-control form-control-sm" value="@toVal" />
+            </div>
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-sm btn-primary">Apply</button>
+                @if (Model.ActivityFrom.HasValue || Model.ActivityTo.HasValue)
+                {
+                    <a href="/Reports?tab=activity" class="btn btn-sm btn-outline-secondary">Clear</a>
+                }
+            </div>
+            @if (Model.ActivityFrom.HasValue || Model.ActivityTo.HasValue)
+            {
+                <span class="text-muted small align-self-center">
+                    Showing @Model.ActivityLogs.Count() result(s)
+                    @if (Model.ActivityFrom.HasValue) { <text>from @Model.ActivityFrom.Value.ToString("MMM d, yyyy h:mm tt")</text> }
+                    @if (Model.ActivityTo.HasValue)   { <text> to @Model.ActivityTo.Value.ToString("MMM d, yyyy h:mm tt")</text> }
+                </span>
+            }
+        </div>
+    </form>
+
+    <div class="d-flex gap-2 mb-3 align-items-center flex-wrap no-print">
+        <input type="search" id="f-act-q" class="form-control form-control-sm" style="max-width:260px"
+               placeholder="Search user or details...">
+        @if (activityActions.Any())
+        {
+            <select id="f-act-action" class="form-select form-select-sm" style="max-width:160px">
+                <option value="">All Actions</option>
+                @foreach (var action in activityActions)
+                {
+                    <option value="@action">@action</option>
+                }
+            </select>
+        }
+        <span class="text-muted small ms-auto" id="f-act-count"></span>
+    </div>
+
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-sm mb-0" id="activity-table">
+                <thead class="table-light">
+                    <tr><th>Time</th><th>User</th><th>Action</th><th>Details</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var log in Model.ActivityLogs)
+                    {
+                        <tr data-action="@log.Action"
+                            data-search="@log.Username @log.Details">
+                            <td class="text-muted small text-nowrap">@log.Timestamp.ToLocalTime().ToString("MMM d, yyyy h:mm tt")</td>
+                            <td class="fw-semibold small">@log.Username</td>
+                            <td><span class="badge bg-secondary">@log.Action</span></td>
+                            <td class="small">@log.Details</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@section Scripts {
+<script>
+(function () {
+    function debounce(fn, ms) {
+        var t;
+        return function () { clearTimeout(t); t = setTimeout(fn, ms); };
+    }
+
+    function filterTable(tableId, countId, getFilters) {
+        var rows = document.querySelectorAll('#' + tableId + ' tbody tr');
+        var visible = 0;
+        rows.forEach(function (row) {
+            var show = getFilters(row);
+            row.style.display = show ? '' : 'none';
+            if (show) visible++;
+        });
+        var countEl = document.getElementById(countId);
+        if (countEl) {
+            countEl.textContent = visible === rows.length
+                ? rows.length + ' items'
+                : visible + ' of ' + rows.length + ' items';
+        }
+    }
+
+    function matches(row, q) {
+        if (!q) return true;
+        return (row.dataset.search || row.textContent).toLowerCase().includes(q);
+    }
+
+    // ---- Stock ----
+    var stockQ    = document.getElementById('f-stock-q');
+    var stockType = document.getElementById('f-stock-type');
+    var stockLow  = document.getElementById('f-stock-low');
+    if (stockQ || stockType || stockLow) {
+        function applyStock() {
+            var q   = (stockQ?.value || '').toLowerCase().trim();
+            var typ = (stockType?.value || '').toLowerCase();
+            var low = stockLow?.checked || false;
+            filterTable('stock-table', 'f-stock-count', function (row) {
+                return matches(row, q)
+                    && (!typ || (row.dataset.type || '').toLowerCase() === typ)
+                    && (!low || row.dataset.low === 'true');
+            });
+        }
+        stockQ?.addEventListener('input', debounce(applyStock, 150));
+        stockType?.addEventListener('change', applyStock);
+        stockLow?.addEventListener('change', applyStock);
+        applyStock();
+    }
+
+    // ---- Checkout ----
+    var coQ       = document.getElementById('f-co-q');
+    var coOverdue = document.getElementById('f-co-overdue');
+    if (coQ || coOverdue) {
+        function applyCheckout() {
+            var q   = (coQ?.value || '').toLowerCase().trim();
+            var ov  = coOverdue?.checked || false;
+            filterTable('checkout-table', 'f-co-count', function (row) {
+                return matches(row, q)
+                    && (!ov || row.dataset.overdue === 'true');
+            });
+        }
+        coQ?.addEventListener('input', debounce(applyCheckout, 150));
+        coOverdue?.addEventListener('change', applyCheckout);
+        applyCheckout();
+    }
+
+    // ---- Lost ----
+    var lostQ = document.getElementById('f-lost-q');
+    if (lostQ) {
+        function applyLost() {
+            var q = lostQ.value.toLowerCase().trim();
+            filterTable('lost-table', 'f-lost-count', function (row) { return matches(row, q); });
+        }
+        lostQ.addEventListener('input', debounce(applyLost, 150));
+        applyLost();
+    }
+
+    // ---- Inventory (Take) ----
+    var invQ    = document.getElementById('f-inv-q');
+    var invType = document.getElementById('f-inv-type');
+    var invLoc  = document.getElementById('f-inv-location');
+    if (invQ || invType || invLoc) {
+        function applyInventory() {
+            var q   = (invQ?.value || '').toLowerCase().trim();
+            var typ = (invType?.value || '').toLowerCase();
+            var loc = invLoc?.value || '';
+            filterTable('inventory-table', 'f-inv-count', function (row) {
+                return matches(row, q)
+                    && (!typ || (row.dataset.type || '').toLowerCase() === typ)
+                    && (!loc || row.dataset.location === loc);
+            });
+        }
+        invQ?.addEventListener('input', debounce(applyInventory, 150));
+        invType?.addEventListener('change', applyInventory);
+        invLoc?.addEventListener('change', applyInventory);
+        applyInventory();
+    }
+
+    // ---- Barcodes ----
+    var bcQ   = document.getElementById('f-bc-q');
+    var bcLoc = document.getElementById('f-bc-location');
+    if (bcQ || bcLoc) {
+        function applyBarcodes() {
+            var q   = (bcQ?.value || '').toLowerCase().trim();
+            var loc = bcLoc?.value || '';
+            var cards = document.querySelectorAll('#barcode-grid .barcode-card');
+            var visible = 0;
+            cards.forEach(function (card) {
+                var name = (card.dataset.name || '').toLowerCase();
+                var sku  = (card.dataset.skuVal || '').toLowerCase();
+                var show = (!q || name.includes(q) || sku.includes(q))
+                        && (!loc || card.dataset.location === loc);
+                card.style.display = show ? '' : 'none';
+                if (show) visible++;
+            });
+            var countEl = document.getElementById('f-bc-count');
+            if (countEl) countEl.textContent = visible + ' of ' + cards.length + ' items';
+        }
+        bcQ?.addEventListener('input', debounce(applyBarcodes, 150));
+        bcLoc?.addEventListener('change', applyBarcodes);
+        applyBarcodes();
+    }
+
+    // ---- Activity ----
+    var actQ      = document.getElementById('f-act-q');
+    var actAction = document.getElementById('f-act-action');
+    if (actQ || actAction) {
+        function applyActivity() {
+            var q   = (actQ?.value || '').toLowerCase().trim();
+            var act = actAction?.value || '';
+            filterTable('activity-table', 'f-act-count', function (row) {
+                return matches(row, q)
+                    && (!act || row.dataset.action === act);
+            });
+        }
+        actQ?.addEventListener('input', debounce(applyActivity, 150));
+        actAction?.addEventListener('change', applyActivity);
+        applyActivity();
+    }
+})();
+</script>
+}
