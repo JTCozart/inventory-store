@@ -3,9 +3,69 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Inventory Tracker — Self-hosted inventory management for small teams</title>
-  <meta name="description" content="Track equipment checkouts, consumable stock, and activity across your team. Runs as a Windows service on any PC on your network." />
+
+  <!-- Primary meta -->
+  <title>Inventory Tracker | Self-Hosted Inventory Management for Small Teams</title>
+  <meta name="description" content="Track equipment checkouts, consumable stock, and team activity with Inventory Tracker. Free, open-source, self-hosted Windows app. No cloud required." />
+  <meta name="keywords" content="inventory management, equipment checkout, asset tracking, self-hosted, windows service, barcode scanner, open source" />
+  <meta name="author" content="Jake Cozart" />
+  <meta name="robots" content="index, follow" />
+  <meta name="theme-color" content="#2563eb" />
+  <link rel="canonical" href="https://jtcozart.github.io/inventory-tracker/" />
+
+  <!-- Open Graph -->
+  <meta property="og:type"        content="website" />
+  <meta property="og:url"         content="https://jtcozart.github.io/inventory-tracker/" />
+  <meta property="og:title"       content="Inventory Tracker | Self-Hosted Inventory Management" />
+  <meta property="og:description" content="Track equipment checkouts, consumable stock, and team activity. Free, open-source Windows service. No cloud subscription required." />
+  <meta property="og:site_name"   content="Inventory Tracker" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card"        content="summary" />
+  <meta name="twitter:title"       content="Inventory Tracker | Self-Hosted Inventory Management" />
+  <meta name="twitter:description" content="Track equipment checkouts, consumable stock, and team activity. Free, open-source Windows service. No cloud subscription required." />
+
+  <!-- JSON-LD structured data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Inventory Tracker",
+    "applicationCategory": "BusinessApplication",
+    "applicationSubCategory": "Inventory Management",
+    "operatingSystem": "Windows 10, Windows 11",
+    "description": "Self-hosted inventory management system for small teams. Track equipment checkouts, consumable stock, and team activity. Runs as a Windows service.",
+    "url": "https://jtcozart.github.io/inventory-tracker/",
+    "downloadUrl": "https://github.com/JTCozart/inventory-tracker/releases/latest",
+    "softwareVersion": "latest",
+    "license": "https://github.com/JTCozart/inventory-tracker/blob/master/LICENSE",
+    "author": {
+      "@type": "Person",
+      "name": "Jake Cozart",
+      "url": "https://github.com/JTCozart"
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "featureList": [
+      "Equipment checkout tracking",
+      "Consumable stock management",
+      "Barcode scanning",
+      "Activity log with date filtering",
+      "Remote access via Cloudflare Tunnel",
+      "Multi-user roles",
+      "Windows service installer"
+    ]
+  }
+  </script>
+
+  <!-- Preconnect -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" />
+
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   <style>
@@ -200,8 +260,8 @@
   <div class="nav-links">
     <a href="#features">Features</a>
     <a href="#how-it-works">How it works</a>
-    <a href="https://github.com/JTCozart/inventory-tracker" target="_blank">GitHub</a>
-    <a href="https://github.com/JTCozart/inventory-tracker/releases/latest" class="btn-nav">
+    <a href="https://github.com/JTCozart/inventory-tracker" target="_blank" rel="noopener noreferrer">GitHub</a>
+    <a href="https://github.com/JTCozart/inventory-tracker/releases/latest" class="btn-nav" target="_blank" rel="noopener noreferrer">
       <i class="fa-solid fa-download"></i> Download
     </a>
   </div>
@@ -210,13 +270,13 @@
 <!-- Hero -->
 <section class="hero">
   <div class="hero-tag">Free &amp; Open Source &nbsp;·&nbsp; Self-Hosted</div>
-  <h1>Inventory management<br><span>built for your team</span></h1>
-  <p>Track equipment checkouts, consumable stock, and team activity. Runs as a Windows service with no cloud subscription required.</p>
+  <h1>Always know<br><span>who has what</span></h1>
+  <p>Check equipment in and out, track supply levels, and keep a full activity log. One installer, one PC on your network, no monthly fees.</p>
   <div class="hero-cta">
-    <a href="https://github.com/JTCozart/inventory-tracker/releases/latest" class="btn-primary">
+    <a href="https://github.com/JTCozart/inventory-tracker/releases/latest" class="btn-primary" target="_blank" rel="noopener noreferrer">
       <i class="fa-solid fa-download"></i> Download Installer
     </a>
-    <a href="https://github.com/JTCozart/inventory-tracker" class="btn-secondary">
+    <a href="https://github.com/JTCozart/inventory-tracker" class="btn-secondary" target="_blank" rel="noopener noreferrer">
       <i class="fa-brands fa-github"></i> View on GitHub
     </a>
   </div>
@@ -282,8 +342,8 @@
 <section id="features" style="background:var(--light)">
   <div class="container">
     <div class="section-tag">Features</div>
-    <h2>Everything your team needs</h2>
-    <p class="section-sub">No bloat, no subscriptions. Just a fast, local web app that gets out of the way.</p>
+    <h2>Built for the way your team actually works</h2>
+    <p class="section-sub">No subscriptions, no cloud dependencies. A local web app that runs on any PC on your network and is accessible from any device.</p>
     <div class="features-grid">
       <div class="feature-card">
         <div class="feature-icon"><i class="fa-solid fa-arrows-rotate"></i></div>
@@ -293,7 +353,7 @@
       <div class="feature-card">
         <div class="feature-icon"><i class="fa-solid fa-box"></i></div>
         <h3>Consumable stock</h3>
-        <p>Track quantities of supplies that are consumed and restocked. Low-stock alerts keep you ahead of shortages.</p>
+        <p>Track supply quantities as your team uses and restocks them. Low-stock alerts notify you before you run out.</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon"><i class="fa-solid fa-camera"></i></div>
@@ -308,7 +368,7 @@
       <div class="feature-card">
         <div class="feature-icon"><i class="fa-solid fa-globe"></i></div>
         <h3>Remote access</h3>
-        <p>Expose the web UI via Cloudflare Tunnel or LocalTunnel. Staff can access inventory from anywhere with no VPN needed.</p>
+        <p>Let staff check inventory remotely via Cloudflare Tunnel or LocalTunnel. No VPN, no firewall changes, no IT ticket required.</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon"><i class="fa-solid fa-users"></i></div>
@@ -367,9 +427,9 @@
 
 <!-- CTA -->
 <section class="cta-section">
-  <h2>Ready to get started?</h2>
-  <p>Free, open source, and runs entirely on your hardware. No accounts, no limits.</p>
-  <a href="https://github.com/JTCozart/inventory-tracker/releases/latest" class="btn-primary" style="display:inline-flex">
+  <h2>Get up and running today</h2>
+  <p>Free, open source, and completely self-hosted. Download the installer and be running in under five minutes.</p>
+  <a href="https://github.com/JTCozart/inventory-tracker/releases/latest" class="btn-primary" style="display:inline-flex" target="_blank" rel="noopener noreferrer">
     <i class="fa-solid fa-download"></i> Download Inventory Tracker
   </a>
 </section>
@@ -383,10 +443,11 @@
     <span>MIT License &middot; &copy; 2026 Jake Cozart</span>
   </div>
   <div style="display:flex;gap:1.5rem">
-    <a href="https://github.com/JTCozart/inventory-tracker"><i class="fa-brands fa-github"></i> GitHub</a>
-    <a href="https://github.com/JTCozart/inventory-tracker/releases"><i class="fa-solid fa-tag"></i> Releases</a>
-    <a href="https://github.com/JTCozart/inventory-tracker/issues"><i class="fa-solid fa-circle-exclamation"></i> Issues</a>
-    <a href="https://github.com/JTCozart/inventory-tracker/blob/master/NOTICES.md"><i class="fa-solid fa-file-lines"></i> Notices</a>
+    <a href="https://github.com/JTCozart/inventory-tracker" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-github"></i> GitHub</a>
+    <a href="https://github.com/JTCozart/inventory-tracker/releases" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-tag"></i> Releases</a>
+    <a href="https://github.com/JTCozart/inventory-tracker/issues" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-circle-exclamation"></i> Issues</a>
+    <a href="https://github.com/JTCozart/inventory-tracker/blob/master/NOTICES.md" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-file-lines"></i> Notices</a>
+    <a href="https://linktr.ee/jtczrt" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-tree"></i> Linktree</a>
   </div>
 </footer>
 
