@@ -14,14 +14,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Parse version from tag
+      - name: Set version
         id: ver
         shell: pwsh
         run: |
-          $tag = "${{ github.ref_name }}"   # e.g. v20260606.1430
-          $ver = $tag.TrimStart('v')        # e.g. 20260606.1430
-          echo "TAG=$tag"     >> $env:GITHUB_OUTPUT
-          echo "VERSION=$ver" >> $env:GITHUB_OUTPUT
+          $tag    = "${{ github.ref_name }}"                  # v20260606.2119
+          $ver    = $tag.TrimStart('v')                       # 20260606.2119
+          $asmVer = "1.0.0.${{ github.run_number }}"         # 1.0.0.42
+          echo "VERSION=$ver"        >> $env:GITHUB_OUTPUT
+          echo "ASM_VERSION=$asmVer" >> $env:GITHUB_OUTPUT
 
       - name: Setup .NET 8
         uses: actions/setup-dotnet@v4
@@ -42,7 +43,9 @@ jobs:
             -c Release -r win-x64 --self-contained true `
             -p:PublishSingleFile=true `
             -p:IncludeNativeLibrariesForSelfExtract=true `
-            -p:Version="${{ steps.ver.outputs.VERSION }}" `
+            -p:AssemblyVersion="${{ steps.ver.outputs.ASM_VERSION }}" `
+            -p:FileVersion="${{ steps.ver.outputs.ASM_VERSION }}" `
+            -p:InformationalVersion="${{ steps.ver.outputs.VERSION }}" `
             -o publish/app
 
       - name: Publish tray companion (InventoryTracker.Tray)
@@ -52,7 +55,9 @@ jobs:
             -c Release -r win-x64 --self-contained true `
             -p:PublishSingleFile=true `
             -p:IncludeNativeLibrariesForSelfExtract=true `
-            -p:Version="${{ steps.ver.outputs.VERSION }}" `
+            -p:AssemblyVersion="${{ steps.ver.outputs.ASM_VERSION }}" `
+            -p:FileVersion="${{ steps.ver.outputs.ASM_VERSION }}" `
+            -p:InformationalVersion="${{ steps.ver.outputs.VERSION }}" `
             -o publish/tray
 
       - name: Install Inno Setup
