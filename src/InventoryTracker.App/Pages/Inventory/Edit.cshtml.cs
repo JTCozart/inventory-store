@@ -13,6 +13,7 @@ namespace InventoryTracker.App.Pages.Inventory;
 public class EditModel : PageModel
 {
     private readonly IInventoryService _inventoryService;
+    private readonly ICategoryService _categoryService;
 
     [BindProperty]
     public EditInputModel Input { get; set; } = new();
@@ -21,10 +22,12 @@ public class EditModel : PageModel
     public int ItemId { get; set; }
 
     public ItemType DisplayItemType { get; private set; }
+    public IEnumerable<CategoryDto> Categories { get; private set; } = [];
 
-    public EditModel(IInventoryService inventoryService)
+    public EditModel(IInventoryService inventoryService, ICategoryService categoryService)
     {
         _inventoryService = inventoryService;
+        _categoryService  = categoryService;
     }
 
     public async Task<IActionResult> OnGetAsync(int id)
@@ -32,6 +35,7 @@ public class EditModel : PageModel
         var item = await _inventoryService.GetItemAsync(id);
         if (item is null) return NotFound();
 
+        Categories      = await _categoryService.GetAllAsync();
         ItemId          = id;
         DisplayItemType = item.ItemType;
         Input = new EditInputModel
@@ -42,7 +46,9 @@ public class EditModel : PageModel
             Location        = item.Location,
             SKU             = item.SKU,
             MinimumQuantity = item.MinimumQuantity,
-            ScanWarning     = item.ScanWarning
+            ScanWarning     = item.ScanWarning,
+            CategoryId      = item.CategoryId,
+            ExpiryDate      = item.ExpiryDate
         };
 
         return Page();
@@ -50,12 +56,16 @@ public class EditModel : PageModel
 
     public async Task<IActionResult> OnPostAsync()
     {
-        if (!ModelState.IsValid) return Page();
+        if (!ModelState.IsValid)
+        {
+            Categories = await _categoryService.GetAllAsync();
+            return Page();
+        }
 
         var (userId, username) = User.GetIdentity();
         await _inventoryService.UpdateItemAsync(ItemId, new UpdateInventoryItemDto(
             Input.Name, Input.Quantity, Input.Description, Input.Location,
-            Input.SKU, Input.MinimumQuantity, Input.ScanWarning
+            Input.SKU, Input.MinimumQuantity, Input.ScanWarning, Input.CategoryId, Input.ExpiryDate
         ), userId, username);
 
         return RedirectToPage("./Index");
@@ -78,5 +88,8 @@ public class EditModel : PageModel
 
         [MaxLength(500)]
         public string? ScanWarning { get; set; }
+
+        public int? CategoryId { get; set; }
+        public DateOnly? ExpiryDate { get; set; }
     }
 }

@@ -68,6 +68,20 @@
                     <label asp-for="Input.Location" class="form-label">Location</label>
                     <input asp-for="Input.Location" class="form-control" />
                 </div>
+                <div class="col-md-6">
+                    <label class="form-label">Category</label>
+                    <select name="Input.CategoryId" class="form-select">
+                        <option value="" selected="@(Model.Input.CategoryId == null)">— None —</option>
+                        @foreach (var cat in Model.Categories)
+                        {
+                            <option value="@cat.Id" selected="@(Model.Input.CategoryId == cat.Id)">@cat.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="Input.ExpiryDate" class="form-label">Expiry Date <span class="text-muted small">(optional)</span></label>
+                    <input asp-for="Input.ExpiryDate" class="form-control" type="date" />
+                </div>
                 <div class="col-12">
                     <label asp-for="Input.ScanWarning" class="form-label">
                         Scan Warning <span class="text-muted small">(shown when this item is scanned)</span>

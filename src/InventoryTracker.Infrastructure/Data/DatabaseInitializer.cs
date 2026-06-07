@@ -49,6 +49,9 @@ public class DatabaseInitializer
         await AddColumnIfMissingAsync(conn, "InventoryItems", "ScanWarning",     "TEXT NULL");
 
         await EnsureCheckoutRecordsTableAsync(conn);
+        await EnsureCategoriesTableAsync(conn);
+        await AddColumnIfMissingAsync(conn, "InventoryItems", "CategoryId",   "INTEGER NULL");
+        await AddColumnIfMissingAsync(conn, "InventoryItems", "ExpiryDate",   "TEXT NULL");
     }
 
     private static async Task MakeUsersEmailNullableAsync(SqliteConnection conn)
@@ -113,7 +116,7 @@ public class DatabaseInitializer
         { "Users", "InventoryItems" };
 
     private static readonly HashSet<string> _allowedColumns = new(StringComparer.OrdinalIgnoreCase)
-        { "FirstName", "LastName", "ItemType", "CheckedOutCount", "LostCount", "ScanWarning" };
+        { "FirstName", "LastName", "ItemType", "CheckedOutCount", "LostCount", "ScanWarning", "CategoryId", "ExpiryDate" };
 
     private static async Task AddColumnIfMissingAsync(
         SqliteConnection conn, string table, string column, string definition)
@@ -162,6 +165,19 @@ public class DatabaseInitializer
             );
             CREATE INDEX IF NOT EXISTS IX_CheckoutRecords_InventoryItemId
                 ON CheckoutRecords (InventoryItemId);";
+        await cmd.ExecuteNonQueryAsync();
+    }
+
+    private static async Task EnsureCategoriesTableAsync(SqliteConnection conn)
+    {
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+            CREATE TABLE IF NOT EXISTS Categories (
+                Id    INTEGER PRIMARY KEY AUTOINCREMENT,
+                Name  TEXT    NOT NULL,
+                Color TEXT    NULL
+            );
+            CREATE UNIQUE INDEX IF NOT EXISTS IX_Categories_Name ON Categories (Name);";
         await cmd.ExecuteNonQueryAsync();
     }
 }

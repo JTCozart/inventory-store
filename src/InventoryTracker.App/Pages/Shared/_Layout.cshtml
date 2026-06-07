@@ -1,4 +1,5 @@
 @inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
+@inject InventoryTracker.App.Services.UpdateInfo UpdateInfo
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -48,6 +49,15 @@
                     </li>
                 </ul>
                 <hr class="sidebar-divider" />
+                @if (UpdateInfo.HasUpdate)
+                {
+                    <a href="@UpdateInfo.ReleaseUrl" target="_blank"
+                       class="d-flex align-items-center gap-2 px-2 py-1 mb-2 rounded text-decoration-none"
+                       style="background:rgba(13,202,240,0.15); color:#0dcaf0; font-size:.8rem;">
+                        <i class="bi bi-arrow-up-circle-fill flex-shrink-0"></i>
+                        <span>v@(UpdateInfo.LatestVersion) available</span>
+                    </a>
+                }
                 <div class="sidebar-user d-flex align-items-center">
                     <i class="bi bi-person-circle me-2 fs-5"></i>
                     <div class="flex-grow-1 small">

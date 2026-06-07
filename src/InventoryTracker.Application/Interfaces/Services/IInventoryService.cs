@@ -11,4 +11,6 @@ public interface IInventoryService
     Task UpdateItemAsync(int id, UpdateInventoryItemDto dto, int userId, string username);
     Task DeleteItemAsync(int id, int userId, string username);
     Task<IEnumerable<InventoryItemDto>> GetLowStockItemsAsync();
+    Task<string> ExportToCsvAsync();
+    Task<(int Imported, int Failed, IReadOnlyList<string> Errors)> ImportFromCsvAsync(Stream csvStream, int userId, string username);
 }

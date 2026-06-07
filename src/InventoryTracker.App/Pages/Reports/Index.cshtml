@@ -9,15 +9,21 @@
     var tCheckout = Model.Tab == "checkout"  ? "active" : string.Empty;
     var tLost     = Model.Tab == "lost"      ? "active" : string.Empty;
     var tInventory= Model.Tab == "inventory" ? "active" : string.Empty;
+    var tExpiry   = Model.Tab == "expiry"    ? "active" : string.Empty;
     var tBarcodes = Model.Tab == "barcodes"  ? "active" : string.Empty;
     var tActivity = Model.Tab == "activity"  ? "active" : string.Empty;
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4 no-print">
     <h1 class="h3 mb-0">Reports</h1>
-    <button class="btn btn-sm btn-outline-secondary" onclick="window.print()">
-        <i class="bi bi-printer me-1"></i> Print
-    </button>
+    <div class="d-flex gap-2">
+        <a href="/Reports?handler=ExportCsv" class="btn btn-sm btn-outline-success">
+            <i class="bi bi-download me-1"></i> Export CSV
+        </a>
+        <button class="btn btn-sm btn-outline-secondary" onclick="window.print()">
+            <i class="bi bi-printer me-1"></i> Print
+        </button>
+    </div>
 </div>
 
 <ul class="nav nav-tabs mb-4 no-print">
@@ -25,6 +31,7 @@
     <li class="nav-item"><a class="nav-link @tCheckout"  href="/Reports?tab=checkout"> <i class="bi bi-box-arrow-up-right me-1"></i>Checked Out</a></li>
     <li class="nav-item"><a class="nav-link @tLost"      href="/Reports?tab=lost">     <i class="bi bi-x-circle me-1"></i>Lost Items</a></li>
     <li class="nav-item"><a class="nav-link @tInventory" href="/Reports?tab=inventory"><i class="bi bi-clipboard-check me-1"></i>Take Inventory</a></li>
+    <li class="nav-item"><a class="nav-link @tExpiry"    href="/Reports?tab=expiry">   <i class="bi bi-calendar-x me-1"></i>Expiry</a></li>
     <li class="nav-item"><a class="nav-link @tBarcodes"  href="/Reports?tab=barcodes"> <i class="bi bi-upc me-1"></i>Barcode Sheet</a></li>
     <li class="nav-item"><a class="nav-link @tActivity"  href="/Reports?tab=activity"> <i class="bi bi-clock-history me-1"></i>Activity Log</a></li>
 </ul>
@@ -57,7 +64,7 @@
         <div class="table-responsive">
             <table class="table table-sm mb-0" id="stock-table">
                 <thead class="table-light">
-                    <tr><th>Name</th><th>Type</th><th>SKU</th><th>Location</th><th class="text-end">Total Qty</th><th class="text-end">Available</th><th class="text-end">Out</th><th class="text-end">Lost</th><th>Status</th></tr>
+                    <tr><th>Name</th><th>Type</th><th>SKU</th><th>Location</th><th class="text-end">Total Qty</th><th class="text-end">Available</th><th class="text-end">Out</th><th class="text-end">Lost</th><th>Expiry</th><th>Status</th></tr>
                 </thead>
                 <tbody>
                     @foreach (var item in Model.StockReport.AllItems)
@@ -74,6 +81,19 @@
                             <td class="text-end fw-semibold @(item.IsLowStock ? "text-danger" : "text-success")">@item.AvailableQuantity</td>
                             <td class="text-end text-warning">@(item.CheckedOutCount > 0 ? item.CheckedOutCount.ToString() : "-")</td>
                             <td class="text-end text-danger">@(item.LostCount > 0 ? item.LostCount.ToString() : "-")</td>
+                            <td class="small text-nowrap">
+                                @{
+                                    var rToday = DateOnly.FromDateTime(DateTime.Today);
+                                    if (item.ExpiryDate.HasValue)
+                                    {
+                                        var rDays = item.ExpiryDate.Value.DayNumber - rToday.DayNumber;
+                                        if (rDays < 0) { <span class="badge bg-danger">Expired</span> }
+                                        else if (rDays <= 30) { <span class="badge bg-warning text-dark">@item.ExpiryDate.Value.ToString("MMM d")</span> }
+                                        else { <text>@item.ExpiryDate.Value.ToString("MMM d, yyyy")</text> }
+                                    }
+                                    else { <span class="text-muted">-</span> }
+                                }
+                            </td>
                             <td><span class="@(item.IsLowStock ? "badge bg-warning text-dark" : "badge bg-success")">@(item.IsLowStock ? "Low Stock" : "OK")</span></td>
                         </tr>
                     }
@@ -245,6 +265,72 @@
     <p class="text-muted small mt-3 no-print" id="f-inv-count-bottom">Total: @Model.TakeInventory.Items.Count() items</p>
 }
 
+@if (Model.Tab == "expiry")
+{
+    var expToday = DateOnly.FromDateTime(DateTime.Today);
+    <div class="print-title d-none">Expiry Report - @expToday.ToString("MMM d, yyyy")</div>
+
+    @if (Model.ExpiredItems.Any())
+    {
+        <h5 class="text-danger mb-2"><i class="bi bi-x-circle me-1"></i>Expired (@Model.ExpiredItems.Count())</h5>
+        <div class="card mb-4">
+            <div class="table-responsive">
+                <table class="table table-sm mb-0">
+                    <thead class="table-light">
+                        <tr><th>Name</th><th>Category</th><th>Location</th><th>SKU</th><th class="text-end">Qty</th><th>Expired</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model.ExpiredItems)
+                        {
+                            <tr class="table-danger">
+                                <td class="fw-semibold">@item.Name</td>
+                                <td class="small text-muted">@(item.CategoryName ?? "-")</td>
+                                <td class="small text-muted">@(item.Location ?? "-")</td>
+                                <td class="small text-muted">@(item.SKU ?? "-")</td>
+                                <td class="text-end">@item.Quantity</td>
+                                <td class="small"><span class="badge bg-danger">@item.ExpiryDate!.Value.ToString("MMM d, yyyy")</span></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-success"><i class="bi bi-check-circle me-1"></i>No expired items.</div>
+    }
+
+    @if (Model.ExpiringItems.Any())
+    {
+        <h5 class="text-warning mb-2"><i class="bi bi-exclamation-triangle me-1"></i>Expiring within 90 days (@Model.ExpiringItems.Count())</h5>
+        <div class="card">
+            <div class="table-responsive">
+                <table class="table table-sm mb-0">
+                    <thead class="table-light">
+                        <tr><th>Name</th><th>Category</th><th>Location</th><th>SKU</th><th class="text-end">Qty</th><th>Expires</th><th>Days Left</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model.ExpiringItems)
+                        {
+                            var days = item.ExpiryDate!.Value.DayNumber - expToday.DayNumber;
+                            <tr class="@(days <= 30 ? "table-warning" : "")">
+                                <td class="fw-semibold">@item.Name</td>
+                                <td class="small text-muted">@(item.CategoryName ?? "-")</td>
+                                <td class="small text-muted">@(item.Location ?? "-")</td>
+                                <td class="small text-muted">@(item.SKU ?? "-")</td>
+                                <td class="text-end">@item.Quantity</td>
+                                <td class="small">@item.ExpiryDate.Value.ToString("MMM d, yyyy")</td>
+                                <td><span class="badge @(days <= 7 ? "bg-danger" : days <= 30 ? "bg-warning text-dark" : "bg-secondary")">@days days</span></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+}
+
 @if (Model.Tab == "barcodes")
 {
     var barcodeLocations = Model.BarcodeItems
@@ -302,8 +388,8 @@
     var activityActions = Model.ActivityLogs
         .Select(l => l.Action).Distinct().OrderBy(a => a).ToList();
 
-    var fromVal = Model.ActivityFrom?.ToString("yyyy-MM-ddTHH:mm") ?? string.Empty;
-    var toVal   = Model.ActivityTo?.ToString("yyyy-MM-ddTHH:mm")   ?? string.Empty;
+    var fromVal = Model.ActivityFrom?.ToString("yyyy-MM-dd") ?? string.Empty;
+    var toVal   = Model.ActivityTo?.ToString("yyyy-MM-dd")   ?? string.Empty;
 
     <div class="print-title d-none">Activity Log - @genTime.ToLocalTime().ToString("MMM d, yyyy")</div>
 
@@ -312,11 +398,11 @@
         <div class="d-flex gap-3 align-items-end flex-wrap">
             <div>
                 <label class="form-label small mb-1">From</label>
-                <input type="datetime-local" name="from" class="form-control form-control-sm" value="@fromVal" />
+                <input type="date" name="from" class="form-control form-control-sm" value="@fromVal" />
             </div>
             <div>
                 <label class="form-label small mb-1">To</label>
-                <input type="datetime-local" name="to" class="form-control form-control-sm" value="@toVal" />
+                <input type="date" name="to" class="form-control form-control-sm" value="@toVal" />
             </div>
             <div class="d-flex gap-2">
                 <button type="submit" class="btn btn-sm btn-primary">Apply</button>
@@ -329,8 +415,8 @@
             {
                 <span class="text-muted small align-self-center">
                     Showing @Model.ActivityLogs.Count() result(s)
-                    @if (Model.ActivityFrom.HasValue) { <text>from @Model.ActivityFrom.Value.ToString("MMM d, yyyy h:mm tt")</text> }
-                    @if (Model.ActivityTo.HasValue)   { <text> to @Model.ActivityTo.Value.ToString("MMM d, yyyy h:mm tt")</text> }
+                    @if (Model.ActivityFrom.HasValue) { <text>from @Model.ActivityFrom.Value.ToString("MMM d, yyyy")</text> }
+                    @if (Model.ActivityTo.HasValue)   { <text> to @Model.ActivityTo.Value.ToString("MMM d, yyyy")</text> }
                 </span>
             }
         </div>
@@ -363,7 +449,7 @@
                     {
                         <tr data-action="@log.Action"
                             data-search="@log.Username @log.Details">
-                            <td class="text-muted small text-nowrap">@log.Timestamp.ToLocalTime().ToString("MMM d, yyyy h:mm tt")</td>
+                            <td class="text-muted small text-nowrap">@log.Timestamp.ToLocalTime().ToString("MMM d, yyyy")</td>
                             <td class="fw-semibold small">@log.Username</td>
                             <td><span class="badge bg-secondary">@log.Action</span></td>
                             <td class="small">@log.Details</td>

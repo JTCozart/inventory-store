@@ -17,7 +17,10 @@ public record InventoryItemDto(
     bool IsLowStock,
     string? ScanWarning,
     DateTime CreatedAt,
-    DateTime UpdatedAt
+    DateTime UpdatedAt,
+    int? CategoryId,
+    string? CategoryName,
+    DateOnly? ExpiryDate
 );
 
 public record CreateInventoryItemDto(
@@ -28,7 +31,9 @@ public record CreateInventoryItemDto(
     string? SKU,
     int MinimumQuantity,
     ItemType ItemType,
-    string? ScanWarning
+    string? ScanWarning,
+    int? CategoryId,
+    DateOnly? ExpiryDate
 );
 
 // ItemType is intentionally excluded — an item's type cannot change after creation.
@@ -39,5 +44,7 @@ public record UpdateInventoryItemDto(
     string? Location,
     string? SKU,
     int MinimumQuantity,
-    string? ScanWarning
+    string? ScanWarning,
+    int? CategoryId,
+    DateOnly? ExpiryDate
 );

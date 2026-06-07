@@ -7,7 +7,8 @@ namespace InventoryTracker.App.Tray;
 
 public class TrayApplicationContext : ApplicationContext
 {
-    private const int Port = 5050;
+    private static readonly int Port =
+        Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development" ? 5051 : 5050;
 
     private readonly IServiceProvider _services;
     private readonly CancellationTokenSource _cts;

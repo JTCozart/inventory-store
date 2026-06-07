@@ -7,20 +7,47 @@
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h1 class="h3 mb-0">Inventory</h1>
-    <a href="/Inventory/Create" class="btn btn-primary">
-        <i class="bi bi-plus-lg me-1"></i> Add Item
-    </a>
+    <div class="d-flex gap-2">
+        <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#importModal">
+            <i class="bi bi-upload me-1"></i> Import
+        </button>
+        <a href="/Inventory/Create" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-1"></i> Add Item
+        </a>
+    </div>
 </div>
+
+@if (!string.IsNullOrEmpty(Model.ImportResult))
+{
+    var isOk = Model.ImportResult.StartsWith("ok:");
+    var isWarn = Model.ImportResult.StartsWith("warn:");
+    var msg = Model.ImportResult.Substring(Model.ImportResult.IndexOf(':') + 1);
+    <div class="alert @(isOk ? "alert-success" : isWarn ? "alert-warning" : "alert-danger") alert-dismissible fade show">
+        @msg
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
 
 <div class="card mb-3">
     <div class="card-body py-2">
-        <form method="get" class="d-flex gap-2">
+        <form method="get" class="d-flex gap-2 flex-wrap">
             <input type="search" name="q" value="@Model.Query" class="form-control"
-                   placeholder="Search by name, SKU, location..." />
+                   style="max-width: 300px" placeholder="Search by name, SKU, location, category..." />
+            @if (Model.Categories.Any())
+            {
+                <select name="category" class="form-select" style="max-width: 180px"
+                        onchange="this.form.submit()">
+                    <option value="">All Categories</option>
+                    @foreach (var cat in Model.Categories)
+                    {
+                        <option value="@cat.Id" selected="@(Model.CategoryFilter == cat.Id)">@cat.Name</option>
+                    }
+                </select>
+            }
             <button type="submit" class="btn btn-outline-secondary">
                 <i class="bi bi-search"></i>
             </button>
-            @if (!string.IsNullOrEmpty(Model.Query))
+            @if (!string.IsNullOrEmpty(Model.Query) || Model.CategoryFilter.HasValue)
             {
                 <a href="/Inventory" class="btn btn-outline-secondary"><i class="bi bi-x"></i></a>
             }
@@ -44,11 +71,13 @@ else
                     <tr>
                         <th class="sortable">Name</th>
                         <th class="sortable">Type</th>
+                        <th class="sortable">Category</th>
                         <th class="sortable">SKU</th>
                         <th class="sortable">Location</th>
                         <th class="text-end sortable">Qty</th>
                         <th class="text-end sortable">Available</th>
                         <th class="text-end sortable">Min</th>
+                        <th class="sortable">Expiry</th>
                         <th class="sortable">Status</th>
                         <th></th>
                     </tr>
@@ -68,11 +97,40 @@ else
                                     <span class="badge bg-secondary">Consumable</span>
                                 }
                             </td>
+                            <td class="text-muted small">
+                                @if (item.CategoryName is not null)
+                                {
+                                    <span class="badge bg-light text-dark border">@item.CategoryName</span>
+                                }
+                                else { <text>-</text> }
+                            </td>
                             <td class="text-muted small">@(item.SKU ?? "-")</td>
                             <td class="text-muted small">@(item.Location ?? "-")</td>
                             <td class="text-end">@item.Quantity</td>
                             <td class="text-end">@item.AvailableQuantity</td>
                             <td class="text-end text-muted">@item.MinimumQuantity</td>
+                            <td class="text-muted small text-nowrap">
+                                @{
+                                    var today = DateOnly.FromDateTime(DateTime.Today);
+                                    if (item.ExpiryDate.HasValue)
+                                    {
+                                        var daysLeft = item.ExpiryDate.Value.DayNumber - today.DayNumber;
+                                        if (daysLeft < 0)
+                                        {
+                                            <span class="badge bg-danger">Expired</span>
+                                        }
+                                        else if (daysLeft <= 30)
+                                        {
+                                            <span class="badge bg-warning text-dark">Exp @item.ExpiryDate.Value.ToString("MMM d")</span>
+                                        }
+                                        else
+                                        {
+                                            <text>@item.ExpiryDate.Value.ToString("MMM d, yyyy")</text>
+                                        }
+                                    }
+                                    else { <text>-</text> }
+                                }
+                            </td>
                             <td>
                                 @if (item.IsLowStock)
                                 {
@@ -107,6 +165,35 @@ else
     </div>
     <div class="text-muted small mt-2">Showing @Model.Items.Count() items</div>
 }
+
+<!-- Import CSV modal -->
+<div class="modal fade" id="importModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-upload me-2"></i>Import from CSV</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" asp-page-handler="ImportCsv" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <p class="text-muted small mb-3">
+                        CSV columns (header row required):<br/>
+                        <code>Type, Name, Quantity, MinimumQuantity, SKU, Location, Category, Description, ScanWarning</code><br/>
+                        Type must be <strong>Consumable</strong> or <strong>Reusable</strong>. Categories are created automatically if they don't exist.
+                    </p>
+                    <div class="mb-3">
+                        <label class="form-label">CSV File <span class="text-danger">*</span></label>
+                        <input type="file" name="csvFile" class="form-control" accept=".csv,text/csv" required />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Import</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
 <!-- Delete confirmation modal -->
 <div class="modal fade" id="deleteModal" tabindex="-1">

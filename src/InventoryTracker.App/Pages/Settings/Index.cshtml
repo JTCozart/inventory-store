@@ -2,6 +2,7 @@
 @model InventoryTracker.App.Pages.Settings.IndexModel
 @using InventoryTracker.Domain.Enums
 @using InventoryTracker.App.Services
+@inject InventoryTracker.App.Services.UpdateInfo UpdateInfo
 @{
     ViewData["Title"] = "Settings";
     ViewData["ActivePage"] = "Settings";
@@ -48,6 +49,11 @@
             </a>
         </li>
     }
+    <li class="nav-item">
+        <a class="nav-link @(Model.Tab == "categories" ? "active" : "")" href="/Settings?tab=categories">
+            <i class="bi bi-tags me-1"></i> Categories
+        </a>
+    </li>
     <li class="nav-item">
         <a class="nav-link @(Model.Tab == "info" ? "active" : "")" href="/Settings?tab=info">
             <i class="bi bi-info-circle me-1"></i> App Info
@@ -312,7 +318,8 @@
                          data-lt-subdomain="@Model.SavedLtSubdomain"
                          data-named-token="@(string.IsNullOrWhiteSpace(Model.SavedTunnelToken) ? "" : "1")"
                          data-named-url="@Model.SavedTunnelUrl"
-                         data-saved-token="@Model.SavedTunnelToken">
+                         data-saved-token="@Model.SavedTunnelToken"
+                         data-serveo-subdomain="@Model.SavedServeoSubdomain">
                         @if (isStopped)
                         {
                             <div class="d-grid gap-2">
@@ -320,15 +327,16 @@
                                     <i class="bi bi-lightning me-1"></i> Quick Tunnel
                                     <span class="text-white-50 ms-1 small">random URL</span>
                                 </button>
-                                @if (!string.IsNullOrWhiteSpace(Model.SavedLtSubdomain))
+                                @if (!string.IsNullOrWhiteSpace(Model.SavedServeoSubdomain))
                                 {
-                                    <button class="btn btn-sm btn-success" onclick="startTunnel('localtunnel')">
-                                        <i class="bi bi-link-45deg me-1"></i> @(Model.SavedLtSubdomain + ".loca.lt")
+                                    <button class="btn btn-sm btn-success" onclick="startTunnel('serveo')">
+                                        <i class="bi bi-shield-lock me-1"></i> @(Model.SavedServeoSubdomain + ".serveousercontent.com")
                                     </button>
                                 }
-                                @if (false) // named tunnel removed
+                                @if (!string.IsNullOrWhiteSpace(Model.SavedLtSubdomain))
                                 {
-                                    <button class="btn btn-sm btn-outline-primary d-none" onclick="startTunnel('named')">
+                                    <button class="btn btn-sm btn-outline-success" onclick="startTunnel('localtunnel')">
+                                        <i class="bi bi-link-45deg me-1"></i> @(Model.SavedLtSubdomain + ".loca.lt")
                                     </button>
                                 }
                             </div>
@@ -360,6 +368,99 @@
 
                 <div class="accordion-item">
                     <h2 class="accordion-header">
+                        <button class="accordion-button @(string.IsNullOrWhiteSpace(Model.SavedServeoSubdomain) && Model.ServeoPublicKey == null ? "collapsed" : "")"
+                                type="button" data-bs-toggle="collapse" data-bs-target="#serveo-section">
+                            <i class="bi bi-shield-lock me-2 text-success"></i>
+                            Serveo <span class="text-muted ms-2 small">free persistent subdomain</span>
+                            @if (!string.IsNullOrWhiteSpace(Model.SavedServeoSubdomain))
+                            {
+                                <span class="badge bg-success ms-2">Configured</span>
+                            }
+                        </button>
+                    </h2>
+                    <div id="serveo-section" class="accordion-collapse collapse @((!string.IsNullOrWhiteSpace(Model.SavedServeoSubdomain) || Model.ServeoPublicKey != null) ? "show" : "")">
+                        <div class="accordion-body">
+
+                            <div class="mb-4">
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    <span class="badge bg-primary rounded-pill">1</span>
+                                    <strong>Generate your SSH key</strong>
+                                </div>
+                                @if (Model.ServeoPublicKey is null)
+                                {
+                                    <p class="text-muted small mb-2">
+                                        The app generates a unique SSH key pair. The private key is stored securely in the app database. You only do this once.
+                                    </p>
+                                    <button class="btn btn-sm btn-primary" onclick="generateServeoKey(this)">
+                                        <i class="bi bi-key me-1"></i> Generate SSH Key
+                                    </button>
+                                    <div id="key-gen-status" class="form-text mt-1"></div>
+                                }
+                                else
+                                {
+                                    <p class="text-muted small mb-2">SSH key generated. Copy the public key below:</p>
+                                    <div class="input-group input-group-sm mb-1">
+                                        <input type="text" class="form-control font-monospace small"
+                                               id="serveo-pubkey" value="@Model.ServeoPublicKey" readonly />
+                                        <button class="btn btn-outline-secondary" type="button"
+                                                onclick="copyServeoKey(this)" title="Copy public key">
+                                            <i class="bi bi-clipboard"></i>
+                                        </button>
+                                        <button class="btn btn-outline-warning" type="button"
+                                                onclick="regenerateServeoKey(this)" title="Generate a new key (you will need to re-add it to Serveo)">
+                                            <i class="bi bi-arrow-clockwise"></i>
+                                        </button>
+                                    </div>
+                                    <div class="form-text"><i class="bi bi-check-circle-fill text-success me-1"></i>Key ready (RSA 4096)</div>
+                                }
+                            </div>
+
+                            <div class="mb-4">
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    <span class="badge bg-primary rounded-pill">2</span>
+                                    <strong>Create a Serveo account &amp; add your SSH key</strong>
+                                </div>
+                                <ol class="small ps-3 mb-2">
+                                    <li>Go to <a href="https://serveo.net" target="_blank">serveo.net</a> and sign up for a free account.</li>
+                                    <li>In the Serveo Console, go to <strong>SSH Keys</strong> and add your public key from Step 1.</li>
+                                    <li>With a free account your subdomain is persistent. Upgrade to Pro ($6/mo) to remove the interstitial warning page for visitors.</li>
+                                </ol>
+                                <a href="https://console.serveo.net" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                    <i class="bi bi-box-arrow-up-right me-1"></i> Open Serveo Console
+                                </a>
+                            </div>
+
+                            <div>
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    <span class="badge bg-primary rounded-pill">3</span>
+                                    <strong>Choose your subdomain</strong>
+                                </div>
+                                <p class="small text-muted mb-2">
+                                    Pick a name — once your SSH key is registered it's permanently yours:
+                                    <code>https://yourname.serveousercontent.com</code>
+                                </p>
+                                <form method="post" asp-page-handler="SaveTunnelConfig">
+                                    <div class="input-group input-group-sm mb-2">
+                                        <span class="input-group-text">https://</span>
+                                        <input name="serveoSubdomain" class="form-control"
+                                               value="@Model.SavedServeoSubdomain"
+                                               placeholder="myinventory" />
+                                        <span class="input-group-text">.serveousercontent.com</span>
+                                    </div>
+                                    <input type="hidden" name="tunnelToken"  value="@Model.SavedTunnelToken" />
+                                    <input type="hidden" name="tunnelUrl"    value="@Model.SavedTunnelUrl" />
+                                    <input type="hidden" name="ltSubdomain"  value="@Model.SavedLtSubdomain" />
+                                    <input type="hidden" name="autostart"    value="@Model.SavedAutostart" />
+                                    <button type="submit" class="btn btn-sm btn-primary">Save Subdomain</button>
+                                </form>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
                         <button class="accordion-button @(string.IsNullOrWhiteSpace(Model.SavedLtSubdomain) ? "collapsed" : "")"
                                 type="button" data-bs-toggle="collapse" data-bs-target="#lt-section">
                             <i class="bi bi-link-45deg me-2 text-success"></i>
@@ -380,9 +481,10 @@
                                     No account needed. Subdomain is first-come-first-served.<br/>
                                     First-time visitors need to bypass the loca.lt landing page once.
                                 </div>
-                                <input type="hidden" name="tunnelToken" value="@Model.SavedTunnelToken" />
-                                <input type="hidden" name="tunnelUrl" value="@Model.SavedTunnelUrl" />
-                                <input type="hidden" name="autostart" value="@Model.SavedAutostart" />
+                                <input type="hidden" name="tunnelToken"     value="@Model.SavedTunnelToken" />
+                                <input type="hidden" name="tunnelUrl"      value="@Model.SavedTunnelUrl" />
+                                <input type="hidden" name="autostart"      value="@Model.SavedAutostart" />
+                                <input type="hidden" name="serveoSubdomain" value="@Model.SavedServeoSubdomain" />
                                 <button type="submit" class="btn btn-sm btn-primary">Save</button>
                             </form>
                         </div>
@@ -403,11 +505,13 @@
                                 <select name="autostart" class="form-select form-select-sm mb-2">
                                     <option value="" selected="@as0">Disabled</option>
                                     <option value="quick" selected="@asQ">Quick Tunnel (random URL)</option>
+                                    <option value="serveo" selected="@(Model.SavedAutostart == "serveo")">Serveo (recommended)</option>
                                     <option value="localtunnel" selected="@asL">localtunnel (loca.lt)</option>
                                 </select>
-                                <input type="hidden" name="tunnelToken"  value="@Model.SavedTunnelToken" />
-                                <input type="hidden" name="tunnelUrl"    value="@Model.SavedTunnelUrl" />
-                                <input type="hidden" name="ltSubdomain"  value="@Model.SavedLtSubdomain" />
+                                <input type="hidden" name="tunnelToken"     value="@Model.SavedTunnelToken" />
+                                <input type="hidden" name="tunnelUrl"      value="@Model.SavedTunnelUrl" />
+                                <input type="hidden" name="ltSubdomain"    value="@Model.SavedLtSubdomain" />
+                                <input type="hidden" name="serveoSubdomain" value="@Model.SavedServeoSubdomain" />
                                 <button type="submit" class="btn btn-sm btn-primary">Save</button>
                             </form>
                         </div>
@@ -420,6 +524,142 @@
     </div>
 }
 
+@if (Model.Tab == "categories")
+{
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0">Categories</h5>
+        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
+            <i class="bi bi-plus-lg me-1"></i> Add Category
+        </button>
+    </div>
+
+    @if (!Model.Categories.Any())
+    {
+        <div class="text-center py-5 text-muted">
+            <i class="bi bi-tags display-4"></i>
+            <p class="mt-2">No categories yet. Add one to start organizing your inventory.</p>
+        </div>
+    }
+    else
+    {
+        <div class="card">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Name</th>
+                            <th>Color</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var cat in Model.Categories)
+                        {
+                            <tr>
+                                <td class="fw-semibold">
+                                    @if (!string.IsNullOrEmpty(cat.Color))
+                                    {
+                                        <span class="me-2 d-inline-block rounded-circle" style="width:12px;height:12px;background:@cat.Color;vertical-align:middle"></span>
+                                    }
+                                    @cat.Name
+                                </td>
+                                <td class="text-muted small">@(cat.Color ?? "—")</td>
+                                <td class="text-end">
+                                    <button class="btn btn-sm btn-outline-secondary me-1"
+                                            onclick="openEditCategoryModal(@cat.Id, '@cat.Name.Replace("'","\\'")', '@(cat.Color ?? "")')"
+                                            title="Edit">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <form method="post" asp-page-handler="DeleteCategory" class="d-inline"
+                                          onsubmit="return confirm('Delete category \'@cat.Name\'? Items in this category will become uncategorized.')">
+                                        <input type="hidden" name="categoryId" value="@cat.Id" />
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+
+    <div class="modal fade" id="addCategoryModal" tabindex="-1">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add Category</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="post" asp-page-handler="AddCategory">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Name <span class="text-danger">*</span></label>
+                            <input name="name" class="form-control" required maxlength="100" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Color <span class="text-muted small">(optional)</span></label>
+                            <input type="hidden" name="color" id="addCatColor" value="" />
+                            <div class="d-flex flex-wrap gap-1" id="addCatSwatches">
+                                <button type="button" class="swatch-btn" data-color="" title="None"
+                                        style="width:28px;height:28px;border-radius:4px;background:#f8f9fa;border:2px solid #dee2e6;"></button>
+                                @foreach (var c in new[]{"#0d6efd","#198754","#dc3545","#ffc107","#fd7e14","#6f42c1","#d63384","#0dcaf0","#20c997","#6c757d","#212529"})
+                                {
+                                    <button type="button" class="swatch-btn" data-color="@c" title="@c"
+                                            style="width:28px;height:28px;border-radius:4px;background:@c;border:2px solid transparent;"></button>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Create</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="editCategoryModal" tabindex="-1">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Category</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="post" asp-page-handler="EditCategory">
+                    <input type="hidden" name="categoryId" id="editCatId" />
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Name <span class="text-danger">*</span></label>
+                            <input name="name" id="editCatName" class="form-control" required maxlength="100" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Color <span class="text-muted small">(optional)</span></label>
+                            <input type="hidden" name="color" id="editCatColor" value="" />
+                            <div class="d-flex flex-wrap gap-1" id="editCatSwatches">
+                                <button type="button" class="swatch-btn" data-color="" title="None"
+                                        style="width:28px;height:28px;border-radius:4px;background:#f8f9fa;border:2px solid #dee2e6;"></button>
+                                @foreach (var c in new[]{"#0d6efd","#198754","#dc3545","#ffc107","#fd7e14","#6f42c1","#d63384","#0dcaf0","#20c997","#6c757d","#212529"})
+                                {
+                                    <button type="button" class="swatch-btn" data-color="@c" title="@c"
+                                            style="width:28px;height:28px;border-radius:4px;background:@c;border:2px solid transparent;"></button>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+}
+
 @if (Model.Tab == "info")
 {
     <div class="card" style="max-width: 520px;">
@@ -427,7 +667,19 @@
         <div class="card-body">
             <dl class="row mb-0">
                 <dt class="col-5">Version</dt>
-                <dd class="col-7">1.0.0</dd>
+                <dd class="col-7">
+                    v@(UpdateInfo.CurrentVersion)
+                    @if (UpdateInfo.HasUpdate)
+                    {
+                        <a href="@UpdateInfo.ReleaseUrl" target="_blank" class="badge bg-info text-decoration-none ms-2">
+                            v@(UpdateInfo.LatestVersion) available
+                        </a>
+                    }
+                    else if (UpdateInfo.LastChecked.HasValue)
+                    {
+                        <span class="text-muted small ms-2">Up to date</span>
+                    }
+                </dd>
                 <dt class="col-5">Local URL</dt>
                 <dd class="col-7">
                     <a href="http://localhost:5050" target="_blank">http://localhost:5050</a>
@@ -454,10 +706,11 @@
     var pollTimer  = null;
     var lastUrl    = null;
     var controls   = document.getElementById('tunnel-controls');
-    var ltSub      = controls ? controls.dataset.ltSubdomain  : '';
-    var namedToken = controls ? controls.dataset.namedToken   : '';
-    var savedToken = controls ? controls.dataset.savedToken   : '';
-    var namedUrl   = controls ? controls.dataset.namedUrl     : '';
+    var ltSub      = controls ? controls.dataset.ltSubdomain    : '';
+    var namedToken = controls ? controls.dataset.namedToken     : '';
+    var savedToken = controls ? controls.dataset.savedToken     : '';
+    var namedUrl   = controls ? controls.dataset.namedUrl       : '';
+    var serveoSub  = controls ? controls.dataset.serveoSubdomain: '';
 
     // ── Public API called by inline onclick attributes ────────────────
     window.startTunnel = function (mode) {
@@ -470,12 +723,59 @@
             apiUrl = '/api/tunnel/start-localtunnel';
             body   = JSON.stringify({ subdomain: ltSub });
             headers['Content-Type'] = 'application/json';
+        } else if (mode === 'serveo') {
+            apiUrl = '/api/tunnel/start-serveo';
+            body   = JSON.stringify({ subdomain: serveoSub });
+            headers['Content-Type'] = 'application/json';
         } else {
             apiUrl = '/api/tunnel/start-quick';
         }
         renderControls('Starting');
         fetch(apiUrl, { method: 'POST', headers: headers, body: body || null, credentials: 'include' })
             .then(function () { startPolling(); });
+    };
+
+    window.generateServeoKey = function (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Generating...';
+        var status = document.getElementById('key-gen-status');
+        fetch('/api/tunnel/generate-serveo-key', { method: 'POST', credentials: 'include' })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (data.publicKey) {
+                    if (status) status.innerHTML = '<i class="bi bi-check-circle-fill text-success me-1"></i>Key generated — reload the page to see it.';
+                    setTimeout(function () { location.reload(); }, 1200);
+                } else {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="bi bi-key me-1"></i> Generate SSH Key';
+                    if (status) status.textContent = 'Generation failed. Check that OpenSSH Client is installed.';
+                }
+            })
+            .catch(function () {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-key me-1"></i> Generate SSH Key';
+                if (status) status.textContent = 'Request failed.';
+            });
+    };
+
+    window.regenerateServeoKey = function (btn) {
+        if (!confirm('This will generate a new SSH key. You will need to remove the old key from your Serveo account and add the new one. Continue?')) return;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+        fetch('/api/tunnel/regenerate-serveo-key', { method: 'POST', credentials: 'include' })
+            .then(function (r) { return r.json(); })
+            .then(function () { location.reload(); })
+            .catch(function () { btn.disabled = false; btn.innerHTML = '<i class="bi bi-arrow-clockwise"></i>'; });
+    };
+
+    window.copyServeoKey = function (btn) {
+        var input = document.getElementById('serveo-pubkey');
+        if (input) {
+            navigator.clipboard.writeText(input.value).then(function () {
+                btn.innerHTML = '<i class="bi bi-check"></i> Copied';
+                setTimeout(function () { btn.innerHTML = '<i class="bi bi-clipboard"></i>'; }, 2000);
+            });
+        }
     };
 
     window.stopTunnel = function () {
@@ -547,8 +847,12 @@
             html += '<button class="btn btn-sm btn-primary" onclick="startTunnel(\'quick\')">'
                   + '<i class="bi bi-lightning me-1"></i> Quick Tunnel '
                   + '<span class="text-white-50 small">random URL</span></button>';
+            if (serveoSub) {
+                html += '<button class="btn btn-sm btn-success" onclick="startTunnel(\'serveo\')">'
+                      + '<i class="bi bi-shield-lock me-1"></i> ' + serveoSub + '.serveousercontent.com</button>';
+            }
             if (ltSub) {
-                html += '<button class="btn btn-sm btn-success" onclick="startTunnel(\'localtunnel\')">'
+                html += '<button class="btn btn-sm btn-outline-success" onclick="startTunnel(\'localtunnel\')">'
                       + '<i class="bi bi-link-45deg me-1"></i> ' + ltSub + '.loca.lt</button>';
             }
             html += '</div>';
@@ -593,5 +897,38 @@ function openEditModal(id, username, firstName, lastName, email, role, isActive)
     document.getElementById('editIsActive').checked = isActive;
     new bootstrap.Modal(document.getElementById('editUserModal')).show();
 }
+
+function openEditCategoryModal(id, name, color) {
+    document.getElementById('editCatId').value = id;
+    document.getElementById('editCatName').value = name;
+    selectSwatch('editCatSwatches', 'editCatColor', color || '');
+    new bootstrap.Modal(document.getElementById('editCategoryModal')).show();
+}
+
+function selectSwatch(containerId, inputId, color) {
+    var container = document.getElementById(containerId);
+    var input     = document.getElementById(inputId);
+    if (!container || !input) return;
+    input.value = color;
+    container.querySelectorAll('.swatch-btn').forEach(function (btn) {
+        var match = (btn.dataset.color || '') === (color || '');
+        btn.style.border = match ? '2px solid #000' : '2px solid transparent';
+        if (btn.dataset.color === '') btn.style.border = match ? '2px solid #000' : '2px solid #dee2e6';
+    });
+}
+
+(function () {
+    function initSwatches(containerId, inputId) {
+        var container = document.getElementById(containerId);
+        if (!container) return;
+        container.querySelectorAll('.swatch-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                selectSwatch(containerId, inputId, btn.dataset.color || '');
+            });
+        });
+    }
+    initSwatches('addCatSwatches', 'addCatColor');
+    initSwatches('editCatSwatches', 'editCatColor');
+})();
 </script>
 }

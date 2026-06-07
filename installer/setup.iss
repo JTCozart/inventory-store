@@ -74,6 +74,11 @@ Filename: "{sys}\sc.exe"; \
   Parameters: "description InventoryTracker ""Inventory Tracker web server — accessible at http://localhost:5050"""; \
   Flags: runhidden waituntilterminated
 
+; Stamp the build version into appsettings.json so the app knows its own version
+Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; \
+  Parameters: "-NoProfile -Command ""$f='{app}\appsettings.json'; $j=Get-Content $f -Raw | ConvertFrom-Json; $j.AppVersion='{#AppVersion}'; $j | ConvertTo-Json -Depth 10 | Set-Content $f"""; \
+  Flags: runhidden waituntilterminated; StatusMsg: "Configuring..."
+
 ; Start the service immediately
 Filename: "{sys}\net.exe"; Parameters: "start InventoryTracker"; \
   Flags: runhidden waituntilterminated; StatusMsg: "Starting service..."
@@ -92,6 +97,20 @@ Filename: "{sys}\sc.exe"; Parameters: "delete InventoryTracker"; Flags: runhidde
 Type: dirifempty; Name: "{localappdata}\InventoryTracker"
 
 [Code]
+// Stop the service and tray before installing new files
+procedure CurStepChanged(CurStep: TSetupStep);
+var
+  ResultCode: Integer;
+begin
+  if CurStep = ssInstall then
+  begin
+    Exec(ExpandConstant('{sys}\net.exe'), 'stop InventoryTracker', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+    Exec('taskkill.exe', '/F /IM InventoryTracker.Tray.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+    // Brief pause to ensure handles are released before file copy
+    Sleep(1500);
+  end;
+end;
+
 // Kill any running tray companion before uninstall
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 var

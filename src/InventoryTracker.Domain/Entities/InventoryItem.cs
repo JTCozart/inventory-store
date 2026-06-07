@@ -10,6 +10,9 @@ public abstract class InventoryItem
     public string? SKU { get; set; }
     public int MinimumQuantity { get; set; }
     public string? ScanWarning { get; set; }
+    public DateOnly? ExpiryDate { get; set; }
+    public int? CategoryId { get; set; }
+    public Category? Category { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public int CreatedByUserId { get; set; }

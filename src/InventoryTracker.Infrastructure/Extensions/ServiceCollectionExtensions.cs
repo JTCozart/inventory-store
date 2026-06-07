@@ -7,6 +7,7 @@ using InventoryTracker.Infrastructure.Security;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
+
 namespace InventoryTracker.Infrastructure.Extensions;
 
 public static class ServiceCollectionExtensions
@@ -17,6 +18,7 @@ public static class ServiceCollectionExtensions
             options.UseSqlite(connectionString));
 
         services.AddScoped<IInventoryRepository, InventoryRepository>();
+        services.AddScoped<ICategoryRepository, CategoryRepository>();
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IActivityLogRepository, ActivityLogRepository>();
         services.AddScoped<IAppSettingRepository, AppSettingRepository>();
@@ -25,6 +27,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
 
         services.AddScoped<IInventoryService, InventoryService>();
+        services.AddScoped<ICategoryService, CategoryService>();
         services.AddScoped<IUserAuthService, AuthenticationService>();
         services.AddScoped<IReportService, ReportService>();
         services.AddScoped<ISettingsService, SettingsService>();

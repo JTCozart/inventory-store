@@ -15,26 +15,33 @@ public class InventoryRepository : IInventoryRepository
     }
 
     public async Task<IEnumerable<InventoryItem>> GetAllAsync() =>
-        await _context.InventoryItems.OrderBy(i => i.Name).ToListAsync();
+        await _context.InventoryItems
+            .Include(i => i.Category)
+            .OrderBy(i => i.Name)
+            .ToListAsync();
 
     public async Task<InventoryItem?> GetByIdAsync(int id) =>
-        await _context.InventoryItems.FindAsync(id);
+        await _context.InventoryItems
+            .Include(i => i.Category)
+            .FirstOrDefaultAsync(i => i.Id == id);
 
     public async Task<IEnumerable<InventoryItem>> SearchAsync(string query)
     {
         var lower = query.ToLower();
         return await _context.InventoryItems
+            .Include(i => i.Category)
             .Where(i => i.Name.ToLower().Contains(lower)
                      || (i.SKU != null && i.SKU.ToLower().Contains(lower))
                      || (i.Location != null && i.Location.ToLower().Contains(lower))
-                     || (i.Description != null && i.Description.ToLower().Contains(lower)))
+                     || (i.Description != null && i.Description.ToLower().Contains(lower))
+                     || (i.Category != null && i.Category.Name.ToLower().Contains(lower)))
             .OrderBy(i => i.Name)
             .ToListAsync();
     }
 
     public async Task<IEnumerable<InventoryItem>> GetLowStockAsync()
     {
-        var all = await _context.InventoryItems.ToListAsync();
+        var all = await _context.InventoryItems.Include(i => i.Category).ToListAsync();
         return all
             .Where(i => i.IsLowStock)
             .OrderBy(i => i.AvailableQuantity);

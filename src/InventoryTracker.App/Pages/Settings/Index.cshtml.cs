@@ -16,11 +16,13 @@ public class IndexModel : PageModel
     private readonly IUserAuthService _authService;
     private readonly ISettingsService _settingsService;
     private readonly TunnelService _tunnel;
+    private readonly ICategoryService _categoryService;
 
     public string Tab { get; private set; } = "account";
     public string? SuccessMessage { get; private set; }
     public string? ErrorMessage { get; private set; }
     public IEnumerable<UserDto> Users { get; private set; } = [];
+    public IEnumerable<CategoryDto> Categories { get; private set; } = [];
     public string LocalIpAddress { get; private set; } = "localhost";
 
     // Tunnel state (read from singleton, used for initial render)
@@ -28,16 +30,19 @@ public class IndexModel : PageModel
     public string? TunnelPublicUrl => _tunnel.PublicUrl;
     public string? TunnelError => _tunnel.Error;
 
-    public string? SavedTunnelToken  { get; private set; }
-    public string? SavedTunnelUrl    { get; private set; }
-    public string? SavedLtSubdomain  { get; private set; }
-    public string? SavedAutostart    { get; private set; }
+    public string? SavedTunnelToken      { get; private set; }
+    public string? SavedTunnelUrl        { get; private set; }
+    public string? SavedLtSubdomain      { get; private set; }
+    public string? SavedAutostart        { get; private set; }
+    public string? SavedServeoSubdomain  { get; private set; }
+    public string? ServeoPublicKey       { get; private set; }
 
-    public IndexModel(IUserAuthService authService, ISettingsService settingsService, TunnelService tunnel)
+    public IndexModel(IUserAuthService authService, ISettingsService settingsService, TunnelService tunnel, ICategoryService categoryService)
     {
         _authService     = authService;
         _settingsService = settingsService;
         _tunnel          = tunnel;
+        _categoryService = categoryService;
     }
 
     public async Task OnGetAsync(string tab = "account", string? success = null, string? error = null)
@@ -50,24 +55,30 @@ public class IndexModel : PageModel
         if (tab == "users")
             Users = await _authService.GetAllUsersAsync();
 
+        if (tab == "categories")
+            Categories = await _categoryService.GetAllAsync();
+
         if (tab == "tunnel")
         {
-            SavedTunnelToken = await _settingsService.GetAsync("tunnel.token");
-            SavedTunnelUrl   = await _settingsService.GetAsync("tunnel.url");
-            SavedLtSubdomain = await _settingsService.GetAsync("tunnel.lt.subdomain");
-            SavedAutostart   = await _settingsService.GetAsync("tunnel.autostart");
+            SavedTunnelToken     = await _settingsService.GetAsync("tunnel.token");
+            SavedTunnelUrl       = await _settingsService.GetAsync("tunnel.url");
+            SavedLtSubdomain     = await _settingsService.GetAsync("tunnel.lt.subdomain");
+            SavedAutostart       = await _settingsService.GetAsync("tunnel.autostart");
+            SavedServeoSubdomain = await _settingsService.GetAsync("tunnel.serveo.subdomain");
+            ServeoPublicKey      = await _tunnel.GetServeoPublicKeyAsync();
         }
     }
 
     public async Task<IActionResult> OnPostSaveTunnelConfigAsync(
-        string? tunnelToken, string? tunnelUrl, string? ltSubdomain, string? autostart)
+        string? tunnelToken, string? tunnelUrl, string? ltSubdomain, string? autostart, string? serveoSubdomain)
     {
         if (!User.IsInRole("Admin")) return Forbid();
 
-        await _settingsService.SetAsync("tunnel.token",         tunnelToken);
-        await _settingsService.SetAsync("tunnel.url",           tunnelUrl);
-        await _settingsService.SetAsync("tunnel.lt.subdomain",  ltSubdomain);
-        await _settingsService.SetAsync("tunnel.autostart",     autostart);
+        await _settingsService.SetAsync("tunnel.token",              tunnelToken);
+        await _settingsService.SetAsync("tunnel.url",                tunnelUrl);
+        await _settingsService.SetAsync("tunnel.lt.subdomain",       ltSubdomain);
+        await _settingsService.SetAsync("tunnel.autostart",          autostart);
+        await _settingsService.SetAsync("tunnel.serveo.subdomain",   serveoSubdomain);
 
         return RedirectWithMessage("tunnel", success: "Tunnel settings saved.");
     }
@@ -140,6 +151,39 @@ public class IndexModel : PageModel
             return RedirectWithMessage("users", success: "User deleted.");
         }
         catch (Exception ex) { return RedirectWithMessage("users", error: ex.Message); }
+    }
+
+    public async Task<IActionResult> OnPostAddCategoryAsync(string name, string? color)
+    {
+        if (!User.IsInRole("Admin") && !User.IsInRole("Manager")) return Forbid();
+        try
+        {
+            await _categoryService.CreateAsync(new Application.DTOs.CreateCategoryDto(name, color));
+            return RedirectWithMessage("categories", success: $"Category '{name}' created.");
+        }
+        catch (Exception ex) { return RedirectWithMessage("categories", error: ex.Message); }
+    }
+
+    public async Task<IActionResult> OnPostEditCategoryAsync(int categoryId, string name, string? color)
+    {
+        if (!User.IsInRole("Admin") && !User.IsInRole("Manager")) return Forbid();
+        try
+        {
+            await _categoryService.UpdateAsync(categoryId, new Application.DTOs.UpdateCategoryDto(name, color));
+            return RedirectWithMessage("categories", success: "Category updated.");
+        }
+        catch (Exception ex) { return RedirectWithMessage("categories", error: ex.Message); }
+    }
+
+    public async Task<IActionResult> OnPostDeleteCategoryAsync(int categoryId)
+    {
+        if (!User.IsInRole("Admin") && !User.IsInRole("Manager")) return Forbid();
+        try
+        {
+            await _categoryService.DeleteAsync(categoryId);
+            return RedirectWithMessage("categories", success: "Category deleted.");
+        }
+        catch (Exception ex) { return RedirectWithMessage("categories", error: ex.Message); }
     }
 
     private IActionResult RedirectWithMessage(string tab, string? success = null, string? error = null) =>

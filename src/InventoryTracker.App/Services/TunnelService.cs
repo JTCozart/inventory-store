@@ -8,6 +8,9 @@ namespace InventoryTracker.App.Services;
 public sealed partial class TunnelService : IAsyncDisposable
 {
     // ── Cloudflared paths ─────────────────────────────────────────────────
+    private static readonly int AppPort =
+        Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development" ? 5051 : 5050;
+
     private static readonly string CloudflaredPath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "InventoryTracker", "tools", "cloudflared.exe");
@@ -15,11 +18,17 @@ public sealed partial class TunnelService : IAsyncDisposable
     private const string CloudflaredDownloadUrl =
         "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe";
 
+    // ── Serveo / SSH paths ────────────────────────────────────────────────
+    private static readonly string ServeoKeyPath = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+        "InventoryTracker", "serveo_ed25519");
+
     // ── State ─────────────────────────────────────────────────────────────
     public enum TunnelState { Stopped, Downloading, Starting, Running, Error }
-    public enum TunnelMode  { Quick, Named, LocalTunnel }
+    public enum TunnelMode  { Quick, Named, LocalTunnel, Serveo }
 
     private Process?                  _cfProcess;
+    private Process?                  _sshProcess;
     private CancellationTokenSource?  _ltCts;
     private readonly List<Task>       _ltWorkers = new();
     private readonly ILogger<TunnelService> _logger;
@@ -30,23 +39,34 @@ public sealed partial class TunnelService : IAsyncDisposable
 
     public event Func<Task>? OnStateChanged;
 
-    public TunnelService(ILogger<TunnelService> logger) => _logger = logger;
+    private readonly IServiceScopeFactory _scopeFactory;
+
+    public TunnelService(ILogger<TunnelService> logger, IServiceScopeFactory scopeFactory)
+    {
+        _logger       = logger;
+        _scopeFactory = scopeFactory;
+    }
 
     // ── Public API ────────────────────────────────────────────────────────
 
     public Task StartQuickAsync()                              => StartCloudflaredAsync(null, null);
     public Task StartNamedAsync(string token, string? url)    => StartCloudflaredAsync(token, url);
     public Task StartLocalTunnelAsync(string subdomain)        => StartLocalTunnelImplAsync(subdomain);
+    public Task StartServeoAsync(string subdomain)             => StartServeoImplAsync(subdomain);
 
     public Task StopAsync()
     {
-        // Kill cloudflared immediately
+        // Kill cloudflared
         try { _cfProcess?.Kill(); } catch { }
         _cfProcess?.Dispose();
         _cfProcess = null;
 
-        // Cancel localtunnel workers — TCP sockets close as soon as the token fires.
-        // Don't await workers; the OS releases the loca.lt subdomain when connections drop.
+        // Kill SSH (Serveo)
+        try { _sshProcess?.Kill(); } catch { }
+        _sshProcess?.Dispose();
+        _sshProcess = null;
+
+        // Cancel localtunnel workers
         _ltCts?.Cancel();
         _ltCts?.Dispose();
         _ltCts = null;
@@ -56,9 +76,68 @@ public sealed partial class TunnelService : IAsyncDisposable
         Error     = null;
         State     = TunnelState.Stopped;
 
-        // Fire-and-forget notification (we may be shutting down)
         _ = NotifyAsync();
         return Task.CompletedTask;
+    }
+
+    // ── Serveo SSH key management ─────────────────────────────────────────
+
+    public async Task<string> EnsureServeoKeyAsync()
+    {
+        using var scope    = _scopeFactory.CreateScope();
+        var settings = scope.ServiceProvider.GetRequiredService<Application.Interfaces.Services.ISettingsService>();
+
+        var existing = await settings.GetAsync("serveo.ssh.public");
+        if (!string.IsNullOrWhiteSpace(existing)) return existing;
+
+        // Generate key pair using Windows built-in ssh-keygen
+        var keygenExe = FindOpenSshExe("ssh-keygen.exe");
+        var tmpKey    = Path.Combine(Path.GetTempPath(), $"serveo_tmp_{Guid.NewGuid():N}");
+        try
+        {
+            var psi = new ProcessStartInfo(keygenExe,
+                $"-t rsa -b 4096 -f \"{tmpKey}\" -N \"\" -q -C \"InventoryTracker\"")
+            {
+                UseShellExecute        = false,
+                CreateNoWindow         = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError  = true
+            };
+            using var proc = Process.Start(psi)!;
+            await proc.WaitForExitAsync();
+
+            if (proc.ExitCode != 0)
+                throw new Exception("ssh-keygen failed — check that OpenSSH Client is installed.");
+
+            var privateKey = await File.ReadAllTextAsync(tmpKey);
+            var publicKey  = (await File.ReadAllTextAsync(tmpKey + ".pub")).Trim();
+
+            await settings.SetAsync("serveo.ssh.private", privateKey);
+            await settings.SetAsync("serveo.ssh.public",  publicKey);
+            _logger.LogInformation("Serveo SSH key generated and stored.");
+            return publicKey;
+        }
+        finally
+        {
+            try { File.Delete(tmpKey); }       catch { }
+            try { File.Delete(tmpKey + ".pub"); } catch { }
+        }
+    }
+
+    public async Task<string> RegenerateServeoKeyAsync()
+    {
+        using var scope  = _scopeFactory.CreateScope();
+        var settings     = scope.ServiceProvider.GetRequiredService<Application.Interfaces.Services.ISettingsService>();
+        await settings.SetAsync("serveo.ssh.private", null);
+        await settings.SetAsync("serveo.ssh.public",  null);
+        return await EnsureServeoKeyAsync();
+    }
+
+    public async Task<string?> GetServeoPublicKeyAsync()
+    {
+        using var scope    = _scopeFactory.CreateScope();
+        var settings = scope.ServiceProvider.GetRequiredService<Application.Interfaces.Services.ISettingsService>();
+        return await settings.GetAsync("serveo.ssh.public");
     }
 
     // ── Cloudflared (Quick + Named) ───────────────────────────────────────
@@ -84,7 +163,7 @@ public sealed partial class TunnelService : IAsyncDisposable
 
             var args = token is not null
                 ? $"tunnel run --token {token} --no-autoupdate"
-                : "tunnel --url http://localhost:5050 --no-autoupdate";
+                : $"tunnel --url http://localhost:{AppPort} --no-autoupdate";
 
             var psi = new ProcessStartInfo(CloudflaredPath, args)
             {
@@ -234,7 +313,7 @@ public sealed partial class TunnelService : IAsyncDisposable
         if (await tunnelStream.ReadAsync(firstByte.AsMemory(), ct) == 0) return;
 
         using var localTcp = new TcpClient();
-        await localTcp.ConnectAsync("127.0.0.1", 5050, ct);
+        await localTcp.ConnectAsync("127.0.0.1", AppPort, ct);
         var localStream = localTcp.GetStream();
 
         // Forward the peeked first byte to the local server
@@ -265,6 +344,226 @@ public sealed partial class TunnelService : IAsyncDisposable
         }
         catch (OperationCanceledException) { }
         catch (IOException) { }
+    }
+
+    // ── Serveo (SSH) ──────────────────────────────────────────────────────
+
+    private async Task StartServeoImplAsync(string subdomain)
+    {
+        if (State is TunnelState.Downloading or TunnelState.Starting or TunnelState.Running) return;
+
+        Error = null; PublicUrl = null;
+
+        try
+        {
+            State = TunnelState.Starting;
+            await NotifyAsync();
+
+            using var scope = _scopeFactory.CreateScope();
+            var settings    = scope.ServiceProvider.GetRequiredService<Application.Interfaces.Services.ISettingsService>();
+            var privateKey  = await settings.GetAsync("serveo.ssh.private");
+            if (string.IsNullOrWhiteSpace(privateKey))
+                throw new Exception("SSH key not found. Complete the Serveo setup in Settings first.");
+
+            var keyFile = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "InventoryTracker", "serveo_key");
+            Directory.CreateDirectory(Path.GetDirectoryName(keyFile)!);
+            await File.WriteAllTextAsync(keyFile, privateKey);
+
+            await FixKeyFilePermissionsAsync(keyFile);
+
+            string sshExe;
+            try   { sshExe = FindOpenSshExe("ssh.exe"); }
+            catch (Exception ex)
+            {
+                throw new Exception($"ssh.exe not found: {ex.Message} — " +
+                    "Enable OpenSSH Client via Settings > Apps > Optional Features.");
+            }
+
+            _logger.LogWarning("Serveo: ssh.exe = {Exe}", sshExe);
+            _logger.LogWarning("Serveo: key file = {File}", keyFile);
+
+            var args = string.Join(" ",
+                $"-i \"{keyFile}\"",
+                "-F none",
+                $"-R {subdomain}:80:localhost:{AppPort}",
+                "serveo.net",
+                "-N",
+                "-v",
+                "-o StrictHostKeyChecking=accept-new",
+                "-o ServerAliveInterval=30",
+                "-o ServerAliveCountMax=3",
+                "-o ExitOnForwardFailure=yes",
+                "-o PasswordAuthentication=no");
+
+            _logger.LogWarning("Serveo: args = {Args}", args.Replace(keyFile, "<keyfile>"));
+
+            var psi = new ProcessStartInfo(sshExe, args)
+            {
+                RedirectStandardOutput = true,
+                RedirectStandardError  = true,
+                UseShellExecute        = false,
+                CreateNoWindow         = true
+            };
+
+            _sshProcess = Process.Start(psi)!;
+            _logger.LogWarning("Serveo: process started PID={Pid}", _sshProcess.Id);
+
+            var (url, output) = await WaitForServeoReadyAsync(_sshProcess, subdomain);
+
+            var exitedEarly = _sshProcess.HasExited;
+            if (exitedEarly)
+                _logger.LogWarning("Serveo: process exited with code {Code}", _sshProcess.ExitCode);
+
+            if (url is not null)
+            {
+                PublicUrl = url;
+                State     = TunnelState.Running;
+                _logger.LogWarning("Serveo: tunnel active at {Url}", url);
+            }
+            else
+            {
+                State = TunnelState.Error;
+                // Surface the raw SSH output directly in the UI error so the user can see it
+                var detail = string.IsNullOrWhiteSpace(output)
+                    ? (exitedEarly ? $"Process exited (code {_sshProcess.ExitCode}) with no output." : "No output received within 45s.")
+                    : output;
+                Error = $"Serveo tunnel failed.\n{detail}";
+                _logger.LogError("Serveo failed. Detail: {Detail}", detail);
+                try { _sshProcess?.Kill(); } catch { }
+            }
+        }
+        catch (Exception ex)
+        {
+            State = TunnelState.Error;
+            Error = ex.Message;
+            _logger.LogError(ex, "Serveo start failed.");
+        }
+
+        await NotifyAsync();
+    }
+
+    private async Task<(string? Url, string? AllOutput)> WaitForServeoReadyAsync(Process process, string subdomain)
+    {
+        var tcs        = new TaskCompletionSource<string?>();
+        var outputLog  = new System.Text.StringBuilder();
+        using var cts  = new CancellationTokenSource(TimeSpan.FromSeconds(45));
+        cts.Token.Register(() =>
+        {
+            _logger.LogWarning("Serveo: timed out after 45s. Output so far:\n{Output}", outputLog);
+            tcs.TrySetResult(null);
+        });
+
+        var expectedUrl = $"https://{subdomain}.serveousercontent.com";
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                async Task ReadStream(StreamReader reader, string label)
+                {
+                    string? line;
+                    while ((line = await reader.ReadLineAsync()) is not null)
+                    {
+                        _logger.LogWarning("Serveo [{Label}]: {Line}", label, line);
+                        lock (outputLog) outputLog.AppendLine($"[{label}] {line}");
+
+                        if (line.Contains("Forwarding HTTP") || line.Contains(".serveousercontent.com")
+                            || line.Contains("remote forward success")
+                            || line.Contains("all expected forwarding replies received"))
+                            tcs.TrySetResult(expectedUrl);
+                        else if (line.Contains("Permission denied"))
+                            tcs.TrySetResult($"__ERR__SSH auth failed (Permission denied). Make sure your public key is added to your Serveo account at console.serveo.net.");
+                        else if (line.Contains("already in use") || line.Contains("Address already in use"))
+                            tcs.TrySetResult($"__ERR__Subdomain '{subdomain}' is already in use. Choose a different name.");
+                        else if (line.Contains("Could not request") || line.Contains("remote port forwarding failed"))
+                            tcs.TrySetResult($"__ERR__Port forwarding rejected: {line.Trim()}");
+                        else if (line.Contains("Connection refused") || line.Contains("Connection timed out")
+                              || line.Contains("No route to host"))
+                            tcs.TrySetResult($"__ERR__Cannot reach serveo.net: {line.Trim()}. Check port 22 is not blocked.");
+                    }
+                }
+
+                await Task.WhenAll(
+                    ReadStream(process.StandardOutput, "out"),
+                    ReadStream(process.StandardError,  "err"));
+
+                tcs.TrySetResult(null);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Serveo: stream read exception.");
+                tcs.TrySetResult(null);
+            }
+        });
+
+        var result = await tcs.Task;
+
+        if (result is not null && result.StartsWith("__ERR__"))
+            return (null, result[7..]);
+
+        return (result, outputLog.ToString());
+    }
+
+    private async Task FixKeyFilePermissionsAsync(string keyFile)
+    {
+        // OpenSSH on Windows requires the private key to be accessible only by the owner.
+        // Use icacls to remove inherited permissions and grant full control to current user only.
+        try
+        {
+            var icacls = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.System), "icacls.exe");
+            if (!File.Exists(icacls))
+            {
+                _logger.LogWarning("Serveo: icacls.exe not found, skipping key permission fix.");
+                return;
+            }
+
+            var username = $"{Environment.UserDomainName}\\{Environment.UserName}";
+
+            // Remove inherited ACEs, then grant current user full control only
+            foreach (var args in new[]
+            {
+                $"\"{keyFile}\" /inheritance:r",
+                $"\"{keyFile}\" /grant:r \"{username}:F\""
+            })
+            {
+                var psi = new ProcessStartInfo(icacls, args)
+                {
+                    UseShellExecute        = false,
+                    CreateNoWindow         = true,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError  = true
+                };
+                using var proc = Process.Start(psi)!;
+                await proc.WaitForExitAsync();
+                _logger.LogInformation("Serveo: icacls {Args} => exit {Code}", args, proc.ExitCode);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Serveo: failed to set key file permissions (SSH may reject the key).");
+        }
+    }
+
+    private static string FindOpenSshExe(string exeName)
+    {
+        // Windows built-in OpenSSH (Windows 10 1809+)
+        var win = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.System),
+            "OpenSSH", exeName);
+        if (File.Exists(win)) return win;
+
+        // Fall back to PATH
+        foreach (var dir in (Environment.GetEnvironmentVariable("PATH") ?? "").Split(Path.PathSeparator))
+        {
+            var p = Path.Combine(dir.Trim(), exeName);
+            if (File.Exists(p)) return p;
+        }
+
+        throw new InvalidOperationException(
+            $"{exeName} not found. Enable OpenSSH Client via Settings > Apps > Optional Features.");
     }
 
     // ── Shared helpers ────────────────────────────────────────────────────

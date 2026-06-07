@@ -64,7 +64,8 @@ internal class Program
             {
                 web.ConfigureServices(ConfigureServices);
                 web.Configure(ConfigureApp);
-                web.UseUrls("http://*:5050");
+                var isDev = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
+                web.UseUrls(isDev ? "http://localhost:5051" : "http://*:5050");
             });
 
     static void ConfigureServices(IServiceCollection services)
@@ -81,6 +82,8 @@ internal class Program
         services.AddHttpContextAccessor();
 
         services.AddSingleton<TunnelService>();
+        services.AddSingleton<UpdateInfo>();
+        services.AddHostedService<UpdateCheckService>();
 
         services.AddAntiforgery(options =>
         {
@@ -192,6 +195,27 @@ internal class Program
                 return Results.Ok();
             });
 
+            endpoints.MapPost("/api/tunnel/start-serveo", [Authorize] async (HttpContext ctx, TunnelService tunnel) =>
+            {
+                var body = await ctx.Request.ReadFromJsonAsync<StartServeoRequest>();
+                if (body is null || string.IsNullOrWhiteSpace(body.Subdomain))
+                    return Results.BadRequest("Subdomain is required.");
+                _ = Task.Run(() => tunnel.StartServeoAsync(body.Subdomain.Trim().ToLower()));
+                return Results.Ok();
+            });
+
+            endpoints.MapPost("/api/tunnel/generate-serveo-key", [Authorize] async (TunnelService tunnel) =>
+            {
+                var publicKey = await tunnel.EnsureServeoKeyAsync();
+                return Results.Ok(new { publicKey });
+            });
+
+            endpoints.MapPost("/api/tunnel/regenerate-serveo-key", [Authorize] async (TunnelService tunnel) =>
+            {
+                var publicKey = await tunnel.RegenerateServeoKeyAsync();
+                return Results.Ok(new { publicKey });
+            });
+
             endpoints.MapPost("/api/tunnel/stop", [Authorize] async (TunnelService tunnel) =>
             {
                 await tunnel.StopAsync();
@@ -284,6 +308,12 @@ internal class Program
                         if (!string.IsNullOrWhiteSpace(sub))
                             await tunnel.StartLocalTunnelAsync(sub);
                     }
+                    else if (mode == "serveo")
+                    {
+                        var sub = await settings.GetAsync("tunnel.serveo.subdomain");
+                        if (!string.IsNullOrWhiteSpace(sub))
+                            await tunnel.StartServeoAsync(sub);
+                    }
                 }
                 catch { }
             });
@@ -293,6 +323,7 @@ internal class Program
 
 internal record StartNamedTunnelRequest(string Token, string? PublicUrl);
 internal record StartLocalTunnelRequest(string Subdomain);
+internal record StartServeoRequest(string Subdomain);
 internal record ResetAdminRequest(string NewPassword);
 
 internal static class LocalApiGuard

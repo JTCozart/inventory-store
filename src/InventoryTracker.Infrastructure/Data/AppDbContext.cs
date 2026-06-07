@@ -8,6 +8,7 @@ public class AppDbContext : DbContext
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
     public DbSet<InventoryItem> InventoryItems => Set<InventoryItem>();
+    public DbSet<Category> Categories => Set<Category>();
     public DbSet<User> Users => Set<User>();
     public DbSet<ActivityLog> ActivityLogs => Set<ActivityLog>();
     public DbSet<AppSetting> AppSettings => Set<AppSetting>();
@@ -15,6 +16,14 @@ public class AppDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<Category>(e =>
+        {
+            e.HasKey(c => c.Id);
+            e.Property(c => c.Name).IsRequired().HasMaxLength(100);
+            e.Property(c => c.Color).HasMaxLength(20);
+            e.HasIndex(c => c.Name).IsUnique();
+        });
+
         modelBuilder.Entity<InventoryItem>(e =>
         {
             e.HasKey(i => i.Id);
@@ -23,6 +32,11 @@ public class AppDbContext : DbContext
             e.Property(i => i.Location).HasMaxLength(200);
             e.Ignore(i => i.AvailableQuantity);
             e.Ignore(i => i.IsLowStock);
+
+            e.HasOne(i => i.Category)
+             .WithMany()
+             .HasForeignKey(i => i.CategoryId)
+             .OnDelete(DeleteBehavior.SetNull);
 
             // Use the existing ItemType int column as the TPH discriminator.
             // 0 = ConsumableItem, 1 = ReusableItem — matches the ItemType enum values.

@@ -1,6 +1,7 @@
 using InventoryTracker.Application.DTOs;
 using InventoryTracker.Application.Interfaces.Services;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace InventoryTracker.App.Pages.Reports;
@@ -9,6 +10,7 @@ namespace InventoryTracker.App.Pages.Reports;
 public class IndexModel : PageModel
 {
     private readonly IReportService _reportService;
+    private readonly IInventoryService _inventoryService;
 
     public string Tab { get; private set; } = "stock";
 
@@ -22,10 +24,22 @@ public class IndexModel : PageModel
     public DateTime? ActivityFrom { get; private set; }
     public DateTime? ActivityTo   { get; private set; }
 
-    public IndexModel(IReportService reportService)
+    public IndexModel(IReportService reportService, IInventoryService inventoryService)
     {
-        _reportService = reportService;
+        _reportService    = reportService;
+        _inventoryService = inventoryService;
     }
+
+    public async Task<IActionResult> OnGetExportCsvAsync()
+    {
+        var csv = await _inventoryService.ExportToCsvAsync();
+        var bytes = System.Text.Encoding.UTF8.GetBytes(csv);
+        var filename = $"inventory-{DateTime.UtcNow:yyyy-MM-dd}.csv";
+        return File(bytes, "text/csv", filename);
+    }
+
+    public IEnumerable<InventoryItemDto> ExpiredItems  { get; private set; } = [];
+    public IEnumerable<InventoryItemDto> ExpiringItems { get; private set; } = [];
 
     public async Task OnGetAsync(string tab = "stock")
     {
@@ -40,6 +54,15 @@ public class IndexModel : PageModel
                 break;
             case "inventory":
                 TakeInventory = await _reportService.GetTakeInventoryReportAsync();
+                break;
+            case "expiry":
+                var allItems  = await _inventoryService.GetAllItemsAsync();
+                var today     = DateOnly.FromDateTime(DateTime.Today);
+                ExpiredItems  = allItems.Where(i => i.ExpiryDate.HasValue && i.ExpiryDate.Value < today)
+                                        .OrderBy(i => i.ExpiryDate).ToList();
+                ExpiringItems = allItems.Where(i => i.ExpiryDate.HasValue && i.ExpiryDate.Value >= today
+                                                 && i.ExpiryDate.Value.DayNumber - today.DayNumber <= 90)
+                                        .OrderBy(i => i.ExpiryDate).ToList();
                 break;
             case "barcodes":
                 StockReport = await _reportService.GetStockReportAsync();

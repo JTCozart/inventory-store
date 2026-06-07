@@ -13,25 +13,37 @@ namespace InventoryTracker.App.Pages.Inventory;
 public class CreateModel : PageModel
 {
     private readonly IInventoryService _inventoryService;
+    private readonly ICategoryService _categoryService;
 
     [BindProperty]
     public CreateInputModel Input { get; set; } = new();
 
-    public CreateModel(IInventoryService inventoryService)
+    public IEnumerable<CategoryDto> Categories { get; private set; } = [];
+
+    public CreateModel(IInventoryService inventoryService, ICategoryService categoryService)
     {
         _inventoryService = inventoryService;
+        _categoryService  = categoryService;
     }
 
-    public IActionResult OnGet() => Page();
+    public async Task<IActionResult> OnGetAsync()
+    {
+        Categories = await _categoryService.GetAllAsync();
+        return Page();
+    }
 
     public async Task<IActionResult> OnPostAsync()
     {
-        if (!ModelState.IsValid) return Page();
+        if (!ModelState.IsValid)
+        {
+            Categories = await _categoryService.GetAllAsync();
+            return Page();
+        }
 
         var (userId, username) = User.GetIdentity();
         await _inventoryService.CreateItemAsync(new CreateInventoryItemDto(
             Input.Name, Input.Quantity, Input.Description, Input.Location, Input.SKU,
-            Input.MinimumQuantity, Input.ItemType, Input.ScanWarning
+            Input.MinimumQuantity, Input.ItemType, Input.ScanWarning, Input.CategoryId, Input.ExpiryDate
         ), userId, username);
 
         return RedirectToPage("./Index");
@@ -56,5 +68,8 @@ public class CreateModel : PageModel
 
         [MaxLength(500)]
         public string? ScanWarning { get; set; }
+
+        public int? CategoryId { get; set; }
+        public DateOnly? ExpiryDate { get; set; }
     }
 }
