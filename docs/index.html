@@ -52,10 +52,15 @@
     "featureList": [
       "Equipment checkout tracking",
       "Consumable stock management",
-      "Barcode scanning",
+      "Item categories with color coding",
+      "Expiry date tracking with alerts",
+      "CSV import and export",
+      "Barcode scanning and label printing",
       "Activity log with date filtering",
-      "Remote access via Cloudflare Tunnel",
-      "Multi-user roles",
+      "Expiry report",
+      "Remote access via Serveo or Cloudflare Tunnel",
+      "Multi-user roles (Admin, Manager, Viewer)",
+      "Auto-update notifications",
       "Windows service installer"
     ]
   }
@@ -260,6 +265,7 @@
   <div class="nav-links">
     <a href="#features">Features</a>
     <a href="#how-it-works">How it works</a>
+    <a href="user-guide.html">User Guide</a>
     <a href="https://github.com/JTCozart/inventory-tracker" target="_blank" rel="noopener noreferrer">GitHub</a>
     <a href="https://github.com/JTCozart/inventory-tracker/releases/latest" class="btn-nav" target="_blank" rel="noopener noreferrer">
       <i class="fa-solid fa-download"></i> Download
@@ -366,9 +372,24 @@
         <p>Stock levels, active checkouts, lost items, take-inventory sheets, and a full activity log with date filtering.</p>
       </div>
       <div class="feature-card">
+        <div class="feature-icon"><i class="fa-solid fa-tags"></i></div>
+        <h3>Categories</h3>
+        <p>Organize items into color-coded categories. Filter your inventory list by category in one click.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon"><i class="fa-solid fa-calendar-xmark"></i></div>
+        <h3>Expiry tracking</h3>
+        <p>Set expiry dates on any item. Expired and Expiring Soon badges appear in the list, and a dedicated Expiry report shows what needs attention.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon"><i class="fa-solid fa-file-csv"></i></div>
+        <h3>CSV import &amp; export</h3>
+        <p>Bulk-load your inventory from a spreadsheet on day one. Export any time for backups or analysis in Excel.</p>
+      </div>
+      <div class="feature-card">
         <div class="feature-icon"><i class="fa-solid fa-globe"></i></div>
         <h3>Remote access</h3>
-        <p>Let staff check inventory remotely via Cloudflare Tunnel or LocalTunnel. No VPN, no firewall changes, no IT ticket required.</p>
+        <p>Expose the UI over the internet via Serveo (free persistent subdomain) or Cloudflare Quick Tunnel. No VPN, no firewall changes required.</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon"><i class="fa-solid fa-users"></i></div>
@@ -388,7 +409,7 @@
       <div class="feature-card">
         <div class="feature-icon"><i class="fa-solid fa-bolt"></i></div>
         <h3>Fast installer</h3>
-        <p>Download one .exe and you're done. The installer registers the service, sets up the tray icon, and launches immediately.</p>
+        <p>Download one .exe and you're done. The installer stops the running service, upgrades the files, and restarts automatically.</p>
       </div>
     </div>
   </div>
@@ -443,6 +464,7 @@
     <span>MIT License &middot; &copy; 2026 Jake Cozart</span>
   </div>
   <div style="display:flex;gap:1.5rem">
+    <a href="user-guide.html"><i class="fa-solid fa-book"></i> User Guide</a>
     <a href="https://github.com/JTCozart/inventory-tracker" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-github"></i> GitHub</a>
     <a href="https://github.com/JTCozart/inventory-tracker/releases" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-tag"></i> Releases</a>
     <a href="https://github.com/JTCozart/inventory-tracker/issues" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-circle-exclamation"></i> Issues</a>

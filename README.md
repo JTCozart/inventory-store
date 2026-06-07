@@ -11,12 +11,15 @@ A self-hosted inventory management system for small teams. Runs as a Windows ser
 
 - **Reusable items** — check out and check in equipment with person tracking
 - **Consumable items** — track stock levels, consume and restock
-- **Barcode scanning** — camera-based scanner or manual SKU entry
+- **Categories** — organize items into color-coded groups with filtering
+- **Expiry dates** — track expiry on any item; Expired and Expiring Soon badges; dedicated expiry report
+- **Barcode scanning** — camera-based scanner or manual SKU entry; print barcode sheets
+- **CSV import / export** — bulk-load your inventory from a spreadsheet or export for backup
 - **Low stock alerts** — configurable minimum quantity thresholds
-- **Activity log** — full audit trail with date/time filtering
-- **Reports** — stock levels, active checkouts, lost items, take-inventory sheet, barcode sheet
-- **Remote access** — built-in Cloudflare tunnel or LocalTunnel support
+- **Reports** — stock levels, active checkouts, lost items, expiry, take-inventory sheet, barcode sheet, activity log
+- **Remote access** — built-in Cloudflare Quick Tunnel or Serveo (free persistent subdomain)
 - **Multi-user** — Admin, Manager, and Viewer roles
+- **Auto-update notifications** — checks GitHub releases and shows a notice in the sidebar
 - **Windows service** — runs in the background, starts at boot
 
 ---
@@ -28,6 +31,7 @@ A self-hosted inventory management system for small teams. Runs as a Windows ser
 1. Download `InventoryTracker-Setup-<version>.exe` from the [latest release](https://github.com/JTCozart/inventory-tracker/releases/latest)
 2. Run the installer as Administrator
 3. The installer:
+   - Stops any running instance before copying files
    - Installs the web server as a Windows service (auto-starts at boot)
    - Adds a tray icon to your system startup
    - Opens the tray icon immediately after install
@@ -37,31 +41,36 @@ A self-hosted inventory management system for small teams. Runs as a Windows ser
 ### System requirements
 
 - Windows 10 version 1803 or later (x64)
+- OpenSSH Client (built-in on Windows 10 1809+) — required only for Serveo remote access
 - No other software required — the installer is self-contained
 
 ---
 
 ## Quick start
 
-See [QUICKSTART.md](QUICKSTART.md) for step-by-step instructions on:
-- Adding your first items
-- Checking items out and in
-- Setting up barcode labels
-- Configuring remote access
+See [QUICKSTART.md](QUICKSTART.md) for step-by-step instructions on the most common tasks.
+
+See the **[User Guide](https://jtcozart.github.io/inventory-tracker/user-guide.html)** for full documentation.
 
 ---
 
 ## Remote access
 
-Inventory Tracker can expose the web UI to the internet via a tunnel, so staff can access it from outside the office without VPN or port forwarding.
+Inventory Tracker can expose the web UI over the internet so staff can access it from outside the office without VPN or port forwarding.
 
 Go to **Settings → Remote Access** and choose:
 
 | Option | Description |
 |---|---|
-| Quick tunnel | Zero-config Cloudflare tunnel — URL changes each session |
-| Named tunnel | Permanent custom domain via Cloudflare |
-| LocalTunnel | Free public URL via localtunnel.me |
+| Quick Tunnel | Zero-config Cloudflare tunnel — URL changes each session |
+| Serveo | Free persistent subdomain (`yourname.serveousercontent.com`) — requires a free Serveo account |
+| localtunnel | Free subdomain via loca.lt — shows an interstitial page to visitors |
+
+**Serveo setup** (one-time):
+1. Settings → Remote Access → Serveo → **Generate SSH Key**
+2. Copy the public key and add it to your account at [console.serveo.net](https://console.serveo.net)
+3. Choose a subdomain and save
+4. Click the Serveo button to start the tunnel
 
 ---
 
@@ -79,7 +88,7 @@ cd src/InventoryTracker.App
 dotnet run
 ```
 
-The app starts in tray mode and hosts the web UI at http://localhost:5050.
+The app starts in tray mode and hosts the web UI at **http://localhost:5051** (dev mode uses 5051 to avoid conflicting with a running production service on 5050).
 
 ### Generate the icon (optional)
 
@@ -92,9 +101,10 @@ pwsh tools/New-Icon.ps1
 
 ```powershell
 # Requires Inno Setup: choco install innosetup
+$v = (Get-Date -Format "yyyyMMdd.HHmm")
 dotnet publish src/InventoryTracker.App  -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -o publish/app
 dotnet publish src/InventoryTracker.Tray -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -o publish/tray
-iscc /DAppVersion="dev" installer/setup.iss
+iscc /DAppVersion="$v" /DAppSemVer="1.$v" installer/setup.iss
 ```
 
 ### Release
@@ -120,7 +130,7 @@ InventoryTracker.App             — ASP.NET Core web server + Windows service h
 InventoryTracker.Tray            — Lightweight tray companion (manages the service)
 ```
 
-Data is stored in `%APPDATA%\InventoryTracker\inventory.db` (SQLite).
+Data is stored in `%APPDATA%\InventoryTracker\inventory.db` (SQLite). The schema is automatically migrated on startup — no manual migration steps required.
 
 ---
 

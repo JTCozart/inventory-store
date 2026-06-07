@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>User Guide | Inventory Tracker</title>
+  <meta name="description" content="Complete user guide for Inventory Tracker — item management, checkout tracking, categories, expiry dates, CSV import/export, remote access, and more." />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="https://jtcozart.github.io/inventory-tracker/user-guide.html" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --blue:   #2563eb;
+      --blue-d: #1d4ed8;
+      --dark:   #0f172a;
+      --gray:   #64748b;
+      --light:  #f8fafc;
+      --border: #e2e8f0;
+      --radius: 12px;
+    }
+    body { font-family: 'Inter', sans-serif; color: var(--dark); background: #fff; line-height: 1.7; }
+    a { color: var(--blue); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 2rem; border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; background: rgba(255,255,255,.95);
+      backdrop-filter: blur(8px); z-index: 100;
+    }
+    .nav-brand {
+      display: flex; align-items: center; gap: .6rem;
+      font-weight: 700; font-size: 1.1rem; color: var(--dark); text-decoration: none;
+    }
+    .it-badge {
+      width: 32px; height: 32px; border-radius: 8px;
+      background: var(--blue); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: .85rem; letter-spacing: -.5px; flex-shrink: 0;
+    }
+    .nav-links { display: flex; gap: 1.5rem; align-items: center; }
+    .nav-links a { color: var(--gray); font-size: .9rem; font-weight: 500; }
+    .nav-links a:hover { color: var(--dark); text-decoration: none; }
+    .btn-nav {
+      background: var(--blue); color: #fff !important;
+      padding: .45rem 1rem; border-radius: 8px; font-weight: 600;
+    }
+    .btn-nav:hover { background: var(--blue-d); }
+
+    .page-hero {
+      background: linear-gradient(160deg, #eff6ff 0%, #fff 60%);
+      padding: 4rem 2rem 3rem; text-align: center;
+    }
+    .page-hero h1 { font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 800; margin-bottom: .75rem; }
+    .page-hero p { color: var(--gray); font-size: 1.05rem; max-width: 560px; margin: 0 auto; }
+
+    .layout { display: grid; grid-template-columns: 240px 1fr; gap: 0; max-width: 1200px; margin: 0 auto; }
+
+    .sidebar-nav {
+      position: sticky; top: 65px; height: calc(100vh - 65px); overflow-y: auto;
+      border-right: 1px solid var(--border); padding: 2rem 1.5rem;
+    }
+    .sidebar-nav ul { list-style: none; }
+    .sidebar-nav li { margin-bottom: .1rem; }
+    .sidebar-nav a {
+      display: block; padding: .35rem .6rem; border-radius: 6px;
+      color: var(--gray); font-size: .88rem; font-weight: 500;
+    }
+    .sidebar-nav a:hover { color: var(--blue); background: #eff6ff; text-decoration: none; }
+    .sidebar-nav .section-label {
+      font-size: .72rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .08em; color: #94a3b8; margin: 1.25rem 0 .4rem .6rem;
+    }
+
+    .content { padding: 3rem 3rem 5rem; }
+    .content section { margin-bottom: 3.5rem; scroll-margin-top: 80px; }
+    .content h2 {
+      font-size: 1.55rem; font-weight: 800; margin-bottom: 1rem;
+      padding-bottom: .6rem; border-bottom: 2px solid var(--border);
+      display: flex; align-items: center; gap: .6rem;
+    }
+    .content h2 i { color: var(--blue); font-size: 1.2rem; }
+    .content h3 { font-size: 1.05rem; font-weight: 700; margin: 1.5rem 0 .5rem; color: var(--dark); }
+    .content p { margin-bottom: .9rem; color: #334155; }
+    .content ul, .content ol { margin: .5rem 0 1rem 1.5rem; color: #334155; }
+    .content li { margin-bottom: .35rem; }
+    .content code {
+      background: var(--light); border: 1px solid var(--border);
+      border-radius: 4px; padding: .15rem .4rem; font-size: .85em; font-family: monospace;
+    }
+    .content pre {
+      background: var(--light); border: 1px solid var(--border); border-radius: 8px;
+      padding: 1rem 1.25rem; overflow-x: auto; margin: .75rem 0 1rem;
+    }
+    .content pre code { background: none; border: none; padding: 0; font-size: .88rem; }
+
+    table { width: 100%; border-collapse: collapse; margin: .75rem 0 1.25rem; font-size: .9rem; }
+    th { background: var(--light); font-weight: 600; text-align: left; }
+    th, td { padding: .6rem .9rem; border: 1px solid var(--border); }
+
+    .callout {
+      border-left: 4px solid var(--blue); background: #eff6ff;
+      border-radius: 0 8px 8px 0; padding: .9rem 1.1rem; margin: 1rem 0;
+      font-size: .92rem; color: #1e3a5f;
+    }
+    .callout.warn { border-color: #d97706; background: #fffbeb; color: #78350f; }
+    .callout i { margin-right: .4rem; }
+
+    .badge-demo {
+      display: inline-block; padding: .2rem .55rem; border-radius: 4px;
+      font-size: .78rem; font-weight: 600;
+    }
+    .badge-red    { background: #fee2e2; color: #991b1b; }
+    .badge-yellow { background: #fef9c3; color: #854d0e; }
+    .badge-green  { background: #dcfce7; color: #166534; }
+    .badge-blue   { background: #dbeafe; color: #1d4ed8; }
+    .badge-gray   { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+
+    footer {
+      border-top: 1px solid var(--border); padding: 2rem;
+      display: flex; justify-content: space-between; align-items: center;
+      flex-wrap: wrap; gap: 1rem; color: var(--gray); font-size: .85rem;
+    }
+    footer a { color: var(--gray); }
+
+    @media (max-width: 768px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar-nav { display: none; }
+      .content { padding: 2rem 1.25rem 4rem; }
+      nav { padding: 1rem; }
+      .nav-links a:not(.btn-nav) { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-brand" href="index.html">
+    <div class="it-badge">IT</div>
+    Inventory Tracker
+  </a>
+  <div class="nav-links">
+    <a href="index.html#features">Features</a>
+    <a href="user-guide.html" style="color:var(--blue);font-weight:600">User Guide</a>
+    <a href="https://github.com/JTCozart/inventory-tracker" target="_blank" rel="noopener noreferrer">GitHub</a>
+    <a href="https://github.com/JTCozart/inventory-tracker/releases/latest" class="btn-nav" target="_blank" rel="noopener noreferrer">
+      <i class="fa-solid fa-download"></i> Download
+    </a>
+  </div>
+</nav>
+
+<div class="page-hero">
+  <h1>User Guide</h1>
+  <p>Everything you need to know about using Inventory Tracker day to day.</p>
+</div>
+
+<div class="layout">
+
+  <!-- Sidebar TOC -->
+  <nav class="sidebar-nav" aria-label="Table of contents">
+    <ul>
+      <li class="section-label">Getting Started</li>
+      <li><a href="#installation">Installation</a></li>
+      <li><a href="#first-login">First Login</a></li>
+
+      <li class="section-label">Inventory</li>
+      <li><a href="#item-types">Item Types</a></li>
+      <li><a href="#categories">Categories</a></li>
+      <li><a href="#adding-items">Adding Items</a></li>
+      <li><a href="#editing-items">Editing Items</a></li>
+      <li><a href="#expiry-dates">Expiry Dates</a></li>
+
+      <li class="section-label">Operations</li>
+      <li><a href="#checkout">Check Out &amp; Check In</a></li>
+      <li><a href="#consumables">Consumables</a></li>
+      <li><a href="#barcode-scanning">Barcode Scanning</a></li>
+      <li><a href="#csv">CSV Import &amp; Export</a></li>
+
+      <li class="section-label">Reports</li>
+      <li><a href="#reports">All Reports</a></li>
+
+      <li class="section-label">Settings</li>
+      <li><a href="#users">User Management</a></li>
+      <li><a href="#remote-access">Remote Access</a></li>
+      <li><a href="#updates">Updates</a></li>
+
+      <li class="section-label">Reference</li>
+      <li><a href="#tray">Tray Icon</a></li>
+      <li><a href="#roles">Role Reference</a></li>
+      <li><a href="#status-badges">Status Badges</a></li>
+    </ul>
+  </nav>
+
+  <!-- Main content -->
+  <main class="content">
+
+    <section id="installation">
+      <h2><i class="fa-solid fa-download"></i> Installation</h2>
+      <ol>
+        <li>Download <code>InventoryTracker-Setup-&lt;version&gt;.exe</code> from the <a href="https://github.com/JTCozart/inventory-tracker/releases/latest" target="_blank">latest release</a>.</li>
+        <li>Run the installer as <strong>Administrator</strong>.</li>
+        <li>The installer will:
+          <ul>
+            <li>Stop any existing running instance</li>
+            <li>Copy application files to <code>Program Files\InventoryTracker</code></li>
+            <li>Register a Windows service (<code>InventoryTracker</code>) set to auto-start at boot</li>
+            <li>Add the tray companion to Windows startup</li>
+            <li>Launch the tray companion immediately</li>
+          </ul>
+        </li>
+      </ol>
+      <div class="callout">
+        <i class="fa-solid fa-circle-info"></i>
+        <strong>System requirements:</strong> Windows 10 version 1803 or later (x64). OpenSSH Client is required only for Serveo remote access (built in on Windows 10 1809+).
+      </div>
+      <h3>Upgrading</h3>
+      <p>Run the new installer over the existing installation. It stops the service, replaces the files, and restarts automatically. Your database and settings are preserved.</p>
+      <h3>Uninstalling</h3>
+      <p>Use <strong>Add or Remove Programs</strong>. You will be asked whether to delete the database and settings — choose No to keep your data for a future reinstall.</p>
+    </section>
+
+    <section id="first-login">
+      <h2><i class="fa-solid fa-key"></i> First Login</h2>
+      <p>Open <strong>http://localhost:5050</strong> in a browser, or double-click the tray icon. You will see a one-time setup page — create your admin username and password (minimum 8 characters). This page disappears permanently once an account is created.</p>
+      <p>To share access with your team, create additional user accounts in <strong>Settings → User Management</strong>.</p>
+    </section>
+
+    <section id="item-types">
+      <h2><i class="fa-solid fa-boxes-stacked"></i> Item Types</h2>
+      <p>Every item is one of two types — chosen at creation and <strong>cannot be changed afterwards</strong>.</p>
+      <table>
+        <tr><th>Type</th><th>Use for</th><th>Operations</th></tr>
+        <tr>
+          <td><strong>Reusable</strong></td>
+          <td>Equipment that leaves and comes back: cameras, laptops, tools, keys</td>
+          <td>Check Out, Check In, Mark Lost</td>
+        </tr>
+        <tr>
+          <td><strong>Consumable</strong></td>
+          <td>Stock that is used up: batteries, paper, cleaning supplies</td>
+          <td>Consume (decrement), Restock (increment)</td>
+        </tr>
+      </table>
+      <p>The <strong>Available Quantity</strong> for Reusable items is: Total − Checked Out − Lost. For Consumables it equals Total Quantity directly.</p>
+    </section>
+
+    <section id="categories">
+      <h2><i class="fa-solid fa-tags"></i> Categories</h2>
+      <p>Categories let you group items (e.g. Tools, Electronics, Safety) and filter the inventory list with one click. Each category can have an optional color for quick visual identification.</p>
+      <h3>Creating categories</h3>
+      <ol>
+        <li>Go to <strong>Settings → Categories</strong></li>
+        <li>Click <strong>Add Category</strong></li>
+        <li>Enter a name and choose a color from the swatch palette</li>
+        <li>Click <strong>Create</strong></li>
+      </ol>
+      <h3>Assigning a category</h3>
+      <p>Select a category from the <strong>Category</strong> dropdown when creating or editing an item. Choose <em>None</em> to leave an item uncategorized.</p>
+      <h3>Filtering by category</h3>
+      <p>On the Inventory page, use the <strong>All Categories</strong> dropdown in the search bar to filter the list to a single category.</p>
+      <div class="callout">
+        <i class="fa-solid fa-circle-info"></i>
+        Deleting a category sets all items in that category to <em>None</em> — it does not delete the items.
+      </div>
+    </section>
+
+    <section id="adding-items">
+      <h2><i class="fa-solid fa-plus"></i> Adding Items</h2>
+      <p>Click <strong>Inventory</strong> in the sidebar, then <strong>Add Item</strong>.</p>
+      <table>
+        <tr><th>Field</th><th>Required</th><th>Notes</th></tr>
+        <tr><td>Name</td><td>Yes</td><td>Displayed everywhere; used in search</td></tr>
+        <tr><td>Item Type</td><td>Yes</td><td>Reusable or Consumable — cannot be changed after creation</td></tr>
+        <tr><td>Quantity</td><td>Yes</td><td>Total units you own</td></tr>
+        <tr><td>Minimum Quantity</td><td>No</td><td>Triggers Low Stock warning on dashboard when available stock reaches this level</td></tr>
+        <tr><td>SKU / Barcode</td><td>No</td><td>Scan with camera or type; used for barcode labels and scan-to-checkout</td></tr>
+        <tr><td>Location</td><td>No</td><td>Shelf, bin, room — appears in reports and search results</td></tr>
+        <tr><td>Category</td><td>No</td><td>Color-coded group (create categories first in Settings)</td></tr>
+        <tr><td>Expiry Date</td><td>No</td><td>Shows Expired / Expiring Soon badges; drives the Expiry report</td></tr>
+        <tr><td>Scan Warning</td><td>No</td><td>Message shown in a yellow alert whenever this item is scanned</td></tr>
+        <tr><td>Description</td><td>No</td><td>Free-text notes visible in the item detail panel</td></tr>
+      </table>
+    </section>
+
+    <section id="editing-items">
+      <h2><i class="fa-solid fa-pencil"></i> Editing Items</h2>
+      <p>Click an item row in the inventory list to open the <strong>detail panel</strong>, then click the <strong>Edit</strong> button (pencil icon) to go to the full edit form. All fields except Item Type can be changed.</p>
+      <p>You can also edit Name, Quantity, Location, SKU, Minimum Quantity, and Scan Warning directly from the detail panel without leaving the page — changes save via the API instantly.</p>
+      <h3>Deleting items</h3>
+      <p>Click the trash icon on the item row and confirm. Deletion is permanent. Checkout history for the item is retained in the activity log.</p>
+    </section>
+
+    <section id="expiry-dates">
+      <h2><i class="fa-solid fa-calendar-xmark"></i> Expiry Dates</h2>
+      <p>Any item (Reusable or Consumable) can have an optional expiry date. When set, the item shows a badge in the inventory list:</p>
+      <ul>
+        <li><span class="badge-demo badge-red">Expired</span> — expiry date has passed</li>
+        <li><span class="badge-demo badge-yellow">Exp MMM D</span> — expiring within the next 30 days</li>
+        <li>Plain date text — expiry is more than 30 days away</li>
+      </ul>
+      <h3>Expiry report</h3>
+      <p>Go to <strong>Reports → Expiry</strong> to see a full breakdown:</p>
+      <ul>
+        <li><strong>Expired</strong> — all items past their expiry date, sorted oldest first</li>
+        <li><strong>Expiring within 90 days</strong> — sorted by date; items within 30 days are highlighted yellow, within 7 days shown in red</li>
+      </ul>
+      <h3>Setting expiry dates</h3>
+      <p>Add or update the expiry date on the <strong>Add Item</strong> or <strong>Edit Item</strong> form using the date picker. The field accepts any date; leave it blank for items that do not expire.</p>
+    </section>
+
+    <section id="checkout">
+      <h2><i class="fa-solid fa-box-arrow-up"></i> Check Out &amp; Check In</h2>
+      <p>Reusable items support check-out and check-in workflows.</p>
+      <h3>Checking out</h3>
+      <ol>
+        <li>Click an item row to open the detail panel</li>
+        <li>In the <strong>Check Out</strong> section, enter the person's name</li>
+        <li>Set the quantity (default 1) and optional notes</li>
+        <li>Click <strong>Check Out</strong></li>
+      </ol>
+      <p>The item's Available Quantity decreases immediately. The checkout record appears in <strong>Active Checkouts</strong> within the detail panel, showing the person's name and how many days the item has been out.</p>
+      <h3>Checking in</h3>
+      <ol>
+        <li>Open the item detail panel</li>
+        <li>Under <strong>Active Checkouts</strong>, find the record</li>
+        <li>Click <strong>Check In</strong></li>
+      </ol>
+      <h3>Marking as lost</h3>
+      <p>If an item is not returned, click <strong>Mark Lost</strong> on the checkout record. The quantity is permanently subtracted from the item's total and appears in the Lost Items report.</p>
+    </section>
+
+    <section id="consumables">
+      <h2><i class="fa-solid fa-box"></i> Consumables</h2>
+      <p>Consumable items track stock levels using Consume and Restock operations.</p>
+      <h3>Consuming stock</h3>
+      <ol>
+        <li>Click the item row to open the detail panel</li>
+        <li>Under <strong>Consume</strong>, enter the quantity used and optional notes</li>
+        <li>Click <strong>Consume</strong></li>
+      </ol>
+      <h3>Restocking</h3>
+      <ol>
+        <li>Click the item row to open the detail panel</li>
+        <li>Under <strong>Restock</strong>, enter the quantity added and optional notes</li>
+        <li>Click <strong>Restock</strong></li>
+      </ol>
+      <p>Both operations are recorded in the activity log with the user, quantity, and notes.</p>
+    </section>
+
+    <section id="barcode-scanning">
+      <h2><i class="fa-solid fa-camera"></i> Barcode Scanning</h2>
+      <p>Any device with a camera can scan barcodes to quickly look up and action items — no app install required. Access the web UI from any device on the same network (or via a tunnel for remote access).</p>
+      <h3>Scanning in the inventory list</h3>
+      <p>Click the scan icon next to the SKU field on the Add Item or Edit Item forms to scan a barcode directly into that field.</p>
+      <h3>Assigning SKUs</h3>
+      <p>Edit an item and scan or type a value into the <strong>SKU / Barcode</strong> field. Any barcode format supported by your device's camera works.</p>
+      <h3>Scan warnings</h3>
+      <p>If an item has a <strong>Scan Warning</strong> set (e.g. "Requires PPE", "Check expiry date"), a yellow alert is shown every time the item is scanned.</p>
+      <h3>Printing barcode labels</h3>
+      <ol>
+        <li>Ensure items have SKUs assigned</li>
+        <li>Go to <strong>Reports → Barcode Sheet</strong></li>
+        <li>Click <strong>Print</strong> — the page formats itself with one barcode per item in a label-friendly grid</li>
+      </ol>
+    </section>
+
+    <section id="csv">
+      <h2><i class="fa-solid fa-file-csv"></i> CSV Import &amp; Export</h2>
+      <h3>Exporting</h3>
+      <p>Go to <strong>Reports</strong> and click <strong>Export CSV</strong> (top right). A dated file is downloaded containing all items with all fields.</p>
+      <h3>Importing</h3>
+      <ol>
+        <li>Go to <strong>Inventory</strong> and click <strong>Import</strong></li>
+        <li>Prepare a CSV file. The first row must be the header:</li>
+      </ol>
+      <pre><code>Type,Name,Quantity,MinimumQuantity,SKU,Location,Category,ExpiryDate,Description,ScanWarning</code></pre>
+      <table>
+        <tr><th>Column</th><th>Required</th><th>Notes</th></tr>
+        <tr><td>Type</td><td>Yes</td><td><code>Reusable</code> or <code>Consumable</code> (case-insensitive)</td></tr>
+        <tr><td>Name</td><td>Yes</td><td>Item name</td></tr>
+        <tr><td>Quantity</td><td>Yes</td><td>Non-negative integer</td></tr>
+        <tr><td>MinimumQuantity</td><td>No</td><td>Defaults to 0</td></tr>
+        <tr><td>SKU</td><td>No</td><td>Leave blank to skip</td></tr>
+        <tr><td>Location</td><td>No</td><td>Free text</td></tr>
+        <tr><td>Category</td><td>No</td><td>Category name — created automatically if it doesn't exist</td></tr>
+        <tr><td>ExpiryDate</td><td>No</td><td>Format: <code>YYYY-MM-DD</code> (e.g. <code>2027-06-01</code>)</td></tr>
+        <tr><td>Description</td><td>No</td><td>Free text</td></tr>
+        <tr><td>ScanWarning</td><td>No</td><td>Free text</td></tr>
+      </table>
+      <p>After upload, a summary shows how many rows were imported and any rows that failed (with row number and reason).</p>
+      <div class="callout">
+        <i class="fa-solid fa-circle-info"></i>
+        Wrap field values in double-quotes if they contain commas. Use <code>""</code> to escape a literal quote within a quoted field.
+      </div>
+    </section>
+
+    <section id="reports">
+      <h2><i class="fa-solid fa-chart-bar"></i> Reports</h2>
+      <p>Go to <strong>Reports</strong> in the sidebar. All reports support printing via the <strong>Print</strong> button. The <strong>Export CSV</strong> button (top right) downloads all items regardless of which tab is active.</p>
+      <table>
+        <tr><th>Tab</th><th>Shows</th></tr>
+        <tr><td><strong>Stock Levels</strong></td><td>All items with quantities, availability, and expiry. Filterable by type and low-stock flag.</td></tr>
+        <tr><td><strong>Checked Out</strong></td><td>All active checkout records — who has what, for how long.</td></tr>
+        <tr><td><strong>Lost Items</strong></td><td>Items marked lost, with the last person who checked them out.</td></tr>
+        <tr><td><strong>Take Inventory</strong></td><td>Printable checklist for physical stock counts — SKU, location, expected quantity, and a blank field for actual count.</td></tr>
+        <tr><td><strong>Expiry</strong></td><td>Expired items and items expiring within 90 days, grouped and color-coded by urgency.</td></tr>
+        <tr><td><strong>Barcode Sheet</strong></td><td>Printable barcode grid for all items that have a SKU.</td></tr>
+        <tr><td><strong>Activity Log</strong></td><td>Full audit trail. Filter by date range and action type. Timestamps shown as date.</td></tr>
+      </table>
+    </section>
+
+    <section id="users">
+      <h2><i class="fa-solid fa-users"></i> User Management</h2>
+      <p>Go to <strong>Settings → User Management</strong> (Admin only).</p>
+      <h3>Creating users</h3>
+      <p>Click <strong>Add User</strong> and fill in the username, optional name/email, password, and role.</p>
+      <h3>Editing users</h3>
+      <p>Click the pencil icon on any user row. You can change their name, email, role, and password. Leave the password field blank to keep the existing password.</p>
+      <h3>Suspending users</h3>
+      <p>Click the pause icon to suspend a user. Suspended users cannot log in but their history is preserved. Click the play icon to reactivate.</p>
+      <h3>Roles</h3>
+      <table>
+        <tr><th>Role</th><th>Can do</th></tr>
+        <tr><td><strong>Admin</strong></td><td>Everything — manage users, settings, categories, and all inventory operations</td></tr>
+        <tr><td><strong>Manager</strong></td><td>All inventory operations (checkout, consume, restock, add/edit/delete items, manage categories); run all reports; cannot manage users or remote access settings</td></tr>
+        <tr><td><strong>Viewer</strong></td><td>View inventory and reports only — no write operations</td></tr>
+      </table>
+    </section>
+
+    <section id="remote-access">
+      <h2><i class="fa-solid fa-globe"></i> Remote Access</h2>
+      <p>Go to <strong>Settings → Remote Access</strong> (Admin only) to configure tunnels. Once active, the public URL is shown in the tray icon menu and in the settings panel.</p>
+
+      <h3>Serveo (recommended)</h3>
+      <p>Serveo gives you a <strong>free persistent subdomain</strong> — the same URL every time you start the tunnel. Requires a free Serveo account.</p>
+      <p><strong>One-time setup:</strong></p>
+      <ol>
+        <li>Click <strong>Generate SSH Key</strong>. The app generates a key pair and stores it securely in the database.</li>
+        <li>Copy the public key using the clipboard button.</li>
+        <li>Open <a href="https://console.serveo.net" target="_blank">console.serveo.net</a>, sign up, and add the public key under <strong>SSH Keys</strong>.</li>
+        <li>Choose a subdomain name (e.g. <code>myinventory</code>) and click <strong>Save Subdomain</strong>. Your URL will be <code>https://myinventory.serveousercontent.com</code>.</li>
+        <li>Click the green <strong>Serveo</strong> button to start. The tunnel status updates to <strong>Running</strong> when ready.</li>
+      </ol>
+      <div class="callout warn">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        Free Serveo accounts show a visitor interstitial page. Upgrade to <strong>Serveo Pro ($6/month)</strong> to remove it.
+      </div>
+      <p>To start Serveo automatically on service restart, go to <strong>Auto-start</strong> in the accordion and select <strong>Serveo</strong>.</p>
+
+      <h3>Quick Tunnel (Cloudflare)</h3>
+      <p>Zero configuration — click <strong>Quick Tunnel</strong> and a temporary HTTPS URL is generated instantly via Cloudflare. No account needed. The URL <strong>changes every time</strong> the tunnel is started, so it is suitable for one-off sharing only.</p>
+
+      <h3>localtunnel</h3>
+      <p>Enter a subdomain name to claim <code>yourname.loca.lt</code>. Free but shows an interstitial page to visitors (a known limitation of the loca.lt service). First-come-first-served subdomain — not guaranteed to be available.</p>
+
+      <h3>Stopping a tunnel</h3>
+      <p>Click <strong>Stop Tunnel</strong> in the status card, or simply stop the Windows service.</p>
+    </section>
+
+    <section id="updates">
+      <h2><i class="fa-solid fa-arrow-up-circle"></i> Updates</h2>
+      <p>Inventory Tracker checks for new releases on GitHub automatically — once at startup (after a 15-second delay) and every 24 hours thereafter.</p>
+      <p>When a newer version is available, a small notice appears <strong>above the logout button</strong> in the sidebar with the new version number and a link to the GitHub release. The notice persists until the app is updated — it does not need to be dismissed.</p>
+      <p>To update, download and run the new installer. It stops the running service, replaces the files, and restarts — typically takes under 30 seconds.</p>
+      <p>The current version is shown in <strong>Settings → App Info</strong>.</p>
+    </section>
+
+    <section id="tray">
+      <h2><i class="fa-solid fa-desktop"></i> Tray Icon</h2>
+      <p>The tray companion runs separately from the service. It shows the service status via its icon color and provides quick access to common actions.</p>
+      <table>
+        <tr><th>Action</th><th>What it does</th></tr>
+        <tr><td>Double-click icon</td><td>Open the web UI in your default browser</td></tr>
+        <tr><td>Open Inventory Tracker</td><td>Open the web UI</td></tr>
+        <tr><td>Local: http://...</td><td>Show the local network address — click to copy to clipboard</td></tr>
+        <tr><td>Tunnel: ...</td><td>Show the active tunnel URL — click to copy to clipboard</td></tr>
+        <tr><td>Reset Admin Password</td><td>Reset the admin account password without logging in (useful if locked out)</td></tr>
+        <tr><td>Exit</td><td>Close the tray companion — the Windows service keeps running</td></tr>
+      </table>
+      <div class="callout">
+        <i class="fa-solid fa-circle-info"></i>
+        Closing the tray companion does <strong>not</strong> stop the web server. The service continues running in the background and is still accessible at its URL.
+      </div>
+    </section>
+
+    <section id="roles">
+      <h2><i class="fa-solid fa-shield"></i> Role Reference</h2>
+      <table>
+        <tr><th>Action</th><th>Admin</th><th>Manager</th><th>Viewer</th></tr>
+        <tr><td>View inventory &amp; reports</td><td>✓</td><td>✓</td><td>✓</td></tr>
+        <tr><td>Check out / check in items</td><td>✓</td><td>✓</td><td></td></tr>
+        <tr><td>Consume / restock items</td><td>✓</td><td>✓</td><td></td></tr>
+        <tr><td>Add / edit / delete items</td><td>✓</td><td>✓</td><td></td></tr>
+        <tr><td>Import / export CSV</td><td>✓</td><td>✓</td><td>✓ (export only)</td></tr>
+        <tr><td>Manage categories</td><td>✓</td><td>✓</td><td></td></tr>
+        <tr><td>Manage users</td><td>✓</td><td></td><td></td></tr>
+        <tr><td>Configure remote access</td><td>✓</td><td></td><td></td></tr>
+        <tr><td>Change own password</td><td>✓</td><td>✓</td><td>✓</td></tr>
+      </table>
+    </section>
+
+    <section id="status-badges">
+      <h2><i class="fa-solid fa-circle-half-stroke"></i> Status Badges</h2>
+      <p>These badges appear on item rows in the Inventory list and Stock Levels report.</p>
+      <table>
+        <tr><th>Badge</th><th>Meaning</th></tr>
+        <tr><td><span class="badge-demo badge-green">OK</span></td><td>Available quantity is above the minimum threshold</td></tr>
+        <tr><td><span class="badge-demo badge-yellow">Low Stock</span></td><td>Available quantity is at or below the minimum quantity</td></tr>
+        <tr><td><span class="badge-demo badge-blue">Out</span></td><td>One or more units are currently checked out (Reusable)</td></tr>
+        <tr><td><span class="badge-demo badge-red">Lost</span></td><td>One or more units have been marked lost</td></tr>
+        <tr><td><span class="badge-demo badge-red">Expired</span></td><td>Expiry date has passed</td></tr>
+        <tr><td><span class="badge-demo badge-yellow">Exp MMM D</span></td><td>Expiry date is within the next 30 days</td></tr>
+        <tr><td><span class="badge-demo badge-gray">Reusable</span></td><td>Item type indicator</td></tr>
+        <tr><td><span class="badge-demo badge-gray">Consumable</span></td><td>Item type indicator</td></tr>
+      </table>
+    </section>
+
+  </main>
+</div>
+
+<footer>
+  <div>
+    <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.25rem">
+      <div class="it-badge" style="width:24px;height:24px;font-size:.65rem;border-radius:5px">IT</div>
+      <strong style="color:#0f172a">Inventory Tracker</strong>
+    </div>
+    <span>MIT License &middot; &copy; 2026 Jake Cozart</span>
+  </div>
+  <div style="display:flex;gap:1.5rem">
+    <a href="index.html"><i class="fa-solid fa-house"></i> Home</a>
+    <a href="https://github.com/JTCozart/inventory-tracker" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-github"></i> GitHub</a>
+    <a href="https://github.com/JTCozart/inventory-tracker/releases" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-tag"></i> Releases</a>
+    <a href="https://github.com/JTCozart/inventory-tracker/issues" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-circle-exclamation"></i> Issues</a>
+  </div>
+</footer>
+
+</body>
+</html>
