@@ -47,6 +47,11 @@
                             <i class="bi bi-sliders me-2"></i> Settings
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a href="/UserGuide" class="nav-link @(ViewData["ActivePage"]?.ToString() == "UserGuide" ? "active" : "")">
+                            <i class="bi bi-book me-2"></i> User Guide
+                        </a>
+                    </li>
                 </ul>
                 <hr class="sidebar-divider" />
                 @if (UpdateInfo.HasUpdate)

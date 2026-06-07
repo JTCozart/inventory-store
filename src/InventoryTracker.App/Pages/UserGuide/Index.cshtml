@@ -1,0 +1,29 @@
+@page
+@{
+    ViewData["Title"] = "User Guide";
+    ViewData["ActivePage"] = "UserGuide";
+}
+
+<style>
+    /* Pull the iframe flush to the content area edges */
+    .user-guide-frame {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        width: 100%;
+        height: 100%;
+        border: none;
+        display: block;
+    }
+    /* On large screens the sidebar is present — offset accordingly */
+    @@media (min-width: 992px) {
+        .user-guide-frame {
+            left: 240px; /* sidebar width */
+        }
+    }
+</style>
+
+<iframe class="user-guide-frame"
+        src="https://jtcozart.github.io/inventory-tracker/user-guide.html"
+        title="User Guide"
+        loading="lazy">
+</iframe>
