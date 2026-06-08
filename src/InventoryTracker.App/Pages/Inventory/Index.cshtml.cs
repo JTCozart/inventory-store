@@ -140,14 +140,14 @@ public class IndexModel : PageModel
     }
 
     public async Task<IActionResult> OnPostCheckOutItemAsync(
-        int itemId, string checkedOutBy, int quantity, string? notes)
+        int itemId, string checkedOutBy, int quantity, string? notes, int? clientId = null)
     {
         if (!CanWrite()) return new JsonResult(new { success = false, error = "Insufficient permissions." }) { StatusCode = 403 };
         var (uid, uname) = GetUser();
         try
         {
             var record = await _checkoutService.CheckOutAsync(
-                new CheckOutItemDto(itemId, checkedOutBy, quantity, notes), uid, uname);
+                new CheckOutItemDto(itemId, checkedOutBy, quantity, notes, clientId), uid, uname);
             return new JsonResult(new { success = true, record }, AppJsonOptions.Web);
         }
         catch (Exception ex)

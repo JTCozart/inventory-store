@@ -197,15 +197,24 @@ function showViewMode() {
 }
 
 async function handleCheckOut() {
-    const by  = document.getElementById('co-by').value.trim();
-    const qty = parseInt(document.getElementById('co-qty').value) || 1;
-    const notes = document.getElementById('co-notes').value.trim();
+    const by       = document.getElementById('co-by').value.trim();
+    const clientId = parseInt(document.getElementById('co-client-id').value) || null;
+    const qty      = parseInt(document.getElementById('co-qty').value) || 1;
+    const notes    = document.getElementById('co-notes').value.trim();
+    const err      = document.getElementById('co-client-err');
 
-    if (!by) { showAlert('modal-alert', 'Please enter the name of the person checking out.', 'warning'); return; }
+    if (!by) {
+        err.classList.remove('d-none');
+        document.getElementById('co-by').focus();
+        return;
+    }
+    err.classList.add('d-none');
 
-    const res = await apiPost('CheckOutItem', { itemId: _currentItemId, checkedOutBy: by, quantity: qty, notes });
+    const res = await apiPost('CheckOutItem', { itemId: _currentItemId, checkedOutBy: by, clientId, quantity: qty, notes });
     if (res.success) {
         document.getElementById('co-by').value = '';
+        document.getElementById('co-client-id').value = '';
+        document.getElementById('co-client-dd').classList.add('d-none');
         document.getElementById('co-notes').value = '';
         document.getElementById('co-qty').value = '1';
         showAlert('modal-alert', 'Checked out successfully.', 'success');
@@ -323,6 +332,63 @@ function esc(str) {
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;');
 }
+
+// ── Client typeahead for checkout ─────────────────────────────────────────────
+var _coClientTimer = null;
+
+window.onCoClientInput = function () {
+    clearTimeout(_coClientTimer);
+    document.getElementById('co-client-id').value = '';
+    var q = (document.getElementById('co-by').value || '').trim();
+    if (q.length < 1) { hideCoClientDd(); return; }
+    _coClientTimer = setTimeout(function () {
+        fetch('/api/clients/search?q=' + encodeURIComponent(q), { credentials: 'include' })
+            .then(function (r) { return r.json(); })
+            .then(function (clients) { showCoClientDd(clients, q); })
+            .catch(function () { hideCoClientDd(); });
+    }, 200);
+};
+
+function showCoClientDd(clients, query) {
+    var dd = document.getElementById('co-client-dd');
+    var escH = function (s) { return s == null ? '' : String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); };
+    var rows = (clients || []).map(function (c) {
+        return '<div class="px-2 py-1" style="cursor:pointer" ' +
+            'onmousedown="selectCoClient(' + c.id + ',\'' + escH(c.displayName).replace(/'/g,"&#39;") + '\')"' +
+            'onmouseover="this.classList.add(\'bg-body-secondary\')" onmouseout="this.classList.remove(\'bg-body-secondary\')">' +
+            escH(c.displayName) + (c.phone ? '<span class="text-muted ms-2">' + escH(c.phone) + '</span>' : '') +
+            '</div>';
+    });
+    rows.push('<div class="px-2 py-1 text-primary" style="cursor:pointer;border-top:1px solid var(--bs-border-color)" ' +
+        'onmousedown="quickCreateCoClient(\'' + escH(query).replace(/'/g,"&#39;") + '\')"' +
+        'onmouseover="this.classList.add(\'bg-body-secondary\')" onmouseout="this.classList.remove(\'bg-body-secondary\')">' +
+        '<i class="bi bi-person-plus me-1"></i>Create "' + escH(query) + '"</div>');
+    dd.innerHTML = rows.join('');
+    dd.classList.remove('d-none');
+}
+
+function hideCoClientDd() {
+    document.getElementById('co-client-dd').classList.add('d-none');
+}
+
+window.selectCoClient = function (id, name) {
+    document.getElementById('co-client-id').value = id;
+    document.getElementById('co-by').value = name;
+    hideCoClientDd();
+};
+
+window.quickCreateCoClient = function (name) {
+    hideCoClientDd();
+    fetch('/api/clients/quick-create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ name: name })
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (c) { selectCoClient(c.id, c.displayName); })
+    .catch(function () {});
+};
 
 // ── Edit item modal ───────────────────────────────────────────────────────────
 
