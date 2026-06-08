@@ -56,7 +56,11 @@ function populateView(s) {
     typeBadge.className = `badge ms-2 ${isReusable ? 'bg-info' : 'bg-secondary'}`;
     const stockBadge = document.getElementById('modal-stock-badge');
     stockBadge.classList.toggle('d-none', !s.isLowStock);
-    if (_canWrite) document.getElementById('btn-switch-edit').classList.remove('d-none');
+    if (_canWrite) {
+        var editBtn = document.getElementById('btn-switch-edit');
+        editBtn.href = '/Inventory/Edit?id=' + s.id;
+        editBtn.classList.remove('d-none');
+    }
 
     // Stats
     document.getElementById('modal-stat-qty').textContent = s.quantity;
@@ -107,23 +111,6 @@ function populateView(s) {
     if (isReusable) buildActiveCheckouts(s.activeCheckouts || []);
 
 
-    // Pre-fill edit form
-    document.getElementById('edit-id').value = s.id;
-    document.getElementById('edit-name').value = s.name;
-    document.getElementById('edit-quantity').value = s.quantity;
-    document.getElementById('edit-min-qty').value = s.minimumQuantity;
-    document.getElementById('edit-location').value = s.location || '';
-    document.getElementById('edit-sku').value = s.sku || '';
-    document.getElementById('edit-scan-warning').value = s.scanWarning || '';
-    document.getElementById('edit-description').value = s.description || '';
-
-    const typeDisplay = document.getElementById('edit-type-display');
-    if (s.itemType === 'Reusable') {
-        typeDisplay.innerHTML = '<span class="badge bg-info"><i class="bi bi-arrow-repeat me-1"></i>Reusable</span>';
-    } else {
-        typeDisplay.innerHTML = '<span class="badge bg-secondary"><i class="bi bi-box me-1"></i>Consumable</span>';
-    }
-
     document.getElementById('modal-content').classList.remove('d-none');
 }
 
@@ -163,22 +150,9 @@ function buildActiveCheckouts(checkouts) {
     }).join('');
 }
 
-function showViewMode(focus = true) {
+function showViewMode() {
     document.getElementById('modal-view-body').classList.remove('d-none');
-    document.getElementById('modal-edit-body').classList.add('d-none');
     document.getElementById('modal-view-footer').classList.add('d-none');
-    document.getElementById('modal-edit-footer').classList.add('d-none');
-    if (_canWrite) document.getElementById('btn-switch-edit').classList.remove('d-none');
-    clearAlert('edit-alert');
-}
-
-function showEditMode() {
-    document.getElementById('modal-view-body').classList.add('d-none');
-    document.getElementById('modal-edit-body').classList.remove('d-none');
-    document.getElementById('modal-view-footer').classList.add('d-none');
-    document.getElementById('modal-edit-footer').classList.remove('d-none');
-    document.getElementById('btn-switch-edit').classList.add('d-none');
-    clearAlert('modal-alert');
 }
 
 async function handleCheckOut() {
@@ -253,30 +227,6 @@ async function handleRestock(suffix) {
     }
 }
 
-async function handleSaveEdit() {
-    const id              = parseInt(document.getElementById('edit-id').value);
-    const name            = document.getElementById('edit-name').value.trim();
-    const quantity        = parseInt(document.getElementById('edit-quantity').value) || 0;
-    const minimumQuantity = parseInt(document.getElementById('edit-min-qty').value) || 0;
-    const location        = document.getElementById('edit-location').value.trim();
-    const sku             = document.getElementById('edit-sku').value.trim();
-    const scanWarning     = document.getElementById('edit-scan-warning').value.trim();
-    const description     = document.getElementById('edit-description').value.trim();
-
-    if (!name) { showAlert('edit-alert', 'Name is required.', 'warning'); return; }
-
-    const res = await apiPost('UpdateItem', {
-        id, name, quantity, description, location, sku, minimumQuantity, scanWarning
-    });
-    if (res.success) {
-        _needsReload = true;
-        showAlert('modal-alert', 'Item updated.', 'success');
-        showViewMode();
-        await refreshModal();
-    } else {
-        showAlert('edit-alert', res.error || 'Save failed.', 'danger');
-    }
-}
 
 async function apiPost(handler, data) {
     const token = document.getElementById('af-token').value;

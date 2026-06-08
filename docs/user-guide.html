@@ -1,10 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>User Guide | Inventory Tracker</title>
-  <meta name="description" content="Complete user guide for Inventory Tracker — item management, checkout tracking, categories, expiry dates, CSV import/export, remote access, public view, dark mode, database backup/restore, and more." />
+  <meta name="description" content="Complete user guide for Inventory Tracker - item management, checkout tracking, categories, expiry dates, CSV import/export, remote access, public view, dark mode, database backup/restore, and more." />
   <meta name="robots" content="index, follow" />
   <link rel="canonical" href="https://jtcozart.github.io/inventory-tracker/user-guide.html" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -83,19 +83,20 @@
     .layout { display: grid; grid-template-columns: 240px 1fr; gap: 0; max-width: 1200px; margin: 0 auto; }
 
     .sidebar-nav {
-      position: sticky; top: 65px; height: calc(100vh - 65px); overflow-y: auto;
-      border-right: 1px solid var(--border); padding: 2rem 1.5rem;
+      position: sticky; top: 65px; height: calc(100vh - 75px); overflow-y: auto;
+      overscroll-behavior: contain;
+      border-right: 1px solid var(--border); padding: 1rem 1.25rem;
     }
     .sidebar-nav ul { list-style: none; }
-    .sidebar-nav li { margin-bottom: .1rem; }
+    .sidebar-nav li { margin-bottom: .05rem; }
     .sidebar-nav a {
-      display: block; padding: .35rem .6rem; border-radius: 6px;
-      color: var(--gray); font-size: .88rem; font-weight: 500;
+      display: block; padding: .28rem .5rem; border-radius: 6px;
+      color: var(--gray); font-size: .85rem; font-weight: 500;
     }
     .sidebar-nav a:hover { color: var(--blue); background: #eff6ff; text-decoration: none; }
     .sidebar-nav .section-label {
-      font-size: .72rem; font-weight: 700; text-transform: uppercase;
-      letter-spacing: .08em; color: #94a3b8; margin: 1.25rem 0 .4rem .6rem;
+      font-size: .7rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .08em; color: #94a3b8; margin: .8rem 0 .25rem .5rem;
     }
 
     .content { padding: 3rem 3rem 5rem; }
@@ -257,18 +258,18 @@
       <h3>Upgrading</h3>
       <p>Run the new installer over the existing installation. It stops the service, replaces the files, and restarts automatically. Your database and settings are preserved.</p>
       <h3>Uninstalling</h3>
-      <p>Use <strong>Add or Remove Programs</strong>. You will be asked whether to delete the database and settings — choose No to keep your data for a future reinstall.</p>
+      <p>Use <strong>Add or Remove Programs</strong>. You will be asked whether to delete the database and settings - choose No to keep your data for a future reinstall.</p>
     </section>
 
     <section id="first-login">
       <h2><i class="fa-solid fa-key"></i> First Login</h2>
-      <p>Open <strong>http://localhost:5050</strong> in a browser, or double-click the tray icon. You will see a one-time setup page — create your admin username and password (minimum 8 characters). This page disappears permanently once an account is created.</p>
+      <p>Open <strong>http://localhost:5050</strong> in a browser, or double-click the tray icon. You will see a one-time setup page - create your admin username and password (minimum 8 characters). This page disappears permanently once an account is created.</p>
       <p>To share access with your team, create additional user accounts in <strong>Settings → User Management</strong>.</p>
     </section>
 
     <section id="item-types">
       <h2><i class="fa-solid fa-boxes-stacked"></i> Item Types</h2>
-      <p>Every item is one of two types — chosen at creation and <strong>cannot be changed afterwards</strong>.</p>
+      <p>Every item is one of two types - chosen at creation and <strong>cannot be changed afterwards</strong>.</p>
       <table>
         <tr><th>Type</th><th>Use for</th><th>Operations</th></tr>
         <tr>
@@ -287,7 +288,7 @@
 
     <section id="categories">
       <h2><i class="fa-solid fa-tags"></i> Categories</h2>
-      <p>Categories let you group items (e.g. Tools, Electronics, Safety) and filter the inventory list with one click. Each category can have an optional color for quick visual identification. Managing categories requires Admin or Manager role — the Categories tab in Settings is not shown to Viewers.</p>
+      <p>Categories let you group items (e.g. Tools, Electronics, Safety) and filter the inventory list with one click. Each category can have an optional color for quick visual identification. Managing categories requires Admin or Manager role - the Categories tab in Settings is not shown to Viewers.</p>
       <h3>Creating categories</h3>
       <ol>
         <li>Go to <strong>Settings → Categories</strong></li>
@@ -298,24 +299,24 @@
       <h3>Assigning a category</h3>
       <p>Select a category from the <strong>Category</strong> dropdown when creating or editing an item. Choose <em>None</em> to leave an item uncategorized.</p>
       <h3>Filtering by category</h3>
-      <p>On the Inventory page, use the <strong>All Categories</strong> dropdown in the search bar to filter the list to a single category.</p>
+      <p>On the Inventory page, use the <strong>All Categories</strong> dropdown in the search bar to filter the list to a single category. When a filter is active the item count below the table changes to <em>Showing X of Y items</em> with a <strong>Clear filters</strong> link to reset in one click.</p>
       <div class="callout">
         <i class="fa-solid fa-circle-info"></i>
-        Deleting a category sets all items in that category to <em>None</em> — it does not delete the items.
+        Deleting a category sets all items in that category to <em>None</em> - it does not delete the items.
       </div>
     </section>
 
     <section id="adding-items">
       <h2><i class="fa-solid fa-plus"></i> Adding Items</h2>
-      <p>Click <strong>Inventory</strong> in the sidebar, then <strong>Add Item</strong>. Requires Admin or Manager role — the button is not shown to Viewers.</p>
+      <p>Click <strong>Inventory</strong> in the sidebar, then <strong>Add Item</strong>. Requires Admin or Manager role - the button is not shown to Viewers.</p>
       <table>
         <tr><th>Field</th><th>Required</th><th>Notes</th></tr>
         <tr><td>Name</td><td>Yes</td><td>Displayed everywhere; used in search</td></tr>
-        <tr><td>Item Type</td><td>Yes</td><td>Reusable or Consumable — cannot be changed after creation</td></tr>
+        <tr><td>Item Type</td><td>Yes</td><td>Reusable or Consumable - cannot be changed after creation</td></tr>
         <tr><td>Quantity</td><td>Yes</td><td>Total units you own</td></tr>
         <tr><td>Minimum Quantity</td><td>No</td><td>Triggers Low Stock warning on dashboard when available stock reaches this level</td></tr>
         <tr><td>SKU / Barcode</td><td>No</td><td>Scan with camera or type; used for barcode labels and scan-to-checkout</td></tr>
-        <tr><td>Location</td><td>No</td><td>Shelf, bin, room — appears in reports and search results</td></tr>
+        <tr><td>Location</td><td>No</td><td>Shelf, bin, room - appears in reports and search results</td></tr>
         <tr><td>Category</td><td>No</td><td>Color-coded group (create categories first in Settings)</td></tr>
         <tr><td>Expiry Date</td><td>No</td><td>Shows Expired / Expiring Soon badges; drives the Expiry report</td></tr>
         <tr><td>Scan Warning</td><td>No</td><td>Message shown in a yellow alert whenever this item is scanned</td></tr>
@@ -325,25 +326,25 @@
 
     <section id="editing-items">
       <h2><i class="fa-solid fa-pencil"></i> Editing Items</h2>
-      <p>Click an item row in the inventory list to open the <strong>detail panel</strong>, then click the <strong>Edit</strong> button (pencil icon) to go to the full edit form. All fields except Item Type can be changed. Requires Admin or Manager role — the Edit button is not shown to Viewers.</p>
-      <p>You can also edit Name, Quantity, Location, SKU, Minimum Quantity, and Scan Warning directly from the detail panel without leaving the page — changes save via the API instantly.</p>
+      <p>Click an item row in the inventory list to open the <strong>detail panel</strong>, then click the <strong>Edit</strong> button (pencil icon) to go to the full edit form. All fields except Item Type can be changed. Requires Admin or Manager role - the Edit button is not shown to Viewers.</p>
+      <p>You can also edit Name, Quantity, Location, SKU, Minimum Quantity, and Scan Warning directly from the detail panel without leaving the page - changes save via the API instantly.</p>
       <h3>Deleting items</h3>
-      <p>Click the trash icon on the item row and confirm. Deletion is permanent. Checkout history for the item is retained in the activity log. Requires Admin or Manager role — the delete button is not shown to Viewers.</p>
+      <p>Click the trash icon on the item row and confirm. Deletion is permanent. Checkout history for the item is retained in the activity log. Requires Admin or Manager role - the delete button is not shown to Viewers.</p>
     </section>
 
     <section id="expiry-dates">
       <h2><i class="fa-solid fa-calendar-xmark"></i> Expiry Dates</h2>
       <p>Any item (Reusable or Consumable) can have an optional expiry date. When set, the item shows a badge in the inventory list:</p>
       <ul>
-        <li><span class="badge-demo badge-red">Expired</span> — expiry date has passed</li>
-        <li><span class="badge-demo badge-yellow">Exp MMM D</span> — expiring within the next 30 days</li>
-        <li>Plain date text — expiry is more than 30 days away</li>
+        <li><span class="badge-demo badge-red">Expired</span> - expiry date has passed</li>
+        <li><span class="badge-demo badge-yellow">Exp MMM D</span> - expiring within the next 30 days</li>
+        <li>Plain date text - expiry is more than 30 days away</li>
       </ul>
       <h3>Expiry report</h3>
       <p>Go to <strong>Reports → Expiry</strong> to see a full breakdown:</p>
       <ul>
-        <li><strong>Expired</strong> — all items past their expiry date, sorted oldest first</li>
-        <li><strong>Expiring within 90 days</strong> — sorted by date; items within 30 days are highlighted yellow, within 7 days shown in red</li>
+        <li><strong>Expired</strong> - all items past their expiry date, sorted oldest first</li>
+        <li><strong>Expiring within 90 days</strong> - sorted by date; items within 30 days are highlighted yellow, within 7 days shown in red</li>
       </ul>
       <h3>Setting expiry dates</h3>
       <p>Add or update the expiry date on the <strong>Add Item</strong> or <strong>Edit Item</strong> form using the date picker. The field accepts any date; leave it blank for items that do not expire.</p>
@@ -372,7 +373,7 @@
 
     <section id="consumables">
       <h2><i class="fa-solid fa-box"></i> Consumables</h2>
-      <p>Consumable items track stock levels using Consume and Restock operations. Requires Admin or Manager role — Viewers can see quantities but the Consume and Restock controls are not shown to them.</p>
+      <p>Consumable items track stock levels using Consume and Restock operations. Requires Admin or Manager role - Viewers can see quantities but the Consume and Restock controls are not shown to them.</p>
       <h3>Consuming stock</h3>
       <ol>
         <li>Click the item row to open the detail panel</li>
@@ -390,7 +391,7 @@
 
     <section id="barcode-scanning">
       <h2><i class="fa-solid fa-camera"></i> Barcode Scanning</h2>
-      <p>Any device with a camera can scan barcodes to quickly look up and action items — no app install required. Access the web UI from any device on the same network (or via a tunnel for remote access).</p>
+      <p>Any device with a camera can scan barcodes to quickly look up and action items - no app install required. Access the web UI from any device on the same network (or via a tunnel for remote access).</p>
       <h3>Scanning in the inventory list</h3>
       <p>Click the scan icon next to the SKU field on the Add Item or Edit Item forms to scan a barcode directly into that field.</p>
       <h3>Assigning SKUs</h3>
@@ -401,7 +402,7 @@
       <ol>
         <li>Ensure items have SKUs assigned</li>
         <li>Go to <strong>Reports → Barcode Sheet</strong></li>
-        <li>Click <strong>Print</strong> — the page formats itself with one barcode per item in a label-friendly grid</li>
+        <li>Click <strong>Print</strong> - the page formats itself with one barcode per item in a label-friendly grid</li>
       </ol>
     </section>
 
@@ -424,7 +425,7 @@
         <tr><td>MinimumQuantity</td><td>No</td><td>Defaults to 0</td></tr>
         <tr><td>SKU</td><td>No</td><td>Leave blank to skip</td></tr>
         <tr><td>Location</td><td>No</td><td>Free text</td></tr>
-        <tr><td>Category</td><td>No</td><td>Category name — created automatically if it doesn't exist</td></tr>
+        <tr><td>Category</td><td>No</td><td>Category name - created automatically if it doesn't exist</td></tr>
         <tr><td>ExpiryDate</td><td>No</td><td>Format: <code>YYYY-MM-DD</code> (e.g. <code>2027-06-01</code>)</td></tr>
         <tr><td>Description</td><td>No</td><td>Free text</td></tr>
         <tr><td>ScanWarning</td><td>No</td><td>Free text</td></tr>
@@ -442,9 +443,9 @@
       <table>
         <tr><th>Tab</th><th>Shows</th></tr>
         <tr><td><strong>Stock Levels</strong></td><td>All items with quantities, availability, and expiry. Filterable by type and low-stock flag.</td></tr>
-        <tr><td><strong>Checked Out</strong></td><td>All active checkout records — who has what, for how long.</td></tr>
+        <tr><td><strong>Checked Out</strong></td><td>All active checkout records - who has what, for how long.</td></tr>
         <tr><td><strong>Lost Items</strong></td><td>Items marked lost, with the last person who checked them out.</td></tr>
-        <tr><td><strong>Take Inventory</strong></td><td>Printable checklist for physical stock counts — SKU, location, expected quantity, and a blank field for actual count.</td></tr>
+        <tr><td><strong>Take Inventory</strong></td><td>Printable checklist for physical stock counts - SKU, location, expected quantity, and a blank field for actual count.</td></tr>
         <tr><td><strong>Expiry</strong></td><td>Expired items and items expiring within 90 days, grouped and color-coded by urgency.</td></tr>
         <tr><td><strong>Barcode Sheet</strong></td><td>Printable barcode grid for all items that have a SKU.</td></tr>
         <tr><td><strong>Activity Log</strong></td><td>Full audit trail. Filter by date range and action type. Timestamps shown as date.</td></tr>
@@ -459,14 +460,14 @@
       <h3>Editing users</h3>
       <p>Click the pencil icon on any user row. You can change their name, email, role, and password. Leave the password field blank to keep the existing password.</p>
       <h3>Suspending and deleting users</h3>
-      <p>Click the pause icon to suspend a user — suspended users cannot log in but their history is preserved. Click the play icon to reactivate. Click the trash icon to permanently delete a user.</p>
-      <p>Admins can suspend or delete <em>other</em> admins. You cannot suspend or delete your own account — the suspend and delete buttons are hidden on your own row as a safeguard against accidental lockout.</p>
+      <p>Click the pause icon to suspend a user - suspended users cannot log in but their history is preserved. Click the play icon to reactivate. Click the trash icon to permanently delete a user.</p>
+      <p>Admins can suspend or delete <em>other</em> admins. You cannot suspend or delete your own account - the suspend and delete buttons are hidden on your own row as a safeguard against accidental lockout.</p>
       <h3>Roles</h3>
       <table>
         <tr><th>Role</th><th>Can do</th></tr>
-        <tr><td><strong>Admin</strong></td><td>Everything — manage users, settings, categories, database backup/restore, and all inventory operations</td></tr>
+        <tr><td><strong>Admin</strong></td><td>Everything - manage users, settings, categories, database backup/restore, and all inventory operations</td></tr>
         <tr><td><strong>Manager</strong></td><td>All inventory operations (checkout, consume, restock, add/edit/delete items, manage categories); run all reports; cannot manage users, remote access, or database settings</td></tr>
-        <tr><td><strong>Viewer</strong></td><td>View inventory and reports only — no write operations. Can see item details and active checkouts (read-only) but cannot check out, consume, edit, delete, or import items. The Categories settings tab and all write controls are hidden.</td></tr>
+        <tr><td><strong>Viewer</strong></td><td>View inventory and reports only - no write operations. Can see item details and active checkouts (read-only) but cannot check out, consume, edit, delete, or import items. The Categories settings tab and all write controls are hidden.</td></tr>
       </table>
     </section>
 
@@ -475,7 +476,7 @@
       <p>Go to <strong>Settings → Remote Access</strong> (Admin only) to configure tunnels. Once active, the public URL is shown in the tray icon menu and in the settings panel.</p>
 
       <h3>Serveo (recommended)</h3>
-      <p>Serveo gives you a <strong>free persistent subdomain</strong> — the same URL every time you start the tunnel. Requires a free Serveo account.</p>
+      <p>Serveo gives you a <strong>free persistent subdomain</strong> - the same URL every time you start the tunnel. Requires a free Serveo account.</p>
       <p><strong>One-time setup:</strong></p>
       <ol>
         <li>Click <strong>Generate SSH Key</strong>. The app generates a key pair and stores it securely in the database.</li>
@@ -491,10 +492,10 @@
       <p>To start Serveo automatically on service restart, go to <strong>Auto-start</strong> in the accordion and select <strong>Serveo</strong>.</p>
 
       <h3>Quick Tunnel (Cloudflare)</h3>
-      <p>Zero configuration — click <strong>Quick Tunnel</strong> and a temporary HTTPS URL is generated instantly via Cloudflare. No account needed. The URL <strong>changes every time</strong> the tunnel is started, so it is suitable for one-off sharing only.</p>
+      <p>Zero configuration - click <strong>Quick Tunnel</strong> and a temporary HTTPS URL is generated instantly via Cloudflare. No account needed. The URL <strong>changes every time</strong> the tunnel is started, so it is suitable for one-off sharing only.</p>
 
       <h3>localtunnel</h3>
-      <p>Enter a subdomain name to claim <code>yourname.loca.lt</code>. Free but shows an interstitial page to visitors (a known limitation of the loca.lt service). First-come-first-served subdomain — not guaranteed to be available.</p>
+      <p>Enter a subdomain name to claim <code>yourname.loca.lt</code>. Free but shows an interstitial page to visitors (a known limitation of the loca.lt service). First-come-first-served subdomain - not guaranteed to be available.</p>
 
       <h3>Stopping a tunnel</h3>
       <p>Click <strong>Stop Tunnel</strong> in the status card, or simply stop the Windows service.</p>
@@ -512,14 +513,14 @@
       </ol>
 
       <h3>Selecting visible items</h3>
-      <p>With public view enabled, a table lists every item in your inventory. Toggle the switch on any row to make that item visible on the public page. Changes take effect instantly — no save button needed.</p>
+      <p>With public view enabled, a table lists every item in your inventory. Toggle the switch on any row to make that item visible on the public page. Changes take effect instantly - no save button needed.</p>
       <div class="callout">
         <i class="fa-solid fa-circle-info"></i>
         Items with no toggle enabled are not shown even if public view is on. Disabling public view hides <em>all</em> items regardless of individual toggles.
       </div>
 
       <h3>The embed code</h3>
-      <p>Copy the <code>&lt;iframe&gt;</code> snippet from the <strong>Embed Code</strong> card and paste it into any web page. The iframe shows item names, type (Reusable / Consumable), category, location, and live availability — it refreshes when the page is reloaded.</p>
+      <p>Copy the <code>&lt;iframe&gt;</code> snippet from the <strong>Embed Code</strong> card and paste it into any web page. The iframe shows item names, type (Reusable / Consumable), category, location, and live availability - it refreshes when the page is reloaded.</p>
       <p>For external access, use your tunnel URL instead of the local address. The settings panel shows a ready-made tunnel link when a tunnel is active.</p>
       <pre><code>&lt;iframe src="http://YOUR_HOST/public" width="100%" height="600"
         frameborder="0" style="border:none;border-radius:8px;"&gt;&lt;/iframe&gt;</code></pre>
@@ -544,10 +545,10 @@
     <section id="dark-mode">
       <h2><i class="fa-solid fa-moon"></i> Dark Mode</h2>
       <p>Inventory Tracker includes a built-in dark theme. Click the <strong>moon icon</strong> near the bottom of the sidebar (above the logout button) to switch to dark mode. Click the <strong>sun icon</strong> to return to light mode.</p>
-      <p>Your preference is saved in the browser and persists across sessions and page reloads. Each user's browser stores its own setting independently — changing dark mode on one device does not affect other devices or other users.</p>
+      <p>Your preference is saved in the browser and persists across sessions and page reloads. Each user's browser stores its own setting independently - changing dark mode on one device does not affect other devices or other users.</p>
       <div class="callout">
         <i class="fa-solid fa-circle-info"></i>
-        Dark mode applies to the full app UI including modals, tables, cards, and forms. It does not affect printed reports — those always print in light mode.
+        Dark mode applies to the full app UI including modals, tables, cards, and forms. It does not affect printed reports - those always print in light mode.
       </div>
     </section>
 
@@ -556,7 +557,7 @@
       <p>Go to <strong>Settings → Database</strong> (Admin only) to download a backup of your data or restore from a previous backup.</p>
 
       <h3>Downloading a backup</h3>
-      <p>Click <strong>Download Backup</strong>. The app creates a clean, consistent snapshot of the database using SQLite's <code>VACUUM INTO</code> operation — the app stays fully running during the backup — and downloads it as a <code>.db</code> file named with the current date and time.</p>
+      <p>Click <strong>Download Backup</strong>. The app creates a clean, consistent snapshot of the database using SQLite's <code>VACUUM INTO</code> operation - the app stays fully running during the backup - and downloads it as a <code>.db</code> file named with the current date and time.</p>
       <div class="callout">
         <i class="fa-solid fa-circle-info"></i>
         Store backups in a safe location outside the server machine. A good habit is to download a backup before any major change (bulk import, user restructure) and before upgrading the app.
@@ -577,9 +578,10 @@
 
     <section id="updates">
       <h2><i class="fa-solid fa-arrow-up-circle"></i> Updates</h2>
-      <p>Inventory Tracker checks for new releases on GitHub automatically — once at startup (after a 15-second delay) and every 24 hours thereafter.</p>
-      <p>When a newer version is available, a small notice appears <strong>above the logout button</strong> in the sidebar with the new version number and a link to the GitHub release. The notice persists until the app is updated — it does not need to be dismissed.</p>
-      <p>To update, download and run the new installer. It stops the running service, replaces the files, and restarts — typically takes under 30 seconds.</p>
+      <p>Inventory Tracker checks for new releases on GitHub automatically - once at startup (after a 15-second delay) and every 24 hours thereafter.</p>
+      <p>When a newer version is available, a small notice appears <strong>above the logout button</strong> in the sidebar with the new version number and a link to the GitHub release. The notice persists until the app is updated - it does not need to be dismissed.</p>
+      <p>To trigger an immediate check, go to <strong>Settings → App Info</strong> and click <strong>Check for Updates</strong>. The result appears inline - either a version badge linking to the release page or a confirmation that the current version is up to date.</p>
+      <p>To update, download and run the new installer. It stops the running service, replaces the files, and restarts - typically takes under 30 seconds.</p>
       <p>The current version is shown in <strong>Settings → App Info</strong>.</p>
     </section>
 
@@ -590,10 +592,10 @@
         <tr><th>Action</th><th>What it does</th></tr>
         <tr><td>Double-click icon</td><td>Open the web UI in your default browser</td></tr>
         <tr><td>Open Inventory Tracker</td><td>Open the web UI</td></tr>
-        <tr><td>Local: http://...</td><td>Show the local network address — click to copy to clipboard</td></tr>
-        <tr><td>Tunnel: ...</td><td>Show the active tunnel URL — click to copy to clipboard</td></tr>
-        <tr><td>Reset Admin Password</td><td>Reset the password of the <strong>first admin account created</strong> (lowest ID) without logging in — useful if locked out. Does not affect other admin accounts.</td></tr>
-        <tr><td>Exit</td><td>Close the tray companion — the Windows service keeps running</td></tr>
+        <tr><td>Local: http://...</td><td>Show the local network address - click to copy to clipboard</td></tr>
+        <tr><td>Tunnel: ...</td><td>Show the active tunnel URL - click to copy to clipboard</td></tr>
+        <tr><td>Reset Admin Password</td><td>Reset the password of the <strong>first admin account created</strong> (lowest ID) without logging in - useful if locked out. Does not affect other admin accounts.</td></tr>
+        <tr><td>Exit</td><td>Close the tray companion - the Windows service keeps running</td></tr>
       </table>
       <div class="callout">
         <i class="fa-solid fa-circle-info"></i>
@@ -657,6 +659,28 @@
 </footer>
 
 <script>
+  (function () {
+    // Always start the TOC at the top regardless of browser scroll restoration
+    var sidebarNav = document.querySelector('.sidebar-nav');
+    if (sidebarNav) {
+      sidebarNav.scrollTop = 0;
+      // After anchor navigation, scroll the TOC to show the active link
+      // but keep the list readable from the top if not overflowing
+      window.addEventListener('hashchange', function () {
+        var active = sidebarNav.querySelector('a[href="' + location.hash + '"]');
+        if (active) {
+          var navTop    = sidebarNav.scrollTop;
+          var navBottom = navTop + sidebarNav.clientHeight;
+          var linkTop   = active.offsetTop;
+          var linkBottom = linkTop + active.offsetHeight;
+          if (linkTop < navTop || linkBottom > navBottom) {
+            sidebarNav.scrollTop = Math.max(0, linkTop - 40);
+          }
+        }
+      });
+    }
+  })();
+
   (function () {
     var toggle = document.querySelector('.nav-toggle');
     var menu   = document.querySelector('.nav-mobile');

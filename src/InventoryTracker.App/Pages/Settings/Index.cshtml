@@ -27,7 +27,35 @@
     </div>
 }
 
-<ul class="nav nav-tabs mb-4">
+@{
+    var selAccount    = Model.Tab == "account";
+    var selUsers      = Model.Tab == "users";
+    var selTunnel     = Model.Tab == "tunnel";
+    var selCategories = Model.Tab == "categories";
+    var selPublicView = Model.Tab == "publicview";
+    var selDatabase   = Model.Tab == "database";
+    var selInfo       = Model.Tab == "info";
+}
+<select class="form-select mb-4 d-md-none" onchange="location.href='/Settings?tab='+this.value">
+    <option value="account" selected="@selAccount">My Account</option>
+    @if (User.IsInRole("Admin"))
+    {
+        <option value="users" selected="@selUsers">User Management</option>
+        <option value="tunnel" selected="@selTunnel">Remote Access</option>
+    }
+    @if (User.IsInRole("Admin") || User.IsInRole("Manager"))
+    {
+        <option value="categories" selected="@selCategories">Categories</option>
+    }
+    @if (User.IsInRole("Admin"))
+    {
+        <option value="publicview" selected="@selPublicView">Public View</option>
+        <option value="database" selected="@selDatabase">Database</option>
+    }
+    <option value="info" selected="@selInfo">App Info</option>
+</select>
+
+<ul class="nav nav-tabs mb-4 d-none d-md-flex">
     <li class="nav-item">
         <a class="nav-link @(Model.Tab == "account" ? "active" : "")" href="/Settings?tab=account">
             <i class="bi bi-person me-1"></i> My Account
@@ -829,8 +857,8 @@
         </div>
 
         <div class="col-12">
-            <div class="card border-danger">
-                <div class="card-header fw-semibold text-danger"><i class="bi bi-upload me-2"></i>Restore from Backup</div>
+            <div class="card border-warning">
+                <div class="card-header fw-semibold text-warning"><i class="bi bi-upload me-2"></i>Restore from Backup</div>
                 <div class="card-body">
                     <div class="alert alert-warning py-2 small mb-3">
                         <i class="bi bi-exclamation-triangle-fill me-1"></i>

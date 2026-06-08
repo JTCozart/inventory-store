@@ -280,6 +280,34 @@ html, body {
     .take-inventory-table td, .take-inventory-table th { font-size: 0.8rem; padding: 4px 6px; }
 }
 
+/* ── Scanner modal: full-screen on small screens ─ */
+
+@media (max-width: 576px) {
+    #scannerModal .modal-dialog {
+        margin: 0;
+        max-width: 100vw;
+        min-height: 100dvh;
+    }
+    #scannerModal .modal-content {
+        min-height: 100dvh;
+        border-radius: 0;
+    }
+}
+
+/* ── Inventory row interaction ───────────────── */
+
+.inventory-row {
+    transition: background-color 0.1s;
+}
+
+.inventory-row:hover td {
+    background-color: rgba(13, 110, 253, 0.06) !important;
+}
+
+[data-bs-theme="dark"] .inventory-row:hover td {
+    background-color: rgba(255, 255, 255, 0.07) !important;
+}
+
 /* ── Dark mode toggle button (in sidebar) ────── */
 
 .sidebar-theme-btn {

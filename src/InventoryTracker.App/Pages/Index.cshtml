@@ -21,25 +21,25 @@
 </div>
 
 <div class="row g-3 mb-4">
-    <div class="col-6 col-xl-2">
+    <div class="col-6 col-md-3 col-xl-2">
         <div class="stat-card border-start border-primary border-4">
             <div class="stat-icon text-primary"><i class="bi bi-boxes"></i></div>
             <div><div class="stat-value">@Model.Summary.TotalItems</div><div class="stat-label">Items</div></div>
         </div>
     </div>
-    <div class="col-6 col-xl-2">
+    <div class="col-6 col-md-3 col-xl-2">
         <div class="stat-card border-start border-success border-4">
             <div class="stat-icon text-success"><i class="bi bi-stack"></i></div>
             <div><div class="stat-value">@Model.Summary.TotalQuantity</div><div class="stat-label">In Stock</div></div>
         </div>
     </div>
-    <div class="col-6 col-xl-2">
+    <div class="col-6 col-md-3 col-xl-2">
         <div class="stat-card border-start border-warning border-4">
             <div class="stat-icon text-warning"><i class="bi bi-exclamation-triangle"></i></div>
             <div><div class="stat-value">@Model.Summary.LowStockCount</div><div class="stat-label">Low Stock</div></div>
         </div>
     </div>
-    <div class="col-6 col-xl-2">
+    <div class="col-6 col-md-3 col-xl-2">
         <div class="stat-card border-start border-info border-4">
             <div class="stat-icon text-info"><i class="bi bi-box-arrow-up-right"></i></div>
             <div><div class="stat-value">@Model.Summary.CheckedOutCount</div><div class="stat-label">Checked Out</div></div>
@@ -57,7 +57,7 @@
                 {
                     <span class="badge bg-warning text-dark ms-2">@Model.Summary.LowStockCount</span>
                 }
-                <a href="/Reports?tab=stock" class="ms-auto text-muted small text-decoration-none">View report</a>
+                <a href="/Reports?tab=stock" class="ms-auto btn btn-sm btn-outline-secondary">View report</a>
             </div>
             <div class="card-body p-0">
                 @if (!Model.Summary.LowStockItems.Any())
@@ -99,7 +99,7 @@
                 {
                     <span class="badge bg-info text-dark ms-2">@Model.Summary.CheckedOutCount</span>
                 }
-                <a href="/Reports?tab=checkout" class="ms-auto text-muted small text-decoration-none">View report</a>
+                <a href="/Reports?tab=checkout" class="ms-auto btn btn-sm btn-outline-secondary">View report</a>
             </div>
             <div class="card-body p-0">
                 @if (!Model.Summary.CheckedOutItems.Any())
@@ -142,7 +142,7 @@
                 {
                     <span class="badge bg-danger ms-2">@Model.Summary.LostItemCount</span>
                 }
-                <a href="/Reports?tab=lost" class="ms-auto text-muted small text-decoration-none">View report</a>
+                <a href="/Reports?tab=lost" class="ms-auto btn btn-sm btn-outline-secondary">View report</a>
             </div>
             <div class="card-body p-0">
                 @if (!Model.Summary.LostItems.Any())
@@ -181,7 +181,7 @@
             <div class="card-header d-flex align-items-center">
                 <i class="bi bi-activity me-2"></i>
                 <strong>Recent Activity</strong>
-                <a href="/Reports?tab=activity" class="ms-auto text-muted small text-decoration-none">Full log</a>
+                <a href="/Reports?tab=activity" class="ms-auto btn btn-sm btn-outline-secondary">Full log</a>
             </div>
             <div class="card-body p-0">
                 @if (!Model.Summary.RecentActivity.Any())
@@ -349,7 +349,7 @@
     var zxingReader   = null;
     var scanning      = false;
     var currentItem   = null;
-    var DISPLAY_H     = 220;
+    var DISPLAY_H     = window.innerWidth <= 576 ? Math.round(window.innerHeight * 0.42) : 220;
 
     if (!window.isSecureContext) {
         document.getElementById('scanner-idle-label').textContent = 'Tap to take a photo of the barcode';

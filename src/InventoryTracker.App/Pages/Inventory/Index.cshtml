@@ -74,14 +74,14 @@ else
                 <thead class="table-light">
                     <tr>
                         <th class="sortable">Name</th>
-                        <th class="sortable">Type</th>
-                        <th class="sortable">Category</th>
-                        <th class="sortable">SKU</th>
-                        <th class="sortable">Location</th>
-                        <th class="text-end sortable">Qty</th>
+                        <th class="sortable d-none d-md-table-cell">Type</th>
+                        <th class="sortable d-none d-md-table-cell">Category</th>
+                        <th class="sortable d-none d-lg-table-cell">SKU</th>
+                        <th class="sortable d-none d-lg-table-cell">Location</th>
+                        <th class="text-end sortable d-none d-lg-table-cell">Qty</th>
                         <th class="text-end sortable">Available</th>
-                        <th class="text-end sortable">Min</th>
-                        <th class="sortable">Expiry</th>
+                        <th class="text-end sortable d-none d-lg-table-cell">Min</th>
+                        <th class="sortable d-none d-md-table-cell">Expiry</th>
                         <th class="sortable">Status</th>
                         <th></th>
                     </tr>
@@ -91,7 +91,7 @@ else
                     {
                         <tr class="inventory-row" data-item-id="@item.Id" style="cursor:pointer">
                             <td class="fw-semibold">@item.Name</td>
-                            <td>
+                            <td class="d-none d-md-table-cell">
                                 @if (item.ItemType == InventoryTracker.Domain.Enums.ItemType.Reusable)
                                 {
                                     <span class="badge bg-info">Reusable</span>
@@ -101,19 +101,19 @@ else
                                     <span class="badge bg-secondary">Consumable</span>
                                 }
                             </td>
-                            <td class="text-muted small">
+                            <td class="text-muted small d-none d-md-table-cell">
                                 @if (item.CategoryName is not null)
                                 {
                                     <span class="badge bg-light text-dark border">@item.CategoryName</span>
                                 }
                                 else { <text>-</text> }
                             </td>
-                            <td class="text-muted small">@(item.SKU ?? "-")</td>
-                            <td class="text-muted small">@(item.Location ?? "-")</td>
-                            <td class="text-end">@item.Quantity</td>
+                            <td class="text-muted small d-none d-lg-table-cell">@(item.SKU ?? "-")</td>
+                            <td class="text-muted small d-none d-lg-table-cell">@(item.Location ?? "-")</td>
+                            <td class="text-end d-none d-lg-table-cell">@item.Quantity</td>
                             <td class="text-end">@item.AvailableQuantity</td>
-                            <td class="text-end text-muted">@item.MinimumQuantity</td>
-                            <td class="text-muted small text-nowrap">
+                            <td class="text-end text-muted d-none d-lg-table-cell">@item.MinimumQuantity</td>
+                            <td class="text-muted small text-nowrap d-none d-md-table-cell">
                                 @{
                                     var today = DateOnly.FromDateTime(DateTime.Today);
                                     if (item.ExpiryDate.HasValue)
@@ -175,7 +175,19 @@ else
             </table>
         </div>
     </div>
-    <div class="text-muted small mt-2">Showing @Model.Items.Count() items</div>
+    <div class="text-muted small mt-2 d-flex align-items-center gap-2">
+        @if (Model.IsFiltered && Model.Items.Count() != Model.TotalCount)
+        {
+            <span>Showing <strong>@Model.Items.Count()</strong> of <strong>@Model.TotalCount</strong> items</span>
+            <a href="/Inventory" class="badge bg-secondary text-decoration-none">
+                <i class="bi bi-x me-1"></i>Clear filters
+            </a>
+        }
+        else
+        {
+            <span>@Model.Items.Count() item@(Model.Items.Count() == 1 ? "" : "s")</span>
+        }
+    </div>
 }
 
 @if (canWrite)

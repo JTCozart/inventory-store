@@ -21,6 +21,8 @@ public class IndexModel : PageModel
     public int? Open { get; private set; }
     public int? CategoryFilter { get; private set; }
     public string? ImportResult { get; private set; }
+    public int TotalCount { get; private set; }
+    public bool IsFiltered => !string.IsNullOrWhiteSpace(Query) || CategoryFilter.HasValue;
 
     public IndexModel(IInventoryService inventoryService, ICheckoutService checkoutService, ICategoryService categoryService)
     {
@@ -40,6 +42,8 @@ public class IndexModel : PageModel
         var items = string.IsNullOrWhiteSpace(q)
             ? await _inventoryService.GetAllItemsAsync()
             : await _inventoryService.SearchItemsAsync(q);
+
+        TotalCount = items.Count();
 
         Items = category.HasValue
             ? items.Where(i => i.CategoryId == category.Value)

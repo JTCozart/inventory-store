@@ -90,16 +90,20 @@ else
   @foreach (var group in byCategory)
   {
     <div class="section-card">
-      @if (!string.IsNullOrEmpty(group.Key))
-      {
-        <div class="category-label d-flex align-items-center gap-1">
+      <div class="category-label d-flex align-items-center gap-1">
+        @if (!string.IsNullOrEmpty(group.Key))
+        {
           @if (!string.IsNullOrEmpty(group.First().CategoryColor))
           {
             <span class="cat-swatch" style="background:@group.First().CategoryColor"></span>
           }
           @group.Key
-        </div>
-      }
+        }
+        else
+        {
+          <span style="color:#cbd5e1">Uncategorized</span>
+        }
+      </div>
       @foreach (var item in group)
       {
         var qtyClass = item.AvailableQuantity == 0 ? "qty-zero"
