@@ -53,6 +53,9 @@ public class DatabaseInitializer
         await AddColumnIfMissingAsync(conn, "InventoryItems", "CategoryId",   "INTEGER NULL");
         await AddColumnIfMissingAsync(conn, "InventoryItems", "ExpiryDate",   "TEXT NULL");
         await AddColumnIfMissingAsync(conn, "InventoryItems", "IsPublic",     "INTEGER NOT NULL DEFAULT 0");
+        await EnsureClientsTableAsync(conn);
+        await AddColumnIfMissingAsync(conn, "CheckoutRecords", "ClientId",    "INTEGER NULL");
+        await AddColumnIfMissingAsync(conn, "Clients",         "Email",       "TEXT NULL");
     }
 
     private static async Task MakeUsersEmailNullableAsync(SqliteConnection conn)
@@ -114,10 +117,10 @@ public class DatabaseInitializer
     }
 
     private static readonly HashSet<string> _allowedTables = new(StringComparer.OrdinalIgnoreCase)
-        { "Users", "InventoryItems" };
+        { "Users", "InventoryItems", "CheckoutRecords", "Clients" };
 
     private static readonly HashSet<string> _allowedColumns = new(StringComparer.OrdinalIgnoreCase)
-        { "FirstName", "LastName", "ItemType", "CheckedOutCount", "LostCount", "ScanWarning", "CategoryId", "ExpiryDate", "IsPublic" };
+        { "FirstName", "LastName", "ItemType", "CheckedOutCount", "LostCount", "ScanWarning", "CategoryId", "ExpiryDate", "IsPublic", "ClientId", "Email" };
 
     private static async Task AddColumnIfMissingAsync(
         SqliteConnection conn, string table, string column, string definition)
@@ -166,6 +169,24 @@ public class DatabaseInitializer
             );
             CREATE INDEX IF NOT EXISTS IX_CheckoutRecords_InventoryItemId
                 ON CheckoutRecords (InventoryItemId);";
+        await cmd.ExecuteNonQueryAsync();
+    }
+
+    private static async Task EnsureClientsTableAsync(SqliteConnection conn)
+    {
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+            CREATE TABLE IF NOT EXISTS Clients (
+                Id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                FirstName   TEXT    NOT NULL,
+                LastName    TEXT    NULL,
+                Phone       TEXT    NULL,
+                DateOfBirth TEXT    NULL,
+                Address     TEXT    NULL,
+                Notes       TEXT    NULL,
+                CreatedAt   TEXT    NOT NULL,
+                UpdatedAt   TEXT    NOT NULL
+            );";
         await cmd.ExecuteNonQueryAsync();
     }
 

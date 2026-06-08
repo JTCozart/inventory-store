@@ -7,93 +7,93 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - Inventory Tracker</title>
     <script>(function(){var t=localStorage.getItem('it-theme');if(t)document.documentElement.setAttribute('data-bs-theme',t);}())</script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="~/lib/bootstrap/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/lib/bootstrap-icons/font/bootstrap-icons.min.css" />
     <link rel="stylesheet" href="~/css/site.css" />
 </head>
 <body>
 @if (User.Identity?.IsAuthenticated == true)
 {
     <div id="app-wrapper">
-        <nav id="sidebar">
-            <div class="sidebar-inner d-flex flex-column h-100 p-3">
-                <div class="d-flex align-items-center justify-content-between mb-4">
-                    <a href="/" class="sidebar-brand d-flex align-items-center text-decoration-none">
-                        <i class="bi bi-box-seam me-2 fs-4"></i>
-                        <span class="fs-5 fw-semibold">Inventory</span>
-                    </a>
-                    <button class="btn btn-link sidebar-close d-lg-none p-0" id="sidebarClose" aria-label="Close menu">
-                        <i class="bi bi-x-lg text-white fs-5"></i>
-                    </button>
-                </div>
-                <hr class="sidebar-divider" />
-                <ul class="nav nav-pills flex-column mb-auto">
-                    <li class="nav-item">
-                        <a href="/" class="nav-link @(ViewData["ActivePage"]?.ToString() == "Dashboard" ? "active" : "")">
-                            <i class="bi bi-speedometer2 me-2"></i> Dashboard
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="/Inventory" class="nav-link @(ViewData["ActivePage"]?.ToString() == "Inventory" ? "active" : "")">
-                            <i class="bi bi-boxes me-2"></i> Inventory
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="/Reports" class="nav-link @(ViewData["ActivePage"]?.ToString() == "Reports" ? "active" : "")">
-                            <i class="bi bi-bar-chart me-2"></i> Reports
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="/Settings" class="nav-link @(ViewData["ActivePage"]?.ToString() == "Settings" ? "active" : "")">
-                            <i class="bi bi-sliders me-2"></i> Settings
-                        </a>
-                    </li>
-                </ul>
-                <hr class="sidebar-divider" />
-                <ul class="nav nav-pills flex-column mb-2">
-                    <li class="nav-item">
-                        <a href="/UserGuide" class="nav-link @(ViewData["ActivePage"]?.ToString() == "UserGuide" ? "active" : "")">
-                            <i class="bi bi-book me-2"></i> User Guide
-                        </a>
-                    </li>
-                </ul>
-                <hr class="sidebar-divider" />
-                @if (UpdateInfo.HasUpdate)
-                {
-                    <a href="@UpdateInfo.ReleaseUrl" target="_blank"
-                       class="d-flex align-items-center gap-2 px-2 py-1 mb-2 rounded text-decoration-none"
-                       style="background:rgba(13,202,240,0.15); color:#0dcaf0; font-size:.8rem;">
-                        <i class="bi bi-arrow-up-circle-fill flex-shrink-0"></i>
-                        <span>v@(UpdateInfo.LatestVersion) available</span>
-                    </a>
-                }
-                <button id="theme-toggle" class="btn btn-link p-0 mb-2 d-flex align-items-center gap-2 sidebar-theme-btn" onclick="toggleTheme()">
-                    <i id="theme-icon" class="bi bi-moon"></i>
-                    <span id="theme-label" class="small">Dark mode</span>
-                </button>
-                <div class="sidebar-user d-flex align-items-center">
-                    <i class="bi bi-person-circle me-2 fs-5"></i>
-                    <div class="flex-grow-1 small">
-                        <div class="fw-semibold">@User.Identity.Name</div>
-                        <form method="post" asp-page="/Auth/Logout" class="d-inline">
-                            <button type="submit" class="btn btn-link p-0 text-decoration-none sidebar-logout">
-                                <i class="bi bi-box-arrow-left me-1"></i>Logout
-                            </button>
-                        </form>
-                    </div>
-                </div>
+        <header id="topnav">
+            <a href="/" class="topnav-brand">
+                <i class="bi bi-box-seam"></i>
+                <span>Inventory</span>
+            </a>
+            <div id="topnav-links">
+                <a href="/" class="topnav-link @(ViewData["ActivePage"]?.ToString() == "Dashboard" ? "active" : "")">
+                    <i class="bi bi-speedometer2"></i> Dashboard
+                </a>
+                <a href="/Inventory" class="topnav-link @(ViewData["ActivePage"]?.ToString() == "Inventory" ? "active" : "")">
+                    <i class="bi bi-boxes"></i> Inventory
+                </a>
+                <a href="/Clients" class="topnav-link @(ViewData["ActivePage"]?.ToString() == "Clients" ? "active" : "")">
+                    <i class="bi bi-people"></i> Clients
+                </a>
+                <a href="/Reports" class="topnav-link @(ViewData["ActivePage"]?.ToString() == "Reports" ? "active" : "")">
+                    <i class="bi bi-bar-chart"></i> Reports
+                </a>
+                <a href="/Settings" class="topnav-link @(ViewData["ActivePage"]?.ToString() == "Settings" ? "active" : "")">
+                    <i class="bi bi-sliders"></i> Settings
+                </a>
             </div>
-        </nav>
-
-        <div id="sidebar-overlay" class="d-lg-none"></div>
-
-        <div id="content-wrapper" class="d-flex flex-column">
-            <header id="topbar" class="d-flex align-items-center px-3 py-2 d-lg-none">
-                <button class="btn btn-link p-0 me-3" id="sidebarToggle" aria-label="Open menu">
-                    <i class="bi bi-list fs-4 text-white"></i>
+            <div class="topnav-sep"></div>
+            @if (UpdateInfo.HasUpdate)
+            {
+                <a href="@UpdateInfo.ReleaseUrl" target="_blank" class="topnav-btn text-decoration-none"
+                   style="color:#0dcaf0; font-size:.8rem; display:flex; align-items:center; gap:.3rem;" title="v@(UpdateInfo.LatestVersion) available">
+                    <i class="bi bi-arrow-up-circle-fill"></i>
+                    <span class="d-none d-lg-inline">v@(UpdateInfo.LatestVersion)</span>
+                </a>
+            }
+            <a href="/UserGuide" class="topnav-btn @(ViewData["ActivePage"]?.ToString() == "UserGuide" ? "active" : "")" title="User Guide" style="text-decoration:none; display:flex; align-items:center;">
+                <i class="bi bi-book"></i>
+            </a>
+            <button id="theme-toggle" class="topnav-btn" onclick="toggleTheme()" title="Toggle theme">
+                <i id="theme-icon" class="bi bi-moon"></i>
+            </button>
+            <div class="topnav-divider"></div>
+            <button class="topnav-btn" onclick="quickScan()" title="Quick Scan">
+                <i class="bi bi-upc-scan"></i>
+            </button>
+            <div class="topnav-divider"></div>
+            <span class="topnav-username">@User.Identity.Name</span>
+            <form method="post" asp-page="/Auth/Logout" class="d-inline">
+                <button type="submit" class="topnav-logout" title="Logout">
+                    <i class="bi bi-box-arrow-left"></i>
+                    <span class="d-none d-lg-inline">Logout</span>
                 </button>
-                <span class="text-white fw-semibold">Inventory Tracker</span>
-            </header>
+            </form>
+            <button id="topnav-toggle" aria-label="Open menu" onclick="toggleMobileNav()">
+                <i class="bi bi-list"></i>
+            </button>
+        </header>
+
+        <div id="mobile-nav">
+            <a href="/" class="@(ViewData["ActivePage"]?.ToString() == "Dashboard" ? "active" : "")">
+                <i class="bi bi-speedometer2"></i> Dashboard
+            </a>
+            <a href="/Inventory" class="@(ViewData["ActivePage"]?.ToString() == "Inventory" ? "active" : "")">
+                <i class="bi bi-boxes"></i> Inventory
+            </a>
+            <a href="/Clients" class="@(ViewData["ActivePage"]?.ToString() == "Clients" ? "active" : "")">
+                <i class="bi bi-people"></i> Clients
+            </a>
+            <a href="/Reports" class="@(ViewData["ActivePage"]?.ToString() == "Reports" ? "active" : "")">
+                <i class="bi bi-bar-chart"></i> Reports
+            </a>
+            <a href="/Settings" class="@(ViewData["ActivePage"]?.ToString() == "Settings" ? "active" : "")">
+                <i class="bi bi-sliders"></i> Settings
+            </a>
+            <a href="/UserGuide" class="@(ViewData["ActivePage"]?.ToString() == "UserGuide" ? "active" : "")">
+                <i class="bi bi-book"></i> User Guide
+            </a>
+            <a href="#" onclick="toggleMobileNav(); quickScan(); return false;">
+                <i class="bi bi-upc-scan"></i> Quick Scan
+            </a>
+        </div>
+
+        <div id="content-wrapper">
             <main class="flex-grow-1 p-3 p-md-4">
                 @RenderBody()
             </main>
@@ -110,7 +110,7 @@ else
     </main>
 }
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="~/lib/bootstrap/js/bootstrap.bundle.min.js"></script>
 <script src="~/js/site.js"></script>
 @if (User.Identity?.IsAuthenticated == true)
 {
@@ -202,6 +202,176 @@ else
       </div>
     </div>
     <script src="~/js/inventory-detail.js"></script>
+
+    <!-- Global scanner modal -->
+    <div class="modal fade" id="scannerModal" tabindex="-1" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-scrollable" style="max-width:480px">
+            <div class="modal-content">
+                <div class="modal-header py-2">
+                    <h5 class="modal-title fs-6"><i class="bi bi-upc-scan me-2"></i>Scan Item</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" onclick="closeModal()"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <div class="btn-group btn-group-sm w-100 mb-1" role="group">
+                            <input type="radio" class="btn-check" name="modal-search-type" id="modal-search-sku" value="sku" checked>
+                            <label class="btn btn-outline-secondary" for="modal-search-sku"><i class="bi bi-upc me-1"></i>SKU / Barcode</label>
+                            <input type="radio" class="btn-check" name="modal-search-type" id="modal-search-name" value="name">
+                            <label class="btn btn-outline-secondary" for="modal-search-name"><i class="bi bi-fonts me-1"></i>Name</label>
+                        </div>
+                        <div class="input-group input-group-sm">
+                            <input type="text" id="modal-manual-sku" class="form-control" placeholder="Type or scan…" />
+                            <button class="btn btn-outline-secondary" onclick="doManualSearch()"><i class="bi bi-search"></i></button>
+                        </div>
+                    </div>
+
+                    <div id="scanner-idle" class="text-center text-muted py-2 mb-2">
+                        <i class="bi bi-upc-scan fs-1 d-block mb-1 opacity-25"></i>
+                        <span class="small" id="scanner-idle-label">Click Start to activate camera</span>
+                        <div class="mt-2">
+                            <button id="scanBtn" class="btn btn-sm btn-primary" type="button">
+                                <i class="bi bi-camera me-1"></i> Start Camera
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="scanner-active" class="d-none mb-2">
+                        <div id="scanner-viewport" class="scanner-viewport">
+                            <video id="scanner-video" autoplay muted playsinline></video>
+                            <div class="scanner-aim"></div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-1">
+                            <span class="text-muted small">Align barcode with the red line</span>
+                            <button id="scanStopBtn" class="btn btn-sm btn-danger" type="button">
+                                <i class="bi bi-stop-circle me-1"></i> Stop
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="scanner-processing" class="d-none text-center py-3">
+                        <div class="spinner-border spinner-border-sm text-primary me-2"></div>
+                        <span class="small text-muted">Reading barcode…</span>
+                    </div>
+
+                    <div id="scanner-error" class="d-none">
+                        <p class="text-danger small mb-2" id="scanner-error-msg"></p>
+                    </div>
+
+                    <input type="file" id="capture-input" accept="image/*" capture="environment" class="d-none" />
+
+                    <div id="scanner-result" class="d-none">
+                        <div class="d-flex align-items-start justify-content-between mb-2">
+                            <div>
+                                <div id="item-name" class="fw-bold"></div>
+                                <div id="item-meta" class="small text-muted"></div>
+                            </div>
+                            <a id="item-edit-link" href="#" class="btn btn-sm btn-outline-secondary ms-2">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                        </div>
+
+                        <div id="scanner-action-alert" class="d-none alert py-2 px-3 mb-2" role="alert"></div>
+
+                        <div id="scan-warning" class="d-none alert alert-warning py-2 px-3 mb-2">
+                            <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                            <span id="scan-warning-text"></span>
+                        </div>
+
+                        <div id="item-stats" class="row g-2 mb-3 text-center small"></div>
+
+                        <div id="reusable-actions" class="d-none">
+                            <div class="mb-2">
+                                <label class="form-label small mb-1">Client</label>
+                                <div class="position-relative">
+                                    <input id="checkout-client-input" type="text" class="form-control form-control-sm"
+                                           placeholder="Search by name…" oninput="onClientInput()" autocomplete="off" />
+                                    <input type="hidden" id="checkout-client-id" />
+                                    <div id="checkout-client-dd" class="d-none position-absolute w-100 border rounded bg-body shadow-sm"
+                                         style="top:100%;z-index:1060;max-height:180px;overflow-y:auto;font-size:.875rem"></div>
+                                    <div id="checkout-client-err" class="text-danger small d-none mt-1">Please enter a name.</div>
+                                </div>
+                            </div>
+                            <div class="row g-1 mb-2">
+                                <div class="col-5"><input id="action-qty" type="number" class="form-control form-control-sm" value="1" min="1" /></div>
+                                <div class="col-7"><input id="action-notes" type="text" class="form-control form-control-sm" placeholder="Notes (optional)" /></div>
+                            </div>
+                            <div class="d-grid gap-1">
+                                <button id="btn-checkout" class="btn btn-sm btn-success" onclick="doCheckout()"><i class="bi bi-box-arrow-up-right me-1"></i> Check Out</button>
+                            </div>
+                            <div id="active-checkouts" class="mt-3 d-none">
+                                <div class="small fw-semibold mb-1">Currently Out</div>
+                                <div id="checkout-list"></div>
+                            </div>
+                        </div>
+
+                        <div id="consumable-actions" class="d-none">
+                            <div class="mb-2">
+                                <label class="form-label small mb-1">Consume</label>
+                                <div class="d-flex gap-1">
+                                    <input id="consume-qty" type="number" class="form-control form-control-sm" style="width:75px" value="1" min="1" />
+                                    <input id="consume-notes" type="text" class="form-control form-control-sm" placeholder="Notes (optional)" />
+                                    <button id="btn-consume" class="btn btn-sm btn-warning flex-shrink-0" onclick="doConsume()" title="Consume"><i class="bi bi-dash-circle"></i></button>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="form-label small mb-1">Restock</label>
+                                <div class="d-flex gap-1">
+                                    <input id="restock-qty" type="number" class="form-control form-control-sm" style="width:75px" value="1" min="1" />
+                                    <input id="restock-notes" type="text" class="form-control form-control-sm" placeholder="Notes (optional)" />
+                                    <button id="btn-restock" class="btn btn-sm btn-success flex-shrink-0" onclick="doRestock()" title="Restock"><i class="bi bi-plus-circle"></i></button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="search-results-picker" class="d-none mt-2">
+                            <div class="small fw-semibold mb-2 text-muted">Multiple items found — select one:</div>
+                            <div id="search-results-list"></div>
+                            <button class="btn btn-sm btn-outline-primary w-100 mt-1 scanner-manage-only d-none" onclick="showQuickAddForm()"><i class="bi bi-plus-lg me-1"></i> Add New Item Instead</button>
+                        </div>
+
+                        <div id="not-found" class="d-none text-center py-2">
+                            <div class="text-muted small mb-2">No item found.</div>
+                            <button class="btn btn-sm btn-outline-primary scanner-manage-only d-none" onclick="showQuickAddForm()"><i class="bi bi-plus-lg me-1"></i> Add Item</button>
+                        </div>
+
+                        <div id="quick-add-form" class="d-none mt-2 scanner-manage-only">
+                            <div class="border rounded p-2 bg-body-secondary">
+                                <div class="small fw-semibold mb-2">New Item</div>
+                                <div class="mb-1">
+                                    <input id="qa-name" type="text" class="form-control form-control-sm" placeholder="Item name (required)" />
+                                    <div id="qa-name-error" class="text-danger small d-none mt-1">Name is required.</div>
+                                </div>
+                                <div class="row g-1 mb-1">
+                                    <div class="col-6">
+                                        <select id="qa-type" class="form-select form-select-sm">
+                                            <option value="1">Reusable</option>
+                                            <option value="0">Consumable</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-6">
+                                        <input id="qa-qty" type="number" class="form-control form-control-sm" value="1" min="1" placeholder="Qty" />
+                                    </div>
+                                </div>
+                                <div class="mb-2">
+                                    <input id="qa-location" type="text" class="form-control form-control-sm" placeholder="Location (optional)" />
+                                </div>
+                                <button id="btn-quick-add" class="btn btn-sm btn-primary w-100" onclick="doQuickAdd()">
+                                    <i class="bi bi-plus-lg me-1"></i> Add &amp; Continue
+                                </button>
+                            </div>
+                        </div>
+
+                        <button class="btn btn-sm btn-outline-secondary mt-3 w-100" onclick="resetScanner()">
+                            <i class="bi bi-arrow-left me-1"></i> Scan Another Item
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>window.canManage = @(_canWrite ? "true" : "false");</script>
+    <script src="https://cdn.jsdelivr.net/npm/@@zxing/library@@0.21.3/umd/index.min.js"></script>
+    <script src="~/js/scanner.js"></script>
     </text>
 }
 @await RenderSectionAsync("Scripts", required: false)

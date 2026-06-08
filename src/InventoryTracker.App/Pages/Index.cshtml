@@ -47,6 +47,51 @@
     </div>
 </div>
 
+<div class="card mb-3">
+    <div class="card-header d-flex align-items-center flex-wrap gap-2">
+        <i class="bi bi-box-arrow-up-right text-success me-1"></i>
+        <strong>Available to Checkout</strong>
+        <span id="avail-count-badge" class="badge bg-success ms-1 d-none"></span>
+        <div class="ms-auto input-group input-group-sm" style="max-width:240px">
+            <input type="text" id="avail-filter" class="form-control" placeholder="Filter by name or category…" oninput="filterAvailItems()" />
+            <button class="btn btn-outline-secondary" onclick="filterAvailItems()"><i class="bi bi-search"></i></button>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <div id="avail-loading" class="text-muted p-3 small"><span class="spinner-border spinner-border-sm me-2"></span>Loading…</div>
+        <div id="avail-error" class="d-none text-danger p-3 small"><i class="bi bi-exclamation-circle me-1"></i>Could not load items.</div>
+        <div id="avail-empty" class="d-none p-3 small d-flex align-items-center gap-2 flex-wrap">
+            <span class="text-muted"><i class="bi bi-inbox me-1"></i>No reusable items match the filter.</span>
+            @if (Model.CanManage)
+            {
+                <button class="btn btn-sm btn-outline-primary" onclick="openScannerModal(document.getElementById('avail-filter').value.trim() || null)">
+                    <i class="bi bi-plus-lg me-1"></i> Add Item
+                </button>
+            }
+        </div>
+        <div id="avail-results" class="d-none">
+            <table class="table table-sm mb-0">
+                <thead class="table-light"><tr><th>Item</th><th>Category</th><th class="text-end">Available</th><th></th></tr></thead>
+                <tbody id="avail-tbody"></tbody>
+            </table>
+            <div class="d-flex align-items-center justify-content-between px-3 py-2 border-top small text-muted">
+                <span id="avail-range-label"></span>
+                <div class="d-flex align-items-center gap-1">
+                    <select id="avail-page-size" class="form-select form-select-sm py-0" style="width:auto" onchange="changeAvailPageSize(this.value)">
+                        <option value="5" selected>5 / page</option>
+                        <option value="10">10 / page</option>
+                        <option value="50">50 / page</option>
+                        <option value="100">100 / page</option>
+                    </select>
+                    <button id="avail-prev" class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="changeAvailPage(-1)">&#8249;</button>
+                    <span id="avail-page-label" class="px-1"></span>
+                    <button id="avail-next" class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="changeAvailPage(1)">&#8250;</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="row g-3">
     <div class="col-lg-6">
         <div class="card h-100">
@@ -209,466 +254,101 @@
     </div>
 </div>
 
-<div class="modal fade" id="scannerModal" tabindex="-1" data-bs-backdrop="static">
-    <div class="modal-dialog modal-dialog-scrollable" style="max-width:480px">
-        <div class="modal-content">
-            <div class="modal-header py-2">
-                <h5 class="modal-title fs-6"><i class="bi bi-upc-scan me-2"></i>Scan Item</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" onclick="closeModal()"></button>
-            </div>
-            <div class="modal-body">
-
-                <div class="input-group input-group-sm mb-3">
-                    <input type="text" id="modal-manual-sku" class="form-control" placeholder="Or type SKU manually" />
-                    <button class="btn btn-outline-secondary" onclick="lookupBarcode(document.getElementById('modal-manual-sku').value)">
-                        <i class="bi bi-search"></i>
-                    </button>
-                </div>
-
-                <div id="scanner-idle" class="text-center text-muted py-2 mb-2">
-                    <i class="bi bi-upc-scan fs-1 d-block mb-1 opacity-25"></i>
-                    <span class="small" id="scanner-idle-label">Click Start to activate camera</span>
-                    <div class="mt-2">
-                        <button id="scanBtn" class="btn btn-sm btn-primary" type="button">
-                            <i class="bi bi-camera me-1"></i> Start Camera
-                        </button>
-                    </div>
-                </div>
-
-                <div id="scanner-active" class="d-none mb-2">
-                    <div id="scanner-viewport" class="scanner-viewport">
-                        <video id="scanner-video" autoplay muted playsinline></video>
-                        <div class="scanner-aim"></div>
-                    </div>
-                    <div class="d-flex justify-content-between align-items-center mt-1">
-                        <span class="text-muted small">Align barcode with the red line</span>
-                        <button id="scanStopBtn" class="btn btn-sm btn-danger" type="button">
-                            <i class="bi bi-stop-circle me-1"></i> Stop
-                        </button>
-                    </div>
-                </div>
-
-                <div id="scanner-processing" class="d-none text-center py-3">
-                    <div class="spinner-border spinner-border-sm text-primary me-2"></div>
-                    <span class="small text-muted">Reading barcode…</span>
-                </div>
-
-                <div id="scanner-error" class="d-none">
-                    <p class="text-danger small mb-2" id="scanner-error-msg"></p>
-                </div>
-
-                <input type="file" id="capture-input" accept="image/*" capture="environment" class="d-none" />
-
-                <div id="scanner-result" class="d-none">
-                    <div class="d-flex align-items-start justify-content-between mb-2">
-                        <div>
-                            <div id="item-name" class="fw-bold"></div>
-                            <div id="item-meta" class="small text-muted"></div>
-                        </div>
-                        <a id="item-edit-link" href="#" class="btn btn-sm btn-outline-secondary ms-2">
-                            <i class="bi bi-pencil"></i>
-                        </a>
-                    </div>
-
-                    <div id="scanner-action-alert" class="d-none alert py-2 px-3 mb-2" role="alert"></div>
-
-                    <div id="scan-warning" class="d-none alert alert-warning py-2 px-3 mb-2">
-                        <i class="bi bi-exclamation-triangle-fill me-1"></i>
-                        <span id="scan-warning-text"></span>
-                    </div>
-
-                    <div id="item-stats" class="row g-2 mb-3 text-center small"></div>
-
-                    <div id="reusable-actions" class="d-none">
-                        <div class="mb-2">
-                            <label class="form-label small mb-1">Checked out by</label>
-                            <input id="checkout-name" type="text" class="form-control form-control-sm" placeholder="Name of person" />
-                            <div id="checkout-name-error" class="text-danger small d-none mt-1">Please enter the person's name.</div>
-                        </div>
-                        <div class="row g-1 mb-2">
-                            <div class="col-5"><input id="action-qty" type="number" class="form-control form-control-sm" value="1" min="1" /></div>
-                            <div class="col-7"><input id="action-notes" type="text" class="form-control form-control-sm" placeholder="Notes (optional)" /></div>
-                        </div>
-                        <div class="d-grid gap-1">
-                            <button id="btn-checkout" class="btn btn-sm btn-success" onclick="doCheckout()"><i class="bi bi-box-arrow-up-right me-1"></i> Check Out</button>
-                        </div>
-                        <div id="active-checkouts" class="mt-3 d-none">
-                            <div class="small fw-semibold mb-1">Currently Out</div>
-                            <div id="checkout-list"></div>
-                        </div>
-                    </div>
-
-                    <div id="consumable-actions" class="d-none">
-                        <div class="mb-2">
-                            <label class="form-label small mb-1">Consume</label>
-                            <div class="d-flex gap-1">
-                                <input id="consume-qty" type="number" class="form-control form-control-sm" style="width:75px" value="1" min="1" />
-                                <input id="consume-notes" type="text" class="form-control form-control-sm" placeholder="Notes (optional)" />
-                                <button id="btn-consume" class="btn btn-sm btn-warning flex-shrink-0" onclick="doConsume()" title="Consume"><i class="bi bi-dash-circle"></i></button>
-                            </div>
-                        </div>
-                        <div>
-                            <label class="form-label small mb-1">Restock</label>
-                            <div class="d-flex gap-1">
-                                <input id="restock-qty" type="number" class="form-control form-control-sm" style="width:75px" value="1" min="1" />
-                                <input id="restock-notes" type="text" class="form-control form-control-sm" placeholder="Notes (optional)" />
-                                <button id="btn-restock" class="btn btn-sm btn-success flex-shrink-0" onclick="doRestock()" title="Restock"><i class="bi bi-plus-circle"></i></button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div id="not-found" class="d-none text-center py-2">
-                        <div class="text-muted small mb-2">No item found for this SKU.</div>
-                        <a href="/Inventory/Create" class="btn btn-sm btn-outline-primary"><i class="bi bi-plus-lg me-1"></i> Add Item</a>
-                    </div>
-
-                    <button class="btn btn-sm btn-outline-secondary mt-3 w-100" onclick="resetScanner()">
-                        <i class="bi bi-arrow-left me-1"></i> Scan Another Item
-                    </button>
-                </div>
-
-            </div>
-        </div>
-    </div>
-</div>
-
 @section Scripts {
-<script src="https://cdn.jsdelivr.net/npm/@@zxing/library@@0.21.3/umd/index.min.js"></script>
 <script>
-(function () {
-    var scanBtn       = document.getElementById('scanBtn');
-    var scanStopBtn   = document.getElementById('scanStopBtn');
-    var scannerIdle   = document.getElementById('scanner-idle');
-    var scannerActive = document.getElementById('scanner-active');
-    var scannerError  = document.getElementById('scanner-error');
-    var scannerProc   = document.getElementById('scanner-processing');
-    var scannerResult = document.getElementById('scanner-result');
-    var captureInput  = document.getElementById('capture-input');
-    var videoEl       = document.getElementById('scanner-video');
-    var bsModal       = null;
-    var zxingReader   = null;
-    var scanning      = false;
-    var currentItem   = null;
-    var DISPLAY_H     = window.innerWidth <= 576 ? Math.round(window.innerHeight * 0.42) : 220;
+// ── Available to Checkout (paginated) ────────────────────────────────────
+var availAllItems = [];
+var availFilterStr = '';
+var availPage = 1;
+var availPageSize = 5;
 
-    if (!window.isSecureContext) {
-        document.getElementById('scanner-idle-label').textContent = 'Tap to take a photo of the barcode';
-        scanBtn.innerHTML = '<i class="bi bi-camera me-1"></i> Open Camera';
-    }
+function loadAvailableItems() {
+    showAvailState('loading');
+    fetch('/api/inventory/available', { credentials: 'include' })
+        .then(function (r) { return r.json(); })
+        .then(function (items) {
+            availAllItems = items || [];
+            var badge = document.getElementById('avail-count-badge');
+            if (badge) {
+                badge.textContent = availAllItems.length;
+                badge.classList.toggle('d-none', availAllItems.length === 0);
+            }
+            renderAvailItems();
+        })
+        .catch(function () { showAvailState('error'); });
+}
 
-    // Modal open / close
-    window.openScannerModal = function (sku) {
-        resetScanner();
-        bsModal = bsModal || new bootstrap.Modal(document.getElementById('scannerModal'));
-        bsModal.show();
-        if (sku) { lookupBarcode(sku.trim()); }
-    };
+window.filterAvailItems = function () {
+    availFilterStr = (document.getElementById('avail-filter').value || '').trim().toLowerCase();
+    availPage = 1;
+    renderAvailItems();
+};
 
-    window.closeModal = function () {
-        stopLive(true);
-    };
+window.changeAvailPageSize = function (val) {
+    availPageSize = parseInt(val) || 5;
+    availPage = 1;
+    renderAvailItems();
+};
 
-    document.getElementById('scannerModal').addEventListener('hidden.bs.modal', function () {
-        stopLive(true);
+window.changeAvailPage = function (delta) {
+    availPage += delta;
+    renderAvailItems();
+};
+
+function renderAvailItems() {
+    var filtered = availAllItems.filter(function (item) {
+        if (!availFilterStr) return true;
+        return (item.name && item.name.toLowerCase().indexOf(availFilterStr) >= 0) ||
+               (item.categoryName && item.categoryName.toLowerCase().indexOf(availFilterStr) >= 0) ||
+               (item.location && item.location.toLowerCase().indexOf(availFilterStr) >= 0);
     });
+    var total = filtered.length;
+    var totalPages = Math.max(1, Math.ceil(total / availPageSize));
+    availPage = Math.min(Math.max(1, availPage), totalPages);
+    if (total === 0) { showAvailState('empty'); return; }
+    var start = (availPage - 1) * availPageSize;
+    var end = Math.min(start + availPageSize, total);
+    var pageItems = filtered.slice(start, end);
+    var tbody = document.getElementById('avail-tbody');
+    tbody.innerHTML = pageItems.map(function (item) {
+        var cat = item.categoryName
+            ? '<span class="badge" style="background:' + escHtml(item.categoryColor || '#6c757d') + '">' + escHtml(item.categoryName) + '</span>'
+            : '<span class="text-muted">—</span>';
+        var avClass = item.availableQuantity > 0 ? 'text-success' : 'text-muted';
+        var disabled = item.availableQuantity <= 0 ? ' disabled' : '';
+        return '<tr>' +
+            '<td class="py-1"><span class="fw-semibold">' + escHtml(item.name) + '</span>' +
+            (item.location ? '<div class="text-muted" style="font-size:.75rem">' + escHtml(item.location) + '</div>' : '') +
+            '</td><td class="py-1 small">' + cat + '</td>' +
+            '<td class="py-1 text-end fw-bold ' + avClass + '">' + item.availableQuantity + '</td>' +
+            '<td class="py-1 text-end"><button class="btn btn-sm btn-outline-success py-0 px-2"' + disabled + ' onclick="lookupById(' + item.id + ')">Checkout</button></td>' +
+            '</tr>';
+    }).join('');
+    document.getElementById('avail-range-label').textContent = 'Showing ' + (start + 1) + '–' + end + ' of ' + total;
+    document.getElementById('avail-page-label').textContent = availPage + ' / ' + totalPages;
+    document.getElementById('avail-prev').disabled = availPage <= 1;
+    document.getElementById('avail-next').disabled = availPage >= totalPages;
+    showAvailState('results');
+}
 
-    scanBtn.addEventListener('click', function () {
-        if (window.isSecureContext) { startLive(); }
-        else { captureInput.value = ''; captureInput.click(); }
+function showAvailState(state) {
+    ['loading', 'error', 'empty', 'results'].forEach(function (s) {
+        var el = document.getElementById('avail-' + s);
+        if (el) el.classList.toggle('d-none', s !== state);
     });
+}
 
-    scanStopBtn && scanStopBtn.addEventListener('click', function () { stopLive(true); });
+document.addEventListener('DOMContentLoaded', function () { loadAvailableItems(); });
 
-    // ── Photo capture (HTTP / insecure context) ──────────────────────────
-    captureInput.addEventListener('change', function () {
-        var file = captureInput.files[0];
-        captureInput.value = '';
-        if (!file) return;
-        scannerIdle.classList.add('d-none');
-        scannerProc.classList.remove('d-none');
-        var url = URL.createObjectURL(file);
-        new ZXing.BrowserMultiFormatReader(new Map([[ZXing.DecodeHintType.TRY_HARDER, true]]))
-            .decodeFromImageUrl(url)
-            .then(function (result) {
-                scannerProc.classList.add('d-none');
-                lookupBarcode(result.getText());
-            })
-            .catch(function () {
-                scannerProc.classList.add('d-none');
-                document.getElementById('scanner-error-msg').textContent =
-                    'Could not read barcode — try again with the barcode clearly in frame.';
-                scannerError.classList.remove('d-none');
-                scannerIdle.classList.remove('d-none');
-            })
-            .finally(function () { URL.revokeObjectURL(url); });
-    });
+function escHtml(s) {
+    return s == null ? '' : String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
 
-    // ── Live viewfinder (HTTPS) ──────────────────────────────────────────
-    // ZXing owns zero DOM — we provide our own <video> and style it freely.
-    // The video element is rotated -90deg via CSS to correct the portrait camera
-    // stream. ZXing reads from the raw MediaStream, so CSS transforms don't
-    // affect detection quality.
-    //
-    // Video CSS size: DISPLAY_H × W (portrait)  →  after rotate(-90deg): W × DISPLAY_H (landscape) ✓
-    // Positioning:  top = (DISPLAY_H-W)/2   left = (W-DISPLAY_H)/2   centres the rotated element
-
-    function positionVideo() {
-        var vp = document.getElementById('scanner-viewport');
-        var W  = vp.offsetWidth || 300;
-        // CSS centres via top:50%;left:50%;translate(-50%,-50%).
-        // We only set dimensions: width=DISPLAY_H, height=W.
-        // After rotate(-90deg): visually W wide × DISPLAY_H tall = fills viewport.
-        videoEl.style.width  = DISPLAY_H + 'px';
-        videoEl.style.height = W + 'px';
-        vp.style.height = DISPLAY_H + 'px';
-    }
-
-    function startLive() {
-        scannerIdle.classList.add('d-none');
-        scannerError.classList.add('d-none');
-        scannerActive.classList.remove('d-none');
-        positionVideo();
-
-        // TRY_HARDER tells ZXing to also scan the image rotated 90° —
-        // needed because the camera delivers landscape frames when the phone
-        // is held portrait, so barcodes appear rotated in the raw stream.
-        var hints = new Map();
-        hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
-        zxingReader = new ZXing.BrowserMultiFormatReader(hints);
-
-        // Get back camera deviceId via a temp getUserMedia call, then hand it
-        // to ZXing.  decodeFromVideoDevice is the correct v0.21 continuous API.
-        navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } } })
-            .then(function (tmpStream) {
-                var track = tmpStream.getVideoTracks()[0];
-                var deviceId = track ? track.getSettings().deviceId : null;
-                tmpStream.getTracks().forEach(function (t) { t.stop(); });
-                return zxingReader.decodeFromVideoDevice(
-                    deviceId,
-                    videoEl,
-                    function (result, err) {
-                        if (result) { stopLive(false); lookupBarcode(result.getText()); }
-                    }
-                );
-            })
-            .then(function () {
-                scanning = true;
-                scanBtn.classList.add('d-none');
-            })
-            .catch(function (err) {
-                stopLive(true);
-                document.getElementById('scanner-error-msg').textContent =
-                    'Camera unavailable: ' + (err.message || err);
-                scannerError.classList.remove('d-none');
-            });
-    }
-
-    function stopLive(showIdle) {
-        scanning = false;
-        scanBtn.classList.remove('d-none');
-        if (zxingReader) {
-            try { zxingReader.stopContinuousDecode(); } catch (e) {}
-            try { zxingReader.reset(); } catch (e) {}
-            zxingReader = null;
-        }
-        if (videoEl.srcObject) {
-            videoEl.srcObject.getTracks().forEach(function (t) { t.stop(); });
-            videoEl.srcObject = null;
-        }
-        scannerActive.classList.add('d-none');
-        if (showIdle) scannerIdle.classList.remove('d-none');
-    }
-
-    window.resetScanner = function () {
-        scannerResult.classList.add('d-none');
-        scannerError.classList.add('d-none');
-        scannerIdle.classList.remove('d-none');
-        document.getElementById('scanner-action-alert').classList.add('d-none');
-        currentItem = null;
-    };
-
-    window.lookupBarcode = function (sku) {
-        if (!sku) return;
-        scannerIdle.classList.add('d-none');
-        scannerResult.classList.remove('d-none');
-        document.getElementById('scanner-action-alert').classList.add('d-none');
-        document.getElementById('checkout-name-error').classList.add('d-none');
-        document.getElementById('item-name').textContent = 'Looking up…';
-        document.getElementById('item-meta').textContent = '';
-        document.getElementById('item-stats').innerHTML = '';
-        document.getElementById('scan-warning').classList.add('d-none');
-        document.getElementById('reusable-actions').classList.add('d-none');
-        document.getElementById('consumable-actions').classList.add('d-none');
-        document.getElementById('not-found').classList.add('d-none');
-
-        fetch('/api/inventory/status?sku=' + encodeURIComponent(sku), { credentials: 'include' })
-            .then(function (r) { return r.json(); })
-            .then(function (item) {
-                if (!item || !item.id) {
-                    document.getElementById('item-name').textContent = 'Not found';
-                    document.getElementById('not-found').classList.remove('d-none');
-                    return;
-                }
-                currentItem = item;
-                document.getElementById('item-name').textContent = item.name;
-                document.getElementById('item-meta').textContent =
-                    (item.location || '') + (item.sku ? ' · ' + item.sku : '');
-                document.getElementById('item-edit-link').href = '/Inventory/Edit?id=' + item.id;
-
-                if (item.scanWarning) {
-                    document.getElementById('scan-warning-text').textContent = item.scanWarning;
-                    document.getElementById('scan-warning').classList.remove('d-none');
-                }
-
-                var statsHtml = '';
-                if (item.itemType === 1) {
-                    statsHtml =
-                        '<div class="col-4"><div class="border rounded p-1"><div class="fw-bold">' + item.quantity + '</div><div class="text-muted">Total</div></div></div>' +
-                        '<div class="col-4"><div class="border rounded p-1 border-success"><div class="fw-bold text-success">' + item.availableQuantity + '</div><div class="text-muted">Available</div></div></div>' +
-                        '<div class="col-4"><div class="border rounded p-1 border-warning"><div class="fw-bold text-warning">' + item.checkedOutCount + '</div><div class="text-muted">Out</div></div></div>';
-                    if (item.lostCount > 0) {
-                        statsHtml += '<div class="col-4"><div class="border rounded p-1 border-danger"><div class="fw-bold text-danger">' + item.lostCount + '</div><div class="text-muted">Lost</div></div></div>';
-                    }
-                    document.getElementById('item-stats').innerHTML = statsHtml;
-                    renderReusableActions(item);
-                } else {
-                    statsHtml =
-                        '<div class="col-6"><div class="border rounded p-1"><div class="fw-bold">' + item.quantity + '</div><div class="text-muted">In Stock</div></div></div>' +
-                        '<div class="col-6"><div class="border rounded p-1 ' + (item.isLowStock ? 'border-danger' : '') + '"><div class="fw-bold ' + (item.isLowStock ? 'text-danger' : '') + '">' + item.minimumQuantity + '</div><div class="text-muted">Min</div></div></div>';
-                    document.getElementById('item-stats').innerHTML = statsHtml;
-                    document.getElementById('consumable-actions').classList.remove('d-none');
-                }
-            })
-            .catch(function () {
-                document.getElementById('item-name').textContent = 'Error looking up item';
-            });
-    };
-
-    function renderReusableActions(item) {
-        document.getElementById('reusable-actions').classList.remove('d-none');
-        var checkouts = item.activeCheckouts || [];
-        var listEl    = document.getElementById('checkout-list');
-        var activeEl  = document.getElementById('active-checkouts');
-        if (checkouts.length > 0) {
-            activeEl.classList.remove('d-none');
-            listEl.innerHTML = checkouts.map(function (c) {
-                return '<div class="d-flex align-items-center justify-content-between border rounded p-1 mb-1 small">' +
-                    '<div><span class="fw-semibold">' + c.checkedOutBy + '</span>' +
-                    '<span class="text-muted ms-1">×' + c.quantity + '</span>' +
-                    '<div class="text-muted" style="font-size:0.7rem">' + new Date(c.checkedOutAt).toLocaleDateString() + '</div></div>' +
-                    '<div class="d-flex gap-1">' +
-                    '<button class="btn btn-xs btn-outline-success py-0 px-1" onclick="doCheckin(' + c.id + ')" title="Check In"><i class="bi bi-box-arrow-in-down"></i></button>' +
-                    '<button class="btn btn-xs btn-outline-danger py-0 px-1" onclick="doMarkLost(' + c.id + ')" title="Mark Lost"><i class="bi bi-x-circle"></i></button>' +
-                    '</div></div>';
-            }).join('');
-        } else {
-            activeEl.classList.add('d-none');
-        }
-    }
-
-    function showActionAlert(msg, type) {
-        var el = document.getElementById('scanner-action-alert');
-        el.className = 'alert alert-' + (type || 'danger') + ' py-2 px-3 mb-2';
-        el.textContent = msg;
-        el.classList.remove('d-none');
-        if (type === 'success') setTimeout(function () { el.classList.add('d-none'); }, 3000);
-    }
-
-    function setBtn(id, loading) {
-        var btn = document.getElementById(id);
-        if (!btn) return;
-        btn.disabled = loading;
-    }
-
-    window.doCheckout = function () {
-        if (!currentItem) return;
-        var name  = document.getElementById('checkout-name').value.trim();
-        var qty   = parseInt(document.getElementById('action-qty').value) || 1;
-        var notes = document.getElementById('action-notes').value.trim() || null;
-        var nameErr = document.getElementById('checkout-name-error');
-        if (!name) {
-            nameErr.classList.remove('d-none');
-            document.getElementById('checkout-name').focus();
-            return;
-        }
-        nameErr.classList.add('d-none');
-        setBtn('btn-checkout', true);
-        apiPost('/api/inventory/checkout', { itemId: currentItem.id, checkedOutBy: name, quantity: qty, notes: notes })
-            .then(function () {
-                document.getElementById('checkout-name').value = '';
-                showActionAlert('Checked out successfully.', 'success');
-                lookupBarcode(currentItem.sku || '');
-            })
-            .catch(function (msg) { showActionAlert(msg || 'Check out failed.'); })
-            .finally(function () { setBtn('btn-checkout', false); });
-    };
-
-    window.doCheckin = function (recordId) {
-        document.querySelectorAll('#checkout-list button').forEach(function (b) { b.disabled = true; });
-        apiPost('/api/inventory/checkin', { recordId: recordId, notes: null })
-            .then(function () {
-                showActionAlert('Checked in successfully.', 'success');
-                lookupBarcode(currentItem.sku || '');
-            })
-            .catch(function (msg) {
-                showActionAlert(msg || 'Check in failed.');
-                document.querySelectorAll('#checkout-list button').forEach(function (b) { b.disabled = false; });
-            });
-    };
-
-    window.doMarkLost = function (recordId) {
-        if (!confirm('Mark this item as lost?')) return;
-        document.querySelectorAll('#checkout-list button').forEach(function (b) { b.disabled = true; });
-        apiPost('/api/inventory/lost', { recordId: recordId, notes: null })
-            .then(function () {
-                showActionAlert('Item marked as lost.', 'success');
-                lookupBarcode(currentItem.sku || '');
-            })
-            .catch(function (msg) {
-                showActionAlert(msg || 'Action failed.');
-                document.querySelectorAll('#checkout-list button').forEach(function (b) { b.disabled = false; });
-            });
-    };
-
-    window.doConsume = function () {
-        if (!currentItem) return;
-        var qty   = parseInt(document.getElementById('consume-qty').value) || 1;
-        var notes = document.getElementById('consume-notes').value.trim() || null;
-        setBtn('btn-consume', true);
-        apiPost('/api/inventory/consume', { itemId: currentItem.id, quantity: qty, notes: notes })
-            .then(function () {
-                showActionAlert('Consumed ' + qty + ' unit(s).', 'success');
-                lookupBarcode(currentItem.sku || '');
-            })
-            .catch(function (msg) { showActionAlert(msg || 'Consume failed.'); })
-            .finally(function () { setBtn('btn-consume', false); });
-    };
-
-    window.doRestock = function () {
-        if (!currentItem) return;
-        var qty   = parseInt(document.getElementById('restock-qty').value) || 1;
-        var notes = document.getElementById('restock-notes').value.trim() || null;
-        setBtn('btn-restock', true);
-        apiPost('/api/inventory/restock', { itemId: currentItem.id, quantity: qty, notes: notes })
-            .then(function () {
-                showActionAlert('Restocked ' + qty + ' unit(s).', 'success');
-                lookupBarcode(currentItem.sku || '');
-            })
-            .catch(function (msg) { showActionAlert(msg || 'Restock failed.'); })
-            .finally(function () { setBtn('btn-restock', false); });
-    };
-
-    function apiPost(url, body) {
-        return fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify(body)
-        }).then(function (r) {
-            if (!r.ok) return r.text().then(function (t) { throw t || ('Server error ' + r.status); });
-            return r;
-        });
-    }
-})();
+if (new URLSearchParams(location.search).get('scan') === '1') {
+    window.addEventListener('load', function () { openScannerModal(null); });
+}
 </script>
 }
+
+@* scanner JS is now in wwwroot/js/scanner.js loaded via _Layout.cshtml *@
+@* placeholder to find end of old code *@

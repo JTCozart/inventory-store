@@ -160,6 +160,23 @@
       .nav-links { display: none; }
       .nav-toggle { display: block; }
     }
+
+    /* Prevent horizontal overflow without breaking position:sticky */
+    body { overflow-x: clip; }
+    table { max-width: 100%; }
+
+    /* When embedded inside the app iframe, hide website chrome */
+    html.in-iframe > body > nav,
+    html.in-iframe > body > footer { display: none !important; }
+    html.in-iframe .sidebar-nav { top: 0; height: 100vh; }
+    html.in-iframe .content-hero { padding-top: 1.5rem; }
+
+    /* TOC active link highlight */
+    .sidebar-nav a.toc-active {
+      color: var(--blue);
+      background: #eff6ff;
+      font-weight: 600;
+    }
   </style>
 </head>
 <body>
@@ -198,15 +215,19 @@
       <li class="section-label">Getting Started</li>
       <li><a href="#installation">Installation</a></li>
       <li><a href="#first-login">First Login</a></li>
+      <li><a href="#dashboard">Dashboard</a></li>
 
       <li class="section-label">Inventory</li>
+      <li><a href="#inventory-page">Inventory Page</a></li>
       <li><a href="#item-types">Item Types</a></li>
       <li><a href="#categories">Categories</a></li>
+      <li><a href="#locations">Locations</a></li>
       <li><a href="#adding-items">Adding Items</a></li>
       <li><a href="#editing-items">Editing Items</a></li>
       <li><a href="#expiry-dates">Expiry Dates</a></li>
 
       <li class="section-label">Operations</li>
+      <li><a href="#clients">Clients</a></li>
       <li><a href="#checkout">Check Out &amp; Check In</a></li>
       <li><a href="#consumables">Consumables</a></li>
       <li><a href="#barcode-scanning">Barcode Scanning</a></li>
@@ -217,6 +238,8 @@
 
       <li class="section-label">Settings</li>
       <li><a href="#users">User Management</a></li>
+      <li><a href="#manage-categories">Managing Categories</a></li>
+      <li><a href="#manage-locations">Managing Locations</a></li>
       <li><a href="#remote-access">Remote Access</a></li>
       <li><a href="#public-view">Public View</a></li>
       <li><a href="#dark-mode">Dark Mode</a></li>
@@ -243,22 +266,14 @@
       <ol>
         <li>Download <code>InventoryTracker-Setup-&lt;version&gt;.exe</code> from the <a href="https://github.com/JTCozart/inventory-tracker/releases/latest" target="_blank">latest release</a>.</li>
         <li>Run the installer as <strong>Administrator</strong>.</li>
-        <li>The installer will:
-          <ul>
-            <li>Stop any existing running instance</li>
-            <li>Copy application files to <code>Program Files\InventoryTracker</code></li>
-            <li>Register a Windows service (<code>InventoryTracker</code>) set to auto-start at boot</li>
-            <li>Add the tray companion to Windows startup</li>
-            <li>Launch the tray companion immediately</li>
-          </ul>
-        </li>
+        <li>The installer will set everything up automatically and launch the app.</li>
       </ol>
       <div class="callout">
         <i class="fa-solid fa-circle-info"></i>
         <strong>System requirements:</strong> Windows 10 version 1803 or later (x64). OpenSSH Client is required only for Serveo remote access (built in on Windows 10 1809+).
       </div>
       <h3>Upgrading</h3>
-      <p>Run the new installer over the existing installation. It stops the service, replaces the files, and restarts automatically. Your database and settings are preserved.</p>
+      <p>Run the new installer over the existing installation. It upgrades and restarts automatically. Your data and settings are preserved.</p>
       <h3>Uninstalling</h3>
       <p>Use <strong>Add or Remove Programs</strong>. You will be asked whether to delete the database and settings - choose No to keep your data for a future reinstall.</p>
     </section>
@@ -267,6 +282,56 @@
       <h2><i class="fa-solid fa-key"></i> First Login</h2>
       <p>Open <strong>http://localhost:5050</strong> in a browser, or double-click the tray icon. You will see a one-time setup page - create your admin username and password (minimum 8 characters). This page disappears permanently once an account is created.</p>
       <p>To share access with your team, create additional user accounts in <strong>Settings → User Management</strong>.</p>
+    </section>
+
+    <section id="dashboard">
+      <h2><i class="fa-solid fa-gauge-high"></i> Dashboard</h2>
+      <p>The Dashboard is the first screen you see after logging in. It gives a live snapshot of your inventory at a glance.</p>
+
+      <h3>Stat cards</h3>
+      <p>Four cards across the top show key numbers at a glance:</p>
+      <table>
+        <tr><th>Card</th><th>Shows</th></tr>
+        <tr><td><strong>Items</strong></td><td>Total number of distinct inventory items</td></tr>
+        <tr><td><strong>In Stock</strong></td><td>Sum of all item quantities</td></tr>
+        <tr><td><strong>Low Stock</strong></td><td>Number of items at or below their minimum quantity threshold</td></tr>
+        <tr><td><strong>Checked Out</strong></td><td>Total units of reusable items currently checked out</td></tr>
+      </table>
+
+      <h3>Available to Checkout panel</h3>
+      <p>At the top of the dashboard, above the other panels, is the <strong>Available to Checkout</strong> panel. It lists all reusable items that currently have units available. Use the filter box to search by name, category, or location. Use the page size dropdown and arrows at the bottom right to page through the list. Click <strong>Checkout</strong> on any row to open the scan dialog pre-loaded with that item so you can check it out right away.</p>
+
+      <h3>Panels</h3>
+      <p>Below the stat cards are four live panels. Each has a <strong>View report</strong> or <strong>Full log</strong> link to the corresponding detailed report.</p>
+      <table>
+        <tr><th>Panel</th><th>Shows</th></tr>
+        <tr><td><strong>Low Stock</strong></td><td>Items whose available quantity is at or below the minimum. Shows available qty and minimum qty side by side.</td></tr>
+        <tr><td><strong>Checked Out</strong></td><td>All active checkouts. Rows highlighted yellow have been out more than 7 days.</td></tr>
+        <tr><td><strong>Lost Items</strong></td><td>Items that have been marked lost, with the last person who had them and the date.</td></tr>
+        <tr><td><strong>Recent Activity</strong></td><td>The 10 most recent actions taken by any user: checkouts, check-ins, edits, imports, and more.</td></tr>
+      </table>
+      <p>Click any item name in the panels to open its detail panel directly.</p>
+
+      <h3>Quick scan</h3>
+      <p>At the top right of the Dashboard there is a SKU field and a <strong>Scan</strong> button. Type a SKU or item name and press Enter, or click <strong>Scan</strong> to open the camera. Once an item is found you can check it out, check it in, consume, or restock it without leaving the Dashboard.</p>
+    </section>
+
+    <section id="inventory-page">
+      <h2><i class="fa-solid fa-boxes-stacked"></i> Inventory Page</h2>
+      <p>Click <strong>Inventory</strong> in the top navigation bar to see all items in a searchable, filterable table.</p>
+
+      <h3>Searching and filtering</h3>
+      <p>Use the search box to find items by name, SKU, location, or category. Select a category from the dropdown next to the search box to narrow the list to a single category. Both filters can be active at the same time. When any filter is active, a clear button (X) appears to reset in one click.</p>
+
+      <h3>The item table</h3>
+      <p>Each row shows the item's name, type, category, SKU, location, total quantity, available quantity, minimum quantity, expiry date, and status badge. On smaller screens some columns are hidden to fit the layout.</p>
+      <p>Click any row to open the <strong>item detail panel</strong>, a slide-in panel that shows full details and lets you perform actions (check out, check in, consume, restock) without navigating away.</p>
+
+      <h3>Adding and importing items</h3>
+      <p>Admin and Manager users see an <strong>Add Item</strong> button and an <strong>Import</strong> button at the top right. Add Item opens the create form. Import opens the CSV import dialog.</p>
+
+      <h3>Deleting items</h3>
+      <p>Each row has a trash icon at the right. Click it and confirm to permanently delete the item. Requires Admin or Manager role.</p>
     </section>
 
     <section id="item-types">
@@ -282,35 +347,38 @@
         <tr>
           <td><strong>Consumable</strong></td>
           <td>Stock that is used up: batteries, paper, cleaning supplies</td>
-          <td>Consume (decrement), Restock (increment)</td>
+          <td>Consume, Restock</td>
         </tr>
       </table>
-      <p>The <strong>Available Quantity</strong> for Reusable items is: Total − Checked Out − Lost. For Consumables it equals Total Quantity directly.</p>
+      <p><strong>Available Quantity</strong> for Reusable items reflects how many units are physically on hand (not checked out or lost). For Consumables it is the same as the total quantity.</p>
     </section>
 
     <section id="categories">
       <h2><i class="fa-solid fa-tags"></i> Categories</h2>
-      <p>Categories let you group items (e.g. Tools, Electronics, Safety) and filter the inventory list with one click. Each category can have an optional color for quick visual identification. Managing categories requires Admin or Manager role - the Categories tab in Settings is not shown to Viewers.</p>
-      <h3>Creating categories</h3>
-      <ol>
-        <li>Go to <strong>Settings → Categories</strong></li>
-        <li>Click <strong>Add Category</strong></li>
-        <li>Enter a name and choose a color from the swatch palette</li>
-        <li>Click <strong>Create</strong></li>
-      </ol>
+      <p>Categories let you group items (e.g. Tools, Electronics, Safety) and filter the inventory list with one click. Each category can have an optional color for quick visual identification. Requires Admin or Manager role.</p>
       <h3>Assigning a category</h3>
       <p>Select a category from the <strong>Category</strong> dropdown when creating or editing an item. Choose <em>None</em> to leave an item uncategorized.</p>
+      <h3>Creating a category while adding an item</h3>
+      <p>On the <strong>Add Item</strong> form, click the <strong>+</strong> button next to the Category dropdown. An inline form appears where you can enter a name and pick a color. Click <strong>Create</strong> - the new category is added to the dropdown and selected automatically. No need to leave the page.</p>
       <h3>Filtering by category</h3>
       <p>On the Inventory page, use the <strong>All Categories</strong> dropdown in the search bar to filter the list to a single category. When a filter is active the item count below the table changes to <em>Showing X of Y items</em> with a <strong>Clear filters</strong> link to reset in one click.</p>
       <div class="callout">
         <i class="fa-solid fa-circle-info"></i>
         Deleting a category sets all items in that category to <em>None</em> - it does not delete the items.
       </div>
+      <h3>Assigning items to a category from Settings</h3>
+      <p>In <strong>Settings → Categories</strong>, each category row has a list icon button. Click it to open a panel showing all items currently in that category and a dropdown to add other items. Use <strong>Remove</strong> to take an item out of the category, or select from the dropdown and click <strong>Add</strong> to assign one. This lets you reorganize categories without opening each item individually.</p>
+    </section>
+
+    <section id="locations">
+      <h2><i class="fa-solid fa-location-dot"></i> Locations</h2>
+      <p>The <strong>Location</strong> field on an item is free text (e.g. "Shelf A3", "Bin 12", "Office Closet"). When typing a location on the Add Item or Edit Item form, existing locations appear as suggestions - select one to keep naming consistent.</p>
+      <p>Manage all locations in one place from <strong>Settings → Locations</strong>. See <a href="#manage-locations">Managing Locations</a> for bulk rename, clear, and item assignment.</p>
     </section>
 
     <section id="adding-items">
       <h2><i class="fa-solid fa-plus"></i> Adding Items</h2>
-      <p>Click <strong>Inventory</strong> in the sidebar, then <strong>Add Item</strong>. Requires Admin or Manager role - the button is not shown to Viewers.</p>
+      <p>Click <strong>Inventory</strong> in the top navigation bar, then <strong>Add Item</strong>. Requires Admin or Manager role - the button is not shown to Viewers.</p>
       <table>
         <tr><th>Field</th><th>Required</th><th>Notes</th></tr>
         <tr><td>Name</td><td>Yes</td><td>Displayed everywhere; used in search</td></tr>
@@ -328,10 +396,10 @@
 
     <section id="editing-items">
       <h2><i class="fa-solid fa-pencil"></i> Editing Items</h2>
-      <p>Click an item row in the inventory list to open the <strong>detail panel</strong>, then click the <strong>Edit</strong> button (pencil icon) to go to the full edit form. All fields except Item Type can be changed. Requires Admin or Manager role - the Edit button is not shown to Viewers.</p>
-      <p>You can also edit Name, Quantity, Location, SKU, Minimum Quantity, and Scan Warning directly from the detail panel without leaving the page - changes save via the API instantly.</p>
+      <p>Click an item row in the inventory list to open the <strong>detail panel</strong>, then click the <strong>Edit</strong> button (pencil icon). An edit form slides in over the current page - you never leave the inventory list. All fields except Item Type can be changed. Requires Admin or Manager role.</p>
+      <p>The edit form includes Name, Quantity, Minimum Quantity, SKU, Location, Category, Expiry Date, Scan Warning, and Description. After saving, the detail panel refreshes automatically to show the updated information.</p>
       <h3>Deleting items</h3>
-      <p>Click the trash icon on the item row and confirm. Deletion is permanent. Checkout history for the item is retained in the activity log. Requires Admin or Manager role - the delete button is not shown to Viewers.</p>
+      <p>Click the trash icon on the item row and confirm. Deletion is permanent. Requires Admin or Manager role.</p>
     </section>
 
     <section id="expiry-dates">
@@ -352,16 +420,40 @@
       <p>Add or update the expiry date on the <strong>Add Item</strong> or <strong>Edit Item</strong> form using the date picker. The field accepts any date; leave it blank for items that do not expire.</p>
     </section>
 
+    <section id="clients">
+      <h2><i class="fa-solid fa-people-group"></i> Clients</h2>
+      <p>The <strong>Clients</strong> page lets you keep a list of the people who borrow items. Every checkout is linked to a client so you always know who has what.</p>
+
+      <h3>Viewing clients</h3>
+      <p>Click <strong>Clients</strong> in the top navigation bar. The list shows each client's name, phone number, and date of birth. Use the search box to find someone by name or phone. Click any row to see their full details.</p>
+
+      <h3>Adding a client</h3>
+      <p>Click <strong>Add Client</strong> (Admin or Manager only). Fill in at least the first name, then optionally add a last name, phone, date of birth, address, and notes. Click <strong>Save</strong>.</p>
+
+      <h3>Editing a client</h3>
+      <p>Click any client row to open their details, then click <strong>Edit</strong>. You can update any field. Click <strong>Save</strong> when done.</p>
+
+      <h3>Deleting a client</h3>
+      <p>Click the trash icon on the client row and confirm. Requires Admin or Manager role.</p>
+
+      <h3>Creating a client during checkout</h3>
+      <p>If you are checking out an item and the person is not in the client list yet, type their name in the <strong>Client</strong> field and select <strong>Create "[name]"</strong> from the dropdown. A client record is created automatically so you can continue without leaving the checkout flow.</p>
+    </section>
+
     <section id="checkout">
       <h2><i class="fa-solid fa-box-arrow-up"></i> Check Out &amp; Check In</h2>
       <p>Reusable items support check-out and check-in workflows. Requires Admin or Manager role. Viewers can open the item detail panel and see the Active Checkouts list (who has what, for how long) but cannot check out, check in, or mark items lost.</p>
       <h3>Checking out</h3>
       <ol>
         <li>Click an item row to open the detail panel</li>
-        <li>In the <strong>Check Out</strong> section, enter the person's name</li>
+        <li>In the <strong>Check Out</strong> section, type a name in the <strong>Client</strong> field. Matching clients from your client list appear as you type. Select one, or select <strong>Create "[name]"</strong> to add a new client on the spot.</li>
         <li>Set the quantity (default 1) and optional notes</li>
         <li>Click <strong>Check Out</strong></li>
       </ol>
+      <div class="callout">
+        <i class="fa-solid fa-circle-info"></i>
+        A client name is required to check out an item. If the person is not in your client list yet, just type their name and choose <strong>Create "[name]"</strong> from the dropdown.
+      </div>
       <p>The item's Available Quantity decreases immediately. The checkout record appears in <strong>Active Checkouts</strong> within the detail panel, showing the person's name and how many days the item has been out.</p>
       <h3>Checking in</h3>
       <ol>
@@ -370,7 +462,9 @@
         <li>Click <strong>Check In</strong></li>
       </ol>
       <h3>Marking as lost</h3>
-      <p>If an item is not returned, click <strong>Mark Lost</strong> on the checkout record. The quantity is permanently subtracted from the item's total and appears in the Lost Items report.</p>
+      <p>If an item is not returned, click <strong>Mark Lost</strong> on the checkout record. The quantity is removed from the available count and appears in the Lost Items report.</p>
+      <h3>Marking a lost item as found</h3>
+      <p>If a previously lost item turns up, open the item's detail panel. A <strong>Lost Items</strong> section appears below Active Checkouts, showing each lost record. Click <strong>Mark Found</strong> on the record - the quantity is restored to available stock and the record is removed from the Lost Items report.</p>
     </section>
 
     <section id="consumables">
@@ -388,12 +482,24 @@
         <li>Under <strong>Restock</strong>, enter the quantity added and optional notes</li>
         <li>Click <strong>Restock</strong></li>
       </ol>
-      <p>Both operations are recorded in the activity log with the user, quantity, and notes.</p>
+      <p>Both operations are recorded in the activity log.</p>
     </section>
 
     <section id="barcode-scanning">
       <h2><i class="fa-solid fa-camera"></i> Barcode Scanning</h2>
       <p>Any device with a camera can scan barcodes to quickly look up and action items - no app install required. Access the web UI from any device on the same network (or via a tunnel for remote access).</p>
+      <h3>Quick scan from anywhere</h3>
+      <p>Click the <strong>barcode icon</strong> in the top navigation bar to open the scanner from any page. At the top of the dialog there are two search modes:</p>
+      <ul>
+        <li><strong>SKU / Barcode</strong> - type or scan a barcode. If no exact match is found the app automatically searches by name and shows the closest results.</li>
+        <li><strong>Name</strong> - type part of an item name. All matching items are shown so you can pick the right one.</li>
+      </ul>
+      <p>If multiple items match, a list appears. Click any result to load that item. Once an item is loaded you can check it out, check it in, consume, or restock it without navigating away.</p>
+
+      <h3>Adding an item from the scanner</h3>
+      <p>If no item is found, an <strong>Add Item</strong> button appears (Admin and Manager only). Click it to fill in a quick form right inside the dialog: name, type (Reusable or Consumable), quantity, and optional location. Click <strong>Add &amp; Continue</strong> to create the item and load it immediately. If you scanned a barcode, the SKU is attached to the new item automatically.</p>
+      <p>If you searched by name and got multiple results, an <strong>Add New Item Instead</strong> button appears at the bottom of the results list if you want to create a brand new item rather than picking an existing one.</p>
+
       <h3>Scanning in the inventory list</h3>
       <p>Click the scan icon next to the SKU field on the Add Item or Edit Item forms to scan a barcode directly into that field.</p>
       <h3>Assigning SKUs</h3>
@@ -423,7 +529,7 @@
         <tr><th>Column</th><th>Required</th><th>Notes</th></tr>
         <tr><td>Type</td><td>Yes</td><td><code>Reusable</code> or <code>Consumable</code> (case-insensitive)</td></tr>
         <tr><td>Name</td><td>Yes</td><td>Item name</td></tr>
-        <tr><td>Quantity</td><td>Yes</td><td>Non-negative integer</td></tr>
+        <tr><td>Quantity</td><td>Yes</td><td>Whole number, 0 or higher</td></tr>
         <tr><td>MinimumQuantity</td><td>No</td><td>Defaults to 0</td></tr>
         <tr><td>SKU</td><td>No</td><td>Leave blank to skip</td></tr>
         <tr><td>Location</td><td>No</td><td>Free text</td></tr>
@@ -441,7 +547,7 @@
 
     <section id="reports">
       <h2><i class="fa-solid fa-chart-bar"></i> Reports</h2>
-      <p>Go to <strong>Reports</strong> in the sidebar. All reports support printing via the <strong>Print</strong> button. The <strong>Export CSV</strong> button (top right) downloads all items regardless of which tab is active.</p>
+      <p>Click <strong>Reports</strong> in the top navigation bar. Use the menu on the left to switch between report types. All reports support printing via the <strong>Print</strong> button. The <strong>Export CSV</strong> button (top right) downloads all items regardless of which report is active.</p>
       <table>
         <tr><th>Tab</th><th>Shows</th></tr>
         <tr><td><strong>Stock Levels</strong></td><td>All items with quantities, availability, and expiry. Filterable by type and low-stock flag.</td></tr>
@@ -452,6 +558,34 @@
         <tr><td><strong>Barcode Sheet</strong></td><td>Printable barcode grid for all items that have a SKU.</td></tr>
         <tr><td><strong>Activity Log</strong></td><td>Full audit trail. Filter by date range and action type. Timestamps shown as date.</td></tr>
       </table>
+    </section>
+
+    <section id="manage-categories">
+      <h2><i class="fa-solid fa-tags"></i> Managing Categories</h2>
+      <p>Go to <strong>Settings → Categories</strong> (Admin or Manager). Here you can create, rename, recolor, delete categories, and manage which items belong to each category.</p>
+      <h3>Creating a category</h3>
+      <ol>
+        <li>Click <strong>Add Category</strong></li>
+        <li>Enter a name and choose a color from the swatch palette</li>
+        <li>Click <strong>Create</strong></li>
+      </ol>
+      <h3>Editing and deleting</h3>
+      <p>Click the pencil icon on a category row to change its name or color. Click the trash icon to delete it - items in that category become uncategorized but are not deleted.</p>
+      <h3>Assigning items to a category</h3>
+      <p>Click the list icon on any category row to open the item panel. It shows all items currently in that category with a <strong>Remove</strong> button on each, and a dropdown to add other items to the category. Changes take effect immediately.</p>
+    </section>
+
+    <section id="manage-locations">
+      <h2><i class="fa-solid fa-geo-alt"></i> Managing Locations</h2>
+      <p>Go to <strong>Settings → Locations</strong> (Admin or Manager). The table lists every location currently assigned to at least one item, along with how many items use it.</p>
+      <h3>Adding a location</h3>
+      <p>Click <strong>Add Location</strong>, enter a name, then click <strong>Next</strong>. The item assignment panel opens immediately so you can assign items to the new location right away.</p>
+      <h3>Assigning items to a location</h3>
+      <p>Click the list icon on any location row to open the item panel. It shows all items currently at that location with a <strong>Remove</strong> button on each, plus a dropdown to add other items. Changes take effect immediately without a page reload.</p>
+      <h3>Renaming a location</h3>
+      <p>Click the pencil icon on a location row, enter the new name, and click <strong>Rename</strong>. Every item at that location is updated at once.</p>
+      <h3>Clearing a location</h3>
+      <p>Click the X icon to remove the location value from all items that use it. The items remain in inventory with no location set.</p>
     </section>
 
     <section id="users">
@@ -469,7 +603,7 @@
         <tr><th>Role</th><th>Can do</th></tr>
         <tr><td><strong>Admin</strong></td><td>Everything - manage users, settings, categories, database backup/restore, and all inventory operations</td></tr>
         <tr><td><strong>Manager</strong></td><td>All inventory operations (checkout, consume, restock, add/edit/delete items, manage categories); run all reports; cannot manage users, remote access, or database settings</td></tr>
-        <tr><td><strong>Viewer</strong></td><td>View inventory and reports only - no write operations. Can see item details and active checkouts (read-only) but cannot check out, consume, edit, delete, or import items. The Categories settings tab and all write controls are hidden.</td></tr>
+        <tr><td><strong>Viewer</strong></td><td>View inventory and reports only. Can see item details and active checkouts but cannot check out, consume, edit, delete, or import items.</td></tr>
       </table>
     </section>
 
@@ -481,7 +615,7 @@
       <p>Serveo gives you a <strong>free persistent subdomain</strong> - the same URL every time you start the tunnel. Requires a free Serveo account.</p>
       <p><strong>One-time setup:</strong></p>
       <ol>
-        <li>Click <strong>Generate SSH Key</strong>. The app generates a key pair and stores it securely in the database.</li>
+        <li>Click <strong>Generate SSH Key</strong>.</li>
         <li>Copy the public key using the clipboard button.</li>
         <li>Open <a href="https://console.serveo.net" target="_blank">console.serveo.net</a>, sign up, and add the public key under <strong>SSH Keys</strong>.</li>
         <li>Choose a subdomain name (e.g. <code>myinventory</code>) and click <strong>Save Subdomain</strong>. Your URL will be <code>https://myinventory.serveousercontent.com</code>.</li>
@@ -491,7 +625,7 @@
         <i class="fa-solid fa-triangle-exclamation"></i>
         Free Serveo accounts show a visitor interstitial page. Upgrade to <strong>Serveo Pro ($6/month)</strong> to remove it.
       </div>
-      <p>To start Serveo automatically on service restart, go to <strong>Auto-start</strong> in the accordion and select <strong>Serveo</strong>.</p>
+      <p>To start Serveo automatically whenever the app starts, go to <strong>Auto-start</strong> and select <strong>Serveo</strong>.</p>
 
       <h3>Quick Tunnel (Cloudflare)</h3>
       <p>Zero configuration - click <strong>Quick Tunnel</strong> and a temporary HTTPS URL is generated instantly via Cloudflare. No account needed. The URL <strong>changes every time</strong> the tunnel is started, so it is suitable for one-off sharing only.</p>
@@ -500,7 +634,7 @@
       <p>Enter a subdomain name to claim <code>yourname.loca.lt</code>. Free but shows an interstitial page to visitors (a known limitation of the loca.lt service). First-come-first-served subdomain - not guaranteed to be available.</p>
 
       <h3>Stopping a tunnel</h3>
-      <p>Click <strong>Stop Tunnel</strong> in the status card, or simply stop the Windows service.</p>
+      <p>Click <strong>Stop Tunnel</strong> in the status card.</p>
     </section>
 
     <section id="public-view">
@@ -546,11 +680,12 @@
 
     <section id="dark-mode">
       <h2><i class="fa-solid fa-moon"></i> Dark Mode</h2>
-      <p>Inventory Tracker includes a built-in dark theme. Click the <strong>moon icon</strong> near the bottom of the sidebar (above the logout button) to switch to dark mode. Click the <strong>sun icon</strong> to return to light mode.</p>
-      <p>Your preference is saved in the browser and persists across sessions and page reloads. Each user's browser stores its own setting independently - changing dark mode on one device does not affect other devices or other users.</p>
+      <p>Inventory Tracker includes a built-in dark theme. Click the <strong>moon icon</strong> in the top navigation bar (to the left of your username) to switch to dark mode. Click the <strong>sun icon</strong> to return to light mode.</p>
+      <p>If your operating system is set to dark mode and you have not chosen a preference in the app, the app (including the login page) will automatically follow your system setting.</p>
+      <p>Your preference is remembered per device and persists across sessions. Changing the theme on one device does not affect other devices or other users.</p>
       <div class="callout">
         <i class="fa-solid fa-circle-info"></i>
-        Dark mode applies to the full app UI including modals, tables, cards, and forms. It does not affect printed reports - those always print in light mode.
+        Dark mode applies to the full app UI including panels, tables, cards, and forms. It does not affect printed reports - those always print in light mode.
       </div>
     </section>
 
@@ -559,7 +694,7 @@
       <p>Go to <strong>Settings → Database</strong> (Admin only) to download a backup of your data or restore from a previous backup.</p>
 
       <h3>Downloading a backup</h3>
-      <p>Click <strong>Download Backup</strong>. The app creates a clean, consistent snapshot of the database using SQLite's <code>VACUUM INTO</code> operation - the app stays fully running during the backup - and downloads it as a <code>.db</code> file named with the current date and time.</p>
+      <p>Click <strong>Download Backup</strong>. The app creates a clean snapshot of your data while staying fully online, then downloads it as a <code>.db</code> file named with the current date and time.</p>
       <div class="callout">
         <i class="fa-solid fa-circle-info"></i>
         Store backups in a safe location outside the server machine. A good habit is to download a backup before any major change (bulk import, user restructure) and before upgrading the app.
@@ -571,7 +706,7 @@
         <li>Click <strong>Choose File</strong> under <em>Restore from Backup</em> and select a <code>.db</code> file previously downloaded from this page.</li>
         <li>Click <strong>Restore Database</strong> and confirm the prompt.</li>
       </ol>
-      <p>Before overwriting, the app automatically saves the current database alongside it as <code>inventory.db.bak</code>, giving you a one-level safety net.</p>
+      <p>The app automatically saves a copy of your current data before overwriting, giving you a safety net if the restore needs to be undone.</p>
       <div class="callout warn">
         <i class="fa-solid fa-triangle-exclamation"></i>
         <strong>Restore replaces all current data.</strong> Every item, user, checkout record, and setting is overwritten with the contents of the backup file. Always download a fresh backup immediately before restoring so you have a copy of the current state.
@@ -580,29 +715,25 @@
 
     <section id="updates">
       <h2><i class="fa-solid fa-arrow-up-circle"></i> Updates</h2>
-      <p>Inventory Tracker checks for new releases on GitHub automatically - once at startup (after a 15-second delay) and every 24 hours thereafter.</p>
+      <p>Inventory Tracker checks for new releases on GitHub automatically in the background. When an update is available you will see a notice without needing to do anything.</p>
       <p>When a newer version is available, a small notice appears <strong>above the logout button</strong> in the sidebar with the new version number and a link to the GitHub release. The notice persists until the app is updated - it does not need to be dismissed.</p>
       <p>To trigger an immediate check, go to <strong>Settings → App Info</strong> and click <strong>Check for Updates</strong>. The result appears inline - either a version badge linking to the release page or a confirmation that the current version is up to date.</p>
-      <p>To update, download and run the new installer. It stops the running service, replaces the files, and restarts - typically takes under 30 seconds.</p>
+      <p>To update, download and run the new installer. It upgrades and restarts automatically, typically in under 30 seconds.</p>
       <p>The current version is shown in <strong>Settings → App Info</strong>.</p>
     </section>
 
     <section id="tray">
       <h2><i class="fa-solid fa-desktop"></i> Tray Icon</h2>
-      <p>The tray companion runs separately from the service. It shows the service status via its icon color and provides quick access to common actions.</p>
+      <p>The tray icon sits in the Windows system tray and provides quick access to common actions.</p>
       <table>
         <tr><th>Action</th><th>What it does</th></tr>
-        <tr><td>Double-click icon</td><td>Open the web UI in your default browser</td></tr>
-        <tr><td>Open Inventory Tracker</td><td>Open the web UI</td></tr>
-        <tr><td>Local: http://...</td><td>Show the local network address - click to copy to clipboard</td></tr>
-        <tr><td>Tunnel: ...</td><td>Show the active tunnel URL - click to copy to clipboard</td></tr>
-        <tr><td>Reset Admin Password</td><td>Reset the password of the <strong>first admin account created</strong> (lowest ID) without logging in - useful if locked out. Does not affect other admin accounts.</td></tr>
-        <tr><td>Exit</td><td>Close the tray companion - the Windows service keeps running</td></tr>
+        <tr><td>Double-click icon</td><td>Open Inventory Tracker in your default browser</td></tr>
+        <tr><td>Open Inventory Tracker</td><td>Open Inventory Tracker in your browser</td></tr>
+        <tr><td>Local: http://...</td><td>Shows your local network address. Click to copy.</td></tr>
+        <tr><td>Tunnel: ...</td><td>Shows the active tunnel URL. Click to copy.</td></tr>
+        <tr><td>Reset Admin Password</td><td>Reset the admin password without logging in. Useful if you are locked out.</td></tr>
+        <tr><td>Exit</td><td>Close the tray icon. Inventory Tracker keeps running and stays accessible.</td></tr>
       </table>
-      <div class="callout">
-        <i class="fa-solid fa-circle-info"></i>
-        Closing the tray companion does <strong>not</strong> stop the web server. The service continues running in the background and is still accessible at its URL.
-      </div>
     </section>
 
     <section id="roles">
@@ -615,7 +746,7 @@
         <tr><td>Consume / restock items</td><td>✓</td><td>✓</td><td></td></tr>
         <tr><td>Add / edit / delete items</td><td>✓</td><td>✓</td><td></td></tr>
         <tr><td>Import CSV</td><td>✓</td><td>✓</td><td></td></tr>
-        <tr><td>Manage categories</td><td>✓</td><td>✓</td><td></td></tr>
+        <tr><td>Manage categories &amp; locations</td><td>✓</td><td>✓</td><td></td></tr>
         <tr><td>Manage users</td><td>✓</td><td></td><td></td></tr>
         <tr><td>Configure remote access</td><td>✓</td><td></td><td></td></tr>
         <tr><td>Enable / disable public view</td><td>✓</td><td></td><td></td></tr>
@@ -661,6 +792,33 @@
 </footer>
 
 <script>
+  // Detect when loaded inside the app iframe
+  if (window !== window.top) {
+    document.documentElement.classList.add('in-iframe');
+  }
+
+  // TOC scroll spy
+  (function () {
+    var sidebarNav = document.querySelector('.sidebar-nav');
+    if (!sidebarNav || !window.IntersectionObserver) return;
+    var sections = document.querySelectorAll('section[id]');
+    var links = sidebarNav.querySelectorAll('a[href^="#"]');
+
+    function setActive(id) {
+      links.forEach(function (a) {
+        a.classList.toggle('toc-active', a.getAttribute('href') === '#' + id);
+      });
+    }
+
+    var observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) setActive(entry.target.id);
+      });
+    }, { rootMargin: '-8% 0px -80% 0px', threshold: 0 });
+
+    sections.forEach(function (s) { observer.observe(s); });
+  })();
+
   (function () {
     // Always start the TOC at the top regardless of browser scroll restoration
     var sidebarNav = document.querySelector('.sidebar-nav');

@@ -31,7 +31,7 @@ public class LoginModel : PageModel
 
     public async Task<IActionResult> OnPostAsync()
     {
-        var username = Request.Form["username"].ToString();
+        var username = Request.Form["username"].ToString().Trim();
         var password = Request.Form["password"].ToString();
 
         if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))

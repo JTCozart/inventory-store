@@ -64,6 +64,51 @@ public class IndexModel : PageModel
         return RedirectToPage();
     }
 
+    public async Task<IActionResult> OnGetEditItemDataAsync(int id)
+    {
+        var item = await _inventoryService.GetItemAsync(id);
+        if (item is null) return new JsonResult(new { success = false, error = "Item not found." });
+        var categories = (await _categoryService.GetAllAsync())
+            .Select(c => new { c.Id, c.Name, c.Color });
+        var locations = (await _inventoryService.GetAllLocationsAsync())
+            .Select(l => l.Name);
+        return new JsonResult(new { success = true, item, categories, locations }, AppJsonOptions.Web);
+    }
+
+    public async Task<IActionResult> OnPostEditItemAsync(
+        int id, string name, int quantity, int minimumQuantity,
+        string? sku, string? location, int? categoryId, string? expiryDate,
+        string? scanWarning, string? description)
+    {
+        if (!CanWrite()) return new JsonResult(new { success = false, error = "Insufficient permissions." }) { StatusCode = 403 };
+        var (uid, uname) = GetUser();
+        DateOnly? expiry = null;
+        if (!string.IsNullOrWhiteSpace(expiryDate) && DateOnly.TryParse(expiryDate, out var parsed))
+            expiry = parsed;
+        try
+        {
+            await _inventoryService.UpdateItemAsync(id, new UpdateInventoryItemDto(
+                name, quantity, description, location, sku, minimumQuantity, scanWarning, categoryId, expiry
+            ), uid, uname);
+            return new JsonResult(new { success = true });
+        }
+        catch (Exception ex)
+        {
+            return new JsonResult(new { success = false, error = ex.Message });
+        }
+    }
+
+    public async Task<IActionResult> OnPostCreateCategoryAsync(string name, string? color)
+    {
+        if (!CanWrite()) return new JsonResult(new { success = false, error = "Insufficient permissions." }) { StatusCode = 403 };
+        try
+        {
+            var cat = await _categoryService.CreateAsync(new CreateCategoryDto(name, color));
+            return new JsonResult(new { id = cat.Id, name = cat.Name, color = cat.Color });
+        }
+        catch (Exception ex) { return BadRequest(ex.Message); }
+    }
+
     public async Task<IActionResult> OnPostUpdateItemAsync(
         int id, string name, int quantity, string? description, string? location,
         string? sku, int minimumQuantity, string? scanWarning)
@@ -99,9 +144,16 @@ public class IndexModel : PageModel
     {
         if (!CanWrite()) return new JsonResult(new { success = false, error = "Insufficient permissions." }) { StatusCode = 403 };
         var (uid, uname) = GetUser();
-        var record = await _checkoutService.CheckOutAsync(
-            new CheckOutItemDto(itemId, checkedOutBy, quantity, notes), uid, uname);
-        return new JsonResult(new { success = true, record }, AppJsonOptions.Web);
+        try
+        {
+            var record = await _checkoutService.CheckOutAsync(
+                new CheckOutItemDto(itemId, checkedOutBy, quantity, notes), uid, uname);
+            return new JsonResult(new { success = true, record }, AppJsonOptions.Web);
+        }
+        catch (Exception ex)
+        {
+            return new JsonResult(new { success = false, error = ex.Message });
+        }
     }
 
     public async Task<IActionResult> OnPostCheckInItemAsync(int recordId, string? notes)
@@ -120,12 +172,27 @@ public class IndexModel : PageModel
         return new JsonResult(new { success = true });
     }
 
+    public async Task<IActionResult> OnPostMarkFoundItemAsync(int recordId, string? notes)
+    {
+        if (!CanWrite()) return new JsonResult(new { success = false, error = "Insufficient permissions." }) { StatusCode = 403 };
+        var (uid, uname) = GetUser();
+        await _checkoutService.MarkFoundAsync(new MarkFoundDto(recordId, notes), uid, uname);
+        return new JsonResult(new { success = true });
+    }
+
     public async Task<IActionResult> OnPostConsumeItemAsync(int itemId, int quantity, string? notes)
     {
         if (!CanWrite()) return new JsonResult(new { success = false, error = "Insufficient permissions." }) { StatusCode = 403 };
         var (uid, uname) = GetUser();
-        await _checkoutService.ConsumeAsync(new ConsumeItemDto(itemId, quantity, notes), uid, uname);
-        return new JsonResult(new { success = true });
+        try
+        {
+            await _checkoutService.ConsumeAsync(new ConsumeItemDto(itemId, quantity, notes), uid, uname);
+            return new JsonResult(new { success = true });
+        }
+        catch (Exception ex)
+        {
+            return new JsonResult(new { success = false, error = ex.Message });
+        }
     }
 
     public async Task<IActionResult> OnPostRestockItemAsync(int itemId, int quantity, string? notes)

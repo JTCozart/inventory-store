@@ -19,6 +19,7 @@ public class CreateModel : PageModel
     public CreateInputModel Input { get; set; } = new();
 
     public IEnumerable<CategoryDto> Categories { get; private set; } = [];
+    public IEnumerable<string> Locations { get; private set; } = [];
 
     public CreateModel(IInventoryService inventoryService, ICategoryService categoryService)
     {
@@ -29,7 +30,21 @@ public class CreateModel : PageModel
     public async Task<IActionResult> OnGetAsync()
     {
         Categories = await _categoryService.GetAllAsync();
+        Locations  = (await _inventoryService.GetAllLocationsAsync()).Select(l => l.Name);
         return Page();
+    }
+
+    public async Task<IActionResult> OnPostCreateCategoryAsync(string name, string? color)
+    {
+        try
+        {
+            var cat = await _categoryService.CreateAsync(new CreateCategoryDto(name, color));
+            return new JsonResult(new { id = cat.Id, name = cat.Name, color = cat.Color });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     public async Task<IActionResult> OnPostAsync()

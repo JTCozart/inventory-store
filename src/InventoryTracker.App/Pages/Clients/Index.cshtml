@@ -1,0 +1,288 @@
+@page
+@model InventoryTracker.App.Pages.Clients.IndexModel
+@{
+    ViewData["Title"] = "Clients";
+    ViewData["ActivePage"] = "Clients";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <h1 class="h3 mb-0">Clients</h1>
+    @if (Model.CanManage)
+    {
+        <button class="btn btn-primary btn-sm" onclick="openClientEdit(null)">
+            <i class="bi bi-person-plus me-1"></i> Add Client
+        </button>
+    }
+</div>
+
+<div class="card mb-3">
+    <div class="card-body py-2">
+        <form method="get" class="d-flex gap-2">
+            <input type="search" name="q" value="@Model.Query" class="form-control" style="max-width:300px" placeholder="Search by name or phone…" />
+            <button type="submit" class="btn btn-outline-secondary"><i class="bi bi-search"></i></button>
+            @if (!string.IsNullOrEmpty(Model.Query))
+            {
+                <a href="/Clients" class="btn btn-outline-secondary"><i class="bi bi-x"></i></a>
+            }
+        </form>
+    </div>
+</div>
+
+@if (!Model.Clients.Any())
+{
+    <div class="text-center py-5 text-muted">
+        <i class="bi bi-people display-4"></i>
+        <p class="mt-2">No clients found.</p>
+    </div>
+}
+else
+{
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Name</th>
+                        <th class="d-none d-md-table-cell">Phone</th>
+                        <th class="d-none d-lg-table-cell">Date of Birth</th>
+                        <th class="d-none d-lg-table-cell">Address</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var c in Model.Clients)
+                    {
+                        <tr style="cursor:pointer" onclick="openClientView(@c.Id)">
+                            <td class="fw-semibold">@c.DisplayName</td>
+                            <td class="text-muted small d-none d-md-table-cell">@(c.Phone ?? "—")</td>
+                            <td class="text-muted small d-none d-lg-table-cell">@(c.DateOfBirth?.ToString("MMM d, yyyy") ?? "—")</td>
+                            <td class="text-muted small d-none d-lg-table-cell">@(c.Address ?? "—")</td>
+                            <td class="text-end" onclick="event.stopPropagation()">
+                                @if (Model.CanManage)
+                                {
+                                    <button class="btn btn-sm btn-outline-danger" onclick="confirmDeleteClient(@c.Id, '@Html.Raw(c.DisplayName.Replace("'","\\\'"))')" title="Delete"><i class="bi bi-trash"></i></button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="text-muted small mt-2">@Model.Clients.Count() client@(Model.Clients.Count() == 1 ? "" : "s")</div>
+}
+
+<!-- View Modal -->
+<div class="modal fade" id="clientViewModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h5 class="modal-title fs-6" id="view-client-name">Client Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="view-modal-body">
+                <div class="text-center py-3"><span class="spinner-border spinner-border-sm"></span></div>
+            </div>
+            <div class="modal-footer py-2">
+                @if (Model.CanManage)
+                {
+                    <button class="btn btn-sm btn-outline-primary" id="view-edit-btn" onclick="">
+                        <i class="bi bi-pencil me-1"></i>Edit
+                    </button>
+                }
+                <button class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal fade" id="clientEditModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h5 class="modal-title fs-6" id="edit-modal-title">Client</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="edit-alert" class="d-none alert py-2 px-3 mb-3" role="alert"></div>
+                <div class="row g-2">
+                    <div class="col-6">
+                        <label class="form-label small mb-1">First Name <span class="text-danger">*</span></label>
+                        <input id="edit-firstname" type="text" class="form-control form-control-sm" />
+                        <div id="edit-firstname-err" class="text-danger small d-none mt-1">Required.</div>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small mb-1">Last Name</label>
+                        <input id="edit-lastname" type="text" class="form-control form-control-sm" />
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small mb-1">Phone</label>
+                        <input id="edit-phone" type="tel" class="form-control form-control-sm" />
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small mb-1">Email</label>
+                        <input id="edit-email" type="email" class="form-control form-control-sm" />
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small mb-1">Date of Birth</label>
+                        <input id="edit-dob" type="date" class="form-control form-control-sm" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label small mb-1">Address</label>
+                        <input id="edit-address" type="text" class="form-control form-control-sm" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label small mb-1">Notes</label>
+                        <textarea id="edit-notes" class="form-control form-control-sm" rows="3"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer py-2">
+                <button class="btn btn-sm btn-primary" id="btn-save-client" onclick="saveClient()">
+                    <i class="bi bi-floppy me-1"></i>Save
+                </button>
+                <button class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete confirmation -->
+<div class="modal fade" id="clientDeleteModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h5 class="modal-title fs-6">Delete Client</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body small">
+                Delete <strong id="delete-client-name"></strong>? This cannot be undone.
+            </div>
+            <div class="modal-footer py-2">
+                <button class="btn btn-sm btn-danger" onclick="deleteClient()">Delete</button>
+                <button class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+var _editClientId = null;
+var _deleteClientId = null;
+var _clientViewModal = null;
+var _clientEditModal = null;
+var _clientDeleteModal = null;
+
+function getViewModal()   { return _clientViewModal   || (_clientViewModal   = new bootstrap.Modal(document.getElementById('clientViewModal'))); }
+function getEditModal()   { return _clientEditModal   || (_clientEditModal   = new bootstrap.Modal(document.getElementById('clientEditModal'))); }
+function getDeleteModal() { return _clientDeleteModal || (_clientDeleteModal = new bootstrap.Modal(document.getElementById('clientDeleteModal'))); }
+
+function escHtml(s) {
+    return s == null ? '' : String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+window.openClientView = function(id) {
+    document.getElementById('view-client-name').textContent = 'Loading…';
+    document.getElementById('view-modal-body').innerHTML = '<div class="text-center py-3"><span class="spinner-border spinner-border-sm"></span></div>';
+    var editBtn = document.getElementById('view-edit-btn');
+    if (editBtn) editBtn.onclick = function() { getViewModal().hide(); openClientEdit(id); };
+    getViewModal().show();
+    fetch('/api/clients/' + id, { credentials: 'include' })
+        .then(r => r.json())
+        .then(c => {
+            document.getElementById('view-client-name').textContent = c.displayName;
+            var dob = c.dateOfBirth ? new Date(c.dateOfBirth + 'T00:00:00').toLocaleDateString('en-US', {year:'numeric',month:'long',day:'numeric'}) : '—';
+            document.getElementById('view-modal-body').innerHTML =
+                '<dl class="row mb-0 small">' +
+                '<dt class="col-4">First Name</dt><dd class="col-8">' + escHtml(c.firstName) + '</dd>' +
+                '<dt class="col-4">Last Name</dt><dd class="col-8">' + escHtml(c.lastName || '—') + '</dd>' +
+                '<dt class="col-4">Phone</dt><dd class="col-8">' + escHtml(c.phone || '—') + '</dd>' +
+                '<dt class="col-4">Email</dt><dd class="col-8">' + (c.email ? '<a href="mailto:' + escHtml(c.email) + '">' + escHtml(c.email) + '</a>' : '—') + '</dd>' +
+                '<dt class="col-4">Date of Birth</dt><dd class="col-8">' + dob + '</dd>' +
+                '<dt class="col-4">Address</dt><dd class="col-8">' + escHtml(c.address || '—') + '</dd>' +
+                '<dt class="col-4">Notes</dt><dd class="col-8" style="white-space:pre-wrap">' + escHtml(c.notes || '—') + '</dd>' +
+                '</dl>';
+        })
+        .catch(() => { document.getElementById('view-modal-body').innerHTML = '<p class="text-danger small">Failed to load client.</p>'; });
+};
+
+window.openClientEdit = function(id) {
+    _editClientId = id;
+    document.getElementById('edit-modal-title').textContent = id ? 'Edit Client' : 'Add Client';
+    document.getElementById('edit-alert').classList.add('d-none');
+    document.getElementById('edit-firstname-err').classList.add('d-none');
+    ['edit-firstname','edit-lastname','edit-phone','edit-email','edit-dob','edit-address','edit-notes'].forEach(function(x) {
+        var el = document.getElementById(x);
+        if (el) el.value = '';
+    });
+    if (id) {
+        fetch('/api/clients/' + id, { credentials: 'include' })
+            .then(r => r.json())
+            .then(c => {
+                document.getElementById('edit-firstname').value = c.firstName || '';
+                document.getElementById('edit-lastname').value  = c.lastName  || '';
+                document.getElementById('edit-phone').value     = c.phone     || '';
+                document.getElementById('edit-email').value     = c.email     || '';
+                document.getElementById('edit-dob').value       = c.dateOfBirth ? c.dateOfBirth.substring(0,10) : '';
+                document.getElementById('edit-address').value   = c.address   || '';
+                document.getElementById('edit-notes').value     = c.notes     || '';
+            })
+            .catch(() => {});
+    }
+    getEditModal().show();
+};
+
+window.saveClient = function() {
+    var firstName = document.getElementById('edit-firstname').value.trim();
+    var err = document.getElementById('edit-firstname-err');
+    if (!firstName) { err.classList.remove('d-none'); document.getElementById('edit-firstname').focus(); return; }
+    err.classList.add('d-none');
+    var body = {
+        firstName:   firstName,
+        lastName:    document.getElementById('edit-lastname').value.trim() || null,
+        phone:       document.getElementById('edit-phone').value.trim()    || null,
+        email:       document.getElementById('edit-email').value.trim()    || null,
+        dateOfBirth: document.getElementById('edit-dob').value             || null,
+        address:     document.getElementById('edit-address').value.trim()  || null,
+        notes:       document.getElementById('edit-notes').value.trim()    || null
+    };
+    var btn = document.getElementById('btn-save-client');
+    btn.disabled = true;
+    var url    = _editClientId ? '/api/clients/' + _editClientId : '/api/clients';
+    var method = _editClientId ? 'PUT' : 'POST';
+    fetch(url, { method: method, headers: {'Content-Type':'application/json', 'X-Requested-With':'XMLHttpRequest'}, credentials:'include', body: JSON.stringify(body) })
+        .then(function(r) {
+            if (r.status === 403) throw 'You do not have permission to perform this action.';
+            if (r.status === 404) throw 'Client not found.';
+            if (!r.ok) return r.json()
+                .then(function(j) { throw j.error || j.title || ('Server error ' + r.status); })
+                .catch(function(e) { if (typeof e === 'string') throw e; throw 'Server error ' + r.status; });
+            return r;
+        })
+        .then(function() { getEditModal().hide(); location.reload(); })
+        .catch(function(msg) {
+            var al = document.getElementById('edit-alert');
+            al.className = 'alert alert-danger py-2 px-3 mb-3';
+            al.textContent = (typeof msg === 'string' ? msg : (msg && msg.message) || 'Failed to save. Check the app is running the latest version.');
+            al.classList.remove('d-none');
+            console.error('saveClient error:', msg);
+        })
+        .finally(function() { btn.disabled = false; });
+};
+
+window.confirmDeleteClient = function(id, name) {
+    _deleteClientId = id;
+    document.getElementById('delete-client-name').textContent = name;
+    getDeleteModal().show();
+};
+
+window.deleteClient = function() {
+    if (!_deleteClientId) return;
+    fetch('/api/clients/' + _deleteClientId, { method: 'DELETE', credentials: 'include' })
+        .then(() => { getDeleteModal().hide(); location.reload(); })
+        .catch(() => {});
+};
+</script>
+}

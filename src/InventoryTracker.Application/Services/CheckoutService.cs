@@ -64,7 +64,8 @@ public class CheckoutService : ICheckoutService
                 CheckedOutBy    = dto.CheckedOutBy,
                 Quantity        = dto.Quantity,
                 Notes           = dto.Notes,
-                CheckedOutAt    = DateTime.UtcNow
+                CheckedOutAt    = DateTime.UtcNow,
+                ClientId        = dto.ClientId
             };
 
             var created = await _checkoutRepo.CreateAsync(record);
@@ -152,6 +153,40 @@ public class CheckoutService : ICheckoutService
             UserId = userId, Username = username,
             Action = "Lost", EntityType = "InventoryItem", EntityId = item.Id,
             Details = $"{record.Quantity}x '{item.Name}' marked as lost (checked out by '{record.CheckedOutBy}')"
+        });
+
+        return MapRecord(record, item.Name);
+    }
+
+    public async Task<CheckoutRecordDto> MarkFoundAsync(MarkFoundDto dto, int userId, string username)
+    {
+        var record = await _checkoutRepo.GetByIdAsync(dto.CheckoutRecordId)
+            ?? throw new KeyNotFoundException("Checkout record not found.");
+
+        if (!record.IsLost)
+            throw new InvalidOperationException("Item is not marked as lost.");
+
+        var item = await _inventoryRepo.GetByIdAsync(record.InventoryItemId)
+            ?? throw new KeyNotFoundException("Item not found.");
+
+        if (item is not ReusableItem reusable)
+            throw new InvalidOperationException("Expected a reusable item for this checkout record.");
+
+        record.IsLost      = false;
+        record.CheckedInAt = null;
+        record.Notes       = dto.Notes ?? record.Notes;
+        await _checkoutRepo.UpdateAsync(record);
+
+        reusable.LostCount       = Math.Max(0, reusable.LostCount - record.Quantity);
+        reusable.CheckedOutCount += record.Quantity;
+        reusable.UpdatedAt        = DateTime.UtcNow;
+        await _inventoryRepo.UpdateAsync(reusable);
+
+        await _activityRepo.CreateAsync(new ActivityLog
+        {
+            UserId = userId, Username = username,
+            Action = "Found", EntityType = "InventoryItem", EntityId = item.Id,
+            Details = $"{record.Quantity}x '{item.Name}' marked as found (was checked out by '{record.CheckedOutBy}')"
         });
 
         return MapRecord(record, item.Name);
@@ -256,6 +291,6 @@ public class CheckoutService : ICheckoutService
 
     private static CheckoutRecordDto MapRecord(CheckoutRecord r, string itemName) => new(
         r.Id, r.InventoryItemId, itemName, r.CheckedOutBy,
-        r.Quantity, r.CheckedOutAt, r.CheckedInAt, r.IsLost, r.Notes
+        r.Quantity, r.CheckedOutAt, r.CheckedInAt, r.IsLost, r.Notes, r.ClientId
     );
 }

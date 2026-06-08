@@ -38,6 +38,8 @@ public record CreateInventoryItemDto(
     DateOnly? ExpiryDate
 );
 
+public record LocationSummaryDto(string Name, int Count);
+
 // ItemType is intentionally excluded — an item's type cannot change after creation.
 public record UpdateInventoryItemDto(
     string Name,

@@ -41,11 +41,11 @@ public class InventoryService : IInventoryService
             ? new ReusableItem()
             : new ConsumableItem();
 
-        item.Name            = dto.Name;
+        item.Name            = dto.Name.Trim();
         item.Quantity        = dto.Quantity;
-        item.Description     = dto.Description;
-        item.Location        = dto.Location;
-        item.SKU             = dto.SKU;
+        item.Description     = string.IsNullOrWhiteSpace(dto.Description) ? null : dto.Description.Trim();
+        item.Location        = string.IsNullOrWhiteSpace(dto.Location) ? null : dto.Location.Trim();
+        item.SKU             = string.IsNullOrWhiteSpace(dto.SKU) ? null : dto.SKU.Trim();
         item.MinimumQuantity = dto.MinimumQuantity;
         item.ScanWarning     = string.IsNullOrWhiteSpace(dto.ScanWarning) ? null : dto.ScanWarning.Trim();
         item.CategoryId      = dto.CategoryId;
@@ -75,11 +75,11 @@ public class InventoryService : IInventoryService
             throw new InvalidOperationException(
                 $"Cannot set Quantity to {dto.Quantity}: {reusable.CheckedOutCount} unit(s) are currently checked out.");
 
-        item.Name            = dto.Name;
+        item.Name            = dto.Name.Trim();
         item.Quantity        = dto.Quantity;
-        item.Description     = dto.Description;
-        item.Location        = dto.Location;
-        item.SKU             = dto.SKU;
+        item.Description     = string.IsNullOrWhiteSpace(dto.Description) ? null : dto.Description.Trim();
+        item.Location        = string.IsNullOrWhiteSpace(dto.Location) ? null : dto.Location.Trim();
+        item.SKU             = string.IsNullOrWhiteSpace(dto.SKU) ? null : dto.SKU.Trim();
         item.MinimumQuantity = dto.MinimumQuantity;
         item.ScanWarning     = string.IsNullOrWhiteSpace(dto.ScanWarning) ? null : dto.ScanWarning.Trim();
         item.CategoryId      = dto.CategoryId;
@@ -143,6 +143,83 @@ public class InventoryService : IInventoryService
             item.CategoryId, item.Category?.Name, item.ExpiryDate,
             item.IsPublic, item.Category?.Color
         );
+    }
+
+    public async Task<IEnumerable<LocationSummaryDto>> GetAllLocationsAsync()
+    {
+        var locations = await _inventoryRepository.GetAllLocationsAsync();
+        return locations.Select(l => new LocationSummaryDto(l.Location, l.Count));
+    }
+
+    public async Task RenameLocationAsync(string from, string to, int userId, string username)
+    {
+        from = from.Trim();
+        to   = to.Trim();
+        if (string.IsNullOrWhiteSpace(to))
+            throw new ArgumentException("New location name cannot be empty.");
+        if (from == to) return;
+
+        await _inventoryRepository.BulkUpdateLocationAsync(from, to);
+
+        await _activityLogRepository.CreateAsync(new ActivityLog
+        {
+            UserId = userId, Username = username,
+            Action = "LocationRenamed",
+            Details = $"Location '{from}' renamed to '{to}'"
+        });
+    }
+
+    public async Task SetItemLocationAsync(int itemId, string? location, int userId, string username)
+    {
+        var item = await _inventoryRepository.GetByIdAsync(itemId)
+            ?? throw new KeyNotFoundException($"Item {itemId} not found.");
+
+        var oldLocation = item.Location;
+        item.Location  = string.IsNullOrWhiteSpace(location) ? null : location.Trim();
+        item.UpdatedAt = DateTime.UtcNow;
+        await _inventoryRepository.UpdateAsync(item);
+
+        await _activityLogRepository.CreateAsync(new ActivityLog
+        {
+            UserId = userId, Username = username,
+            Action = "LocationChanged", EntityType = "InventoryItem", EntityId = itemId,
+            Details = $"'{item.Name}' location changed from '{oldLocation ?? "none"}' to '{item.Location ?? "none"}'"
+        });
+    }
+
+    public async Task SetItemCategoryAsync(int itemId, int? categoryId, int userId, string username)
+    {
+        var item = await _inventoryRepository.GetByIdAsync(itemId)
+            ?? throw new KeyNotFoundException($"Item {itemId} not found.");
+
+        var oldName = item.Category?.Name ?? "none";
+        item.CategoryId = categoryId;
+        item.UpdatedAt  = DateTime.UtcNow;
+        await _inventoryRepository.UpdateAsync(item);
+
+        var newName = categoryId.HasValue
+            ? (await _categoryRepository.GetByIdAsync(categoryId.Value))?.Name ?? categoryId.ToString()
+            : "none";
+
+        await _activityLogRepository.CreateAsync(new ActivityLog
+        {
+            UserId = userId, Username = username,
+            Action = "CategoryChanged", EntityType = "InventoryItem", EntityId = itemId,
+            Details = $"'{item.Name}' category changed from '{oldName}' to '{newName}'"
+        });
+    }
+
+    public async Task ClearLocationAsync(string location, int userId, string username)
+    {
+        location = location.Trim();
+        await _inventoryRepository.BulkUpdateLocationAsync(location, null);
+
+        await _activityLogRepository.CreateAsync(new ActivityLog
+        {
+            UserId = userId, Username = username,
+            Action = "LocationCleared",
+            Details = $"Location '{location}' cleared from all items"
+        });
     }
 
     public async Task<string> ExportToCsvAsync()

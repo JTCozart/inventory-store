@@ -23,6 +23,7 @@ public class EditModel : PageModel
 
     public ItemType DisplayItemType { get; private set; }
     public IEnumerable<CategoryDto> Categories { get; private set; } = [];
+    public IEnumerable<string> Locations { get; private set; } = [];
 
     public EditModel(IInventoryService inventoryService, ICategoryService categoryService)
     {
@@ -30,28 +31,22 @@ public class EditModel : PageModel
         _categoryService  = categoryService;
     }
 
-    public async Task<IActionResult> OnGetAsync(int id)
+    public IActionResult OnGetAsync(int id)
     {
-        var item = await _inventoryService.GetItemAsync(id);
-        if (item is null) return NotFound();
+        return RedirectToPage("/Inventory/Index", new { open = id });
+    }
 
-        Categories      = await _categoryService.GetAllAsync();
-        ItemId          = id;
-        DisplayItemType = item.ItemType;
-        Input = new EditInputModel
+    public async Task<IActionResult> OnPostCreateCategoryAsync(string name, string? color)
+    {
+        try
         {
-            Name            = item.Name,
-            Quantity        = item.Quantity,
-            Description     = item.Description,
-            Location        = item.Location,
-            SKU             = item.SKU,
-            MinimumQuantity = item.MinimumQuantity,
-            ScanWarning     = item.ScanWarning,
-            CategoryId      = item.CategoryId,
-            ExpiryDate      = item.ExpiryDate
-        };
-
-        return Page();
+            var cat = await _categoryService.CreateAsync(new CreateCategoryDto(name, color));
+            return new JsonResult(new { id = cat.Id, name = cat.Name, color = cat.Color });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     public async Task<IActionResult> OnPostAsync()

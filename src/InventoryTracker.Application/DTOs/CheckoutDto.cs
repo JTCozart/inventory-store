@@ -11,7 +11,8 @@ public record CheckoutRecordDto(
     DateTime CheckedOutAt,
     DateTime? CheckedInAt,
     bool IsLost,
-    string? Notes
+    string? Notes,
+    int? ClientId
 );
 
 public record ItemStatusDto(
@@ -34,7 +35,8 @@ public record CheckOutItemDto(
     int InventoryItemId,
     string CheckedOutBy,
     int Quantity,
-    string? Notes
+    string? Notes,
+    int? ClientId = null
 );
 
 public record CheckInItemDto(
@@ -43,6 +45,11 @@ public record CheckInItemDto(
 );
 
 public record MarkLostDto(
+    int CheckoutRecordId,
+    string? Notes
+);
+
+public record MarkFoundDto(
     int CheckoutRecordId,
     string? Notes
 );

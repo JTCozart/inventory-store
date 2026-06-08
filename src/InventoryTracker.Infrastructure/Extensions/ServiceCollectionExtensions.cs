@@ -23,6 +23,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IActivityLogRepository, ActivityLogRepository>();
         services.AddScoped<IAppSettingRepository, AppSettingRepository>();
         services.AddScoped<ICheckoutRepository, CheckoutRepository>();
+        services.AddScoped<IClientRepository, ClientRepository>();
 
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
 
@@ -32,6 +33,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IReportService, ReportService>();
         services.AddScoped<ISettingsService, SettingsService>();
         services.AddScoped<ICheckoutService, CheckoutService>();
+        services.AddScoped<IClientService, ClientService>();
 
         services.AddScoped<DatabaseInitializer>();
 

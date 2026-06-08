@@ -74,17 +74,53 @@
                 </div>
                 <div class="col-md-6">
                     <label asp-for="Input.Location" class="form-label">Location</label>
-                    <input asp-for="Input.Location" class="form-control" placeholder="e.g. Shelf A3, Bin 12" />
+                    <input asp-for="Input.Location" class="form-control" placeholder="e.g. Shelf A3, Bin 12"
+                           list="location-suggestions" autocomplete="off" />
+                    <datalist id="location-suggestions">
+                        @foreach (var loc in Model.Locations)
+                        {
+                            <option value="@loc"></option>
+                        }
+                    </datalist>
                 </div>
                 <div class="col-md-6">
                     <label class="form-label">Category</label>
-                    <select name="Input.CategoryId" class="form-select">
-                        <option value="">— None —</option>
-                        @foreach (var cat in Model.Categories)
-                        {
-                            <option value="@cat.Id">@cat.Name</option>
-                        }
-                    </select>
+                    <div class="d-flex gap-2">
+                        <select name="Input.CategoryId" id="category-select" class="form-select">
+                            <option value="">— None —</option>
+                            @foreach (var cat in Model.Categories)
+                            {
+                                <option value="@cat.Id">@cat.Name</option>
+                            }
+                        </select>
+                        <button type="button" class="btn btn-outline-secondary" id="new-cat-btn" title="Create new category">
+                            <i class="bi bi-plus-lg"></i>
+                        </button>
+                    </div>
+                    <div id="new-cat-form" class="mt-2 border rounded p-2 d-none">
+                        <div class="mb-2">
+                            <label class="form-label small mb-1">Name <span class="text-danger">*</span></label>
+                            <input type="text" id="new-cat-name" class="form-control form-control-sm" placeholder="Category name" />
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label small mb-1">Color <span class="text-muted small">(optional)</span></label>
+                            <input type="hidden" id="new-cat-color" value="" />
+                            <div class="d-flex flex-wrap gap-1" id="new-cat-swatches">
+                                <button type="button" class="swatch-btn" data-color="" title="None"
+                                        style="width:28px;height:28px;border-radius:4px;background:#f8f9fa;border:2px solid #dee2e6;"></button>
+                                @foreach (var c in new[]{"#0d6efd","#198754","#dc3545","#ffc107","#fd7e14","#6f42c1","#d63384","#0dcaf0","#20c997","#6c757d","#212529"})
+                                {
+                                    <button type="button" class="swatch-btn" data-color="@c" title="@c"
+                                            style="width:28px;height:28px;border-radius:4px;background:@c;border:2px solid transparent;"></button>
+                                }
+                            </div>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-sm btn-primary" id="new-cat-save">Create</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="new-cat-cancel">Cancel</button>
+                        </div>
+                        <div id="new-cat-error" class="text-danger small mt-1 d-none"></div>
+                    </div>
                 </div>
                 <div class="col-md-6">
                     <label asp-for="Input.ExpiryDate" class="form-label">Expiry Date <span class="text-muted small">(optional)</span></label>
@@ -118,5 +154,89 @@
 initSkuScanner('sku-input', 'sku-scan-btn', 'sku-scan-cancel', 'sku-scanner-area',
                'sku-scanner-viewport', 'sku-scanner-video',
                'sku-capture-input', 'sku-scan-hint');
+</script>
+<script>
+(function () {
+    var btn       = document.getElementById('new-cat-btn');
+    var form      = document.getElementById('new-cat-form');
+    var cancelBtn = document.getElementById('new-cat-cancel');
+    var saveBtn   = document.getElementById('new-cat-save');
+    var nameInput = document.getElementById('new-cat-name');
+    var colorInput= document.getElementById('new-cat-color');
+    var swatches  = document.getElementById('new-cat-swatches');
+    var errorEl   = document.getElementById('new-cat-error');
+    var select    = document.getElementById('category-select');
+
+    // Wire up swatches the same way as Settings > Categories
+    swatches.querySelectorAll('.swatch-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var color = btn.dataset.color || '';
+            colorInput.value = color;
+            swatches.querySelectorAll('.swatch-btn').forEach(function (b) {
+                var match = (b.dataset.color || '') === color;
+                b.style.border = match ? '2px solid #000' : '2px solid transparent';
+                if (b.dataset.color === '') b.style.border = match ? '2px solid #000' : '2px solid #dee2e6';
+            });
+        });
+    });
+
+    btn.addEventListener('click', function () {
+        form.classList.toggle('d-none');
+        if (!form.classList.contains('d-none')) nameInput.focus();
+    });
+
+    cancelBtn.addEventListener('click', function () {
+        form.classList.add('d-none');
+        nameInput.value = '';
+        colorInput.value = '';
+        swatches.querySelectorAll('.swatch-btn').forEach(function (b) {
+            b.style.border = b.dataset.color === '' ? '2px solid #dee2e6' : '2px solid transparent';
+        });
+        errorEl.classList.add('d-none');
+    });
+
+    nameInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') { e.preventDefault(); saveBtn.click(); }
+    });
+
+    saveBtn.addEventListener('click', async function () {
+        var name = nameInput.value.trim();
+        if (!name) {
+            errorEl.textContent = 'Name is required.';
+            errorEl.classList.remove('d-none');
+            return;
+        }
+        saveBtn.disabled = true;
+        errorEl.classList.add('d-none');
+        try {
+            var token = document.getElementById('af-token').value;
+            var res = await fetch('/Inventory/Create?handler=CreateCategory', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ name: name, color: colorInput.value, __RequestVerificationToken: token }).toString()
+            });
+            if (res.ok) {
+                var cat = await res.json();
+                var opt = new Option(cat.name, cat.id, true, true);
+                select.appendChild(opt);
+                select.value = cat.id;
+                form.classList.add('d-none');
+                nameInput.value = '';
+                colorInput.value = '';
+                swatches.querySelectorAll('.swatch-btn').forEach(function (b) {
+                    b.style.border = b.dataset.color === '' ? '2px solid #dee2e6' : '2px solid transparent';
+                });
+            } else {
+                errorEl.textContent = await res.text() || 'Failed to create category.';
+                errorEl.classList.remove('d-none');
+            }
+        } catch {
+            errorEl.textContent = 'Network error. Please try again.';
+            errorEl.classList.remove('d-none');
+        } finally {
+            saveBtn.disabled = false;
+        }
+    });
+}());
 </script>
 }

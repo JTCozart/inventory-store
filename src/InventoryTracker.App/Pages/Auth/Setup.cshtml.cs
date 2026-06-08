@@ -42,7 +42,7 @@ public class SetupModel : PageModel
         try
         {
             var user = await _authService.SetupAdminAsync(
-                Input.Username, Input.Email, Input.Password, Input.FirstName, Input.LastName);
+                Input.Username.Trim(), Input.Email, Input.Password, Input.FirstName, Input.LastName);
 
             var claims = new List<Claim>
             {

@@ -13,6 +13,7 @@ public class AppDbContext : DbContext
     public DbSet<ActivityLog> ActivityLogs => Set<ActivityLog>();
     public DbSet<AppSetting> AppSettings => Set<AppSetting>();
     public DbSet<CheckoutRecord> CheckoutRecords => Set<CheckoutRecord>();
+    public DbSet<Client> Clients => Set<Client>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -74,6 +75,17 @@ public class AppDbContext : DbContext
             e.Property(c => c.CheckedOutBy).IsRequired().HasMaxLength(200);
             e.Ignore(c => c.IsCheckedIn);
             e.Ignore(c => c.IsOut);
+        });
+
+        modelBuilder.Entity<Client>(e =>
+        {
+            e.HasKey(c => c.Id);
+            e.Property(c => c.FirstName).IsRequired().HasMaxLength(100);
+            e.Property(c => c.LastName).HasMaxLength(100);
+            e.Property(c => c.Phone).HasMaxLength(50);
+            e.Property(c => c.Email).HasMaxLength(255);
+            e.Property(c => c.Address).HasMaxLength(500);
+            e.Ignore(c => c.DisplayName);
         });
     }
 }

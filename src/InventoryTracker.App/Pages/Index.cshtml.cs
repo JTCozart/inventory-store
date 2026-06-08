@@ -11,6 +11,7 @@ public class IndexModel : PageModel
     private readonly IReportService _reportService;
 
     public DashboardSummaryDto Summary { get; private set; } = null!;
+    public bool CanManage => User.IsInRole("Admin") || User.IsInRole("Manager");
 
     public IndexModel(IReportService reportService)
     {

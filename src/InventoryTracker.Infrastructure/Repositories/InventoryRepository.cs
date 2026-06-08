@@ -81,4 +81,22 @@ public class InventoryRepository : IInventoryRepository
 
     public async Task<int> TotalQuantityAsync() =>
         await _context.InventoryItems.SumAsync(i => (int?)i.Quantity) ?? 0;
+
+    public async Task<IEnumerable<(string Location, int Count)>> GetAllLocationsAsync()
+    {
+        var rows = await _context.InventoryItems
+            .Where(i => i.Location != null && i.Location != "")
+            .GroupBy(i => i.Location!)
+            .Select(g => new { Location = g.Key, Count = g.Count() })
+            .OrderBy(x => x.Location)
+            .ToListAsync();
+        return rows.Select(r => (r.Location, r.Count));
+    }
+
+    public async Task BulkUpdateLocationAsync(string from, string? to)
+    {
+        await _context.InventoryItems
+            .Where(i => i.Location == from)
+            .ExecuteUpdateAsync(s => s.SetProperty(i => i.Location, to));
+    }
 }

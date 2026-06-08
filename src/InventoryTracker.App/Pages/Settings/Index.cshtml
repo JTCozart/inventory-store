@@ -27,86 +27,60 @@
     </div>
 }
 
-@{
-    var selAccount    = Model.Tab == "account";
-    var selUsers      = Model.Tab == "users";
-    var selTunnel     = Model.Tab == "tunnel";
-    var selCategories = Model.Tab == "categories";
-    var selPublicView = Model.Tab == "publicview";
-    var selDatabase   = Model.Tab == "database";
-    var selInfo       = Model.Tab == "info";
-}
-<select class="form-select mb-4 d-md-none" onchange="location.href='/Settings?tab='+this.value">
-    <option value="account" selected="@selAccount">My Account</option>
+<select class="form-select page-sidenav-select" onchange="location.href=this.value">
+    <option value="/Settings?tab=account"  selected="@(Model.Tab=="account")">My Account</option>
     @if (User.IsInRole("Admin"))
     {
-        <option value="users" selected="@selUsers">User Management</option>
-        <option value="tunnel" selected="@selTunnel">Remote Access</option>
+        <option value="/Settings?tab=users"      selected="@(Model.Tab=="users")">Users</option>
+        <option value="/Settings?tab=tunnel"     selected="@(Model.Tab=="tunnel")">Remote Access</option>
+        <option value="/Settings?tab=publicview" selected="@(Model.Tab=="publicview")">Public View</option>
+        <option value="/Settings?tab=database"   selected="@(Model.Tab=="database")">Database</option>
     }
     @if (User.IsInRole("Admin") || User.IsInRole("Manager"))
     {
-        <option value="categories" selected="@selCategories">Categories</option>
+        <option value="/Settings?tab=categories" selected="@(Model.Tab=="categories")">Categories</option>
+        <option value="/Settings?tab=locations"  selected="@(Model.Tab=="locations")">Locations</option>
     }
-    @if (User.IsInRole("Admin"))
-    {
-        <option value="publicview" selected="@selPublicView">Public View</option>
-        <option value="database" selected="@selDatabase">Database</option>
-    }
-    <option value="info" selected="@selInfo">App Info</option>
+    <option value="/Settings?tab=info" selected="@(Model.Tab=="info")">App Info</option>
 </select>
 
-<ul class="nav nav-tabs mb-4 d-none d-md-flex">
-    <li class="nav-item">
-        <a class="nav-link @(Model.Tab == "account" ? "active" : "")" href="/Settings?tab=account">
-            <i class="bi bi-person me-1"></i> My Account
+<div class="page-layout">
+<nav class="page-sidenav">
+    <a href="/Settings?tab=account" class="nav-link @(Model.Tab == "account" ? "active" : "")">
+        <i class="bi bi-person"></i> My Account
+    </a>
+    @if (User.IsInRole("Admin"))
+    {
+        <div class="page-sidenav-section">Admin</div>
+        <a href="/Settings?tab=users" class="nav-link @(Model.Tab == "users" ? "active" : "")">
+            <i class="bi bi-people"></i> Users
         </a>
-    </li>
-    @if (User.IsInRole("Admin"))
-    {
-        <li class="nav-item">
-            <a class="nav-link @(Model.Tab == "users" ? "active" : "")" href="/Settings?tab=users">
-                <i class="bi bi-people me-1"></i> User Management
-            </a>
-        </li>
-    }
-    @if (User.IsInRole("Admin"))
-    {
-        <li class="nav-item">
-            <a class="nav-link @(Model.Tab == "tunnel" ? "active" : "")" href="/Settings?tab=tunnel">
-                <i class="bi bi-cloud me-1"></i> Remote Access
-            </a>
-        </li>
+        <a href="/Settings?tab=tunnel" class="nav-link @(Model.Tab == "tunnel" ? "active" : "")">
+            <i class="bi bi-cloud"></i> Remote Access
+        </a>
+        <a href="/Settings?tab=publicview" class="nav-link @(Model.Tab == "publicview" ? "active" : "")">
+            <i class="bi bi-eye"></i> Public View
+        </a>
+        <a href="/Settings?tab=database" class="nav-link @(Model.Tab == "database" ? "active" : "")">
+            <i class="bi bi-database"></i> Database
+        </a>
     }
     @if (User.IsInRole("Admin") || User.IsInRole("Manager"))
     {
-        <li class="nav-item">
-            <a class="nav-link @(Model.Tab == "categories" ? "active" : "")" href="/Settings?tab=categories">
-                <i class="bi bi-tags me-1"></i> Categories
-            </a>
-        </li>
-    }
-    @if (User.IsInRole("Admin"))
-    {
-        <li class="nav-item">
-            <a class="nav-link @(Model.Tab == "publicview" ? "active" : "")" href="/Settings?tab=publicview">
-                <i class="bi bi-eye me-1"></i> Public View
-            </a>
-        </li>
-    }
-    @if (User.IsInRole("Admin"))
-    {
-        <li class="nav-item">
-            <a class="nav-link @(Model.Tab == "database" ? "active" : "")" href="/Settings?tab=database">
-                <i class="bi bi-database me-1"></i> Database
-            </a>
-        </li>
-    }
-    <li class="nav-item">
-        <a class="nav-link @(Model.Tab == "info" ? "active" : "")" href="/Settings?tab=info">
-            <i class="bi bi-info-circle me-1"></i> App Info
+        <div class="page-sidenav-section">Inventory</div>
+        <a href="/Settings?tab=categories" class="nav-link @(Model.Tab == "categories" ? "active" : "")">
+            <i class="bi bi-tags"></i> Categories
         </a>
-    </li>
-</ul>
+        <a href="/Settings?tab=locations" class="nav-link @(Model.Tab == "locations" ? "active" : "")">
+            <i class="bi bi-geo-alt"></i> Locations
+        </a>
+    }
+    <div class="page-sidenav-section">About</div>
+    <a href="/Settings?tab=info" class="nav-link @(Model.Tab == "info" ? "active" : "")">
+        <i class="bi bi-info-circle"></i> App Info
+    </a>
+</nav>
+<div class="page-content">
 
 @if (Model.Tab == "account")
 {
@@ -618,6 +592,11 @@
                                 </td>
                                 <td class="text-muted small">@(cat.Color ?? "—")</td>
                                 <td class="text-end">
+                                    <button class="btn btn-sm btn-outline-primary me-1"
+                                            onclick="openManageCategoryModal(@cat.Id, '@cat.Name.Replace("'","\\'")')"
+                                            title="Manage items">
+                                        <i class="bi bi-list-ul"></i>
+                                    </button>
                                     <button class="btn btn-sm btn-outline-secondary me-1"
                                             onclick="openEditCategoryModal(@cat.Id, '@cat.Name.Replace("'","\\'")', '@(cat.Color ?? "")')"
                                             title="Edit">
@@ -638,6 +617,34 @@
             </div>
         </div>
     }
+
+    <div class="modal fade" id="manageCategoryModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Items in <span id="mgr-cat-name"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="mgr-cat-loading" class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status"></div>
+                    </div>
+                    <div id="mgr-cat-content" class="d-none">
+                        <h6 class="fw-semibold mb-2">Currently in this category</h6>
+                        <div id="mgr-cat-in-list" class="mb-4"></div>
+                        <h6 class="fw-semibold mb-2">Add an item to this category</h6>
+                        <div class="d-flex gap-2">
+                            <select id="mgr-cat-add-select" class="form-select form-select-sm"></select>
+                            <button type="button" class="btn btn-sm btn-primary flex-shrink-0" onclick="mgrCatAddItem()">
+                                <i class="bi bi-plus-lg me-1"></i>Add
+                            </button>
+                        </div>
+                        <div id="mgr-cat-error" class="text-danger small mt-2 d-none"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <div class="modal fade" id="addCategoryModal" tabindex="-1">
         <div class="modal-dialog modal-sm">
@@ -711,6 +718,258 @@
             </div>
         </div>
     </div>
+}
+
+@if (Model.Tab == "locations" && (User.IsInRole("Admin") || User.IsInRole("Manager")))
+{
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0">Locations</h5>
+        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addLocationModal">
+            <i class="bi bi-plus-lg me-1"></i> Add Location
+        </button>
+    </div>
+
+    @if (!Model.Locations.Any())
+    {
+        <div class="text-center py-5 text-muted">
+            <i class="bi bi-geo-alt display-4"></i>
+            <p class="mt-2">No locations have been assigned to any inventory items yet.</p>
+        </div>
+    }
+    else
+    {
+        <div class="card">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Location</th>
+                            <th class="text-end">Items</th>
+                            <th class="text-end no-print">Actions</th>
+                        </tr>
+
+                    </thead>
+                    <tbody>
+                        @foreach (var loc in Model.Locations)
+                        {
+                            <tr>
+                                <td class="fw-semibold">@loc.Name</td>
+                                <td class="text-end text-muted">@loc.Count</td>
+                                <td class="text-end">
+                                    <button class="btn btn-sm btn-outline-primary me-1"
+                                            onclick="openManageLocationModal('@loc.Name.Replace("'","\\'")')"
+                                            title="Manage items">
+                                        <i class="bi bi-list-ul"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-secondary me-1"
+                                            onclick="openRenameLocationModal('@loc.Name.Replace("'","\\'")')"
+                                            title="Rename">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <form method="post" asp-page-handler="ClearLocation" class="d-inline"
+                                          onsubmit="return confirm('Remove location \'@loc.Name\' from all @loc.Count item(s)? They will have no location set.')">
+                                        <input type="hidden" name="location" value="@loc.Name" />
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Clear from all items">
+                                            <i class="bi bi-x-lg"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+
+    <div class="modal fade" id="addLocationModal" tabindex="-1">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add Location</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Location Name <span class="text-danger">*</span></label>
+                        <input type="text" id="add-loc-name" class="form-control" maxlength="200" placeholder="e.g. Shelf A3, Bin 12" />
+                    </div>
+                    <p class="text-muted small mb-0">After naming it, you will be taken to assign items to this location.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="confirmAddLocation()">Next</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="renameLocationModal" tabindex="-1">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Rename Location</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="post" asp-page-handler="RenameLocation">
+                    <div class="modal-body">
+                        <input type="hidden" name="from" id="renameLocFrom" />
+                        <div class="mb-3">
+                            <label class="form-label">Current name</label>
+                            <input id="renameLocFromDisplay" class="form-control" readonly />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">New name <span class="text-danger">*</span></label>
+                            <input name="to" id="renameLocTo" class="form-control" required maxlength="200" />
+                        </div>
+                        <p class="text-muted small mb-0">All items currently at this location will be updated.</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Rename</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="manageLocationModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Items at <span id="mgr-loc-name"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="mgr-loading" class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status"></div>
+                    </div>
+                    <div id="mgr-content" class="d-none">
+                        <h6 class="fw-semibold mb-2">Currently here</h6>
+                        <div id="mgr-at-list" class="mb-4"></div>
+                        <h6 class="fw-semibold mb-2">Add an item to this location</h6>
+                        <div class="d-flex gap-2">
+                            <select id="mgr-add-select" class="form-select form-select-sm"></select>
+                            <button type="button" class="btn btn-sm btn-primary flex-shrink-0" onclick="mgrAddItem()">
+                                <i class="bi bi-plus-lg me-1"></i>Add
+                            </button>
+                        </div>
+                        <div id="mgr-error" class="text-danger small mt-2 d-none"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    var _mgrLocation = '';
+    var _mgrModal = null;
+
+    function confirmAddLocation() {
+        var name = document.getElementById('add-loc-name').value.trim();
+        if (!name) { document.getElementById('add-loc-name').focus(); return; }
+        bootstrap.Modal.getInstance(document.getElementById('addLocationModal')).hide();
+        document.getElementById('add-loc-name').value = '';
+        openManageLocationModal(name);
+    }
+
+    function openRenameLocationModal(name) {
+        document.getElementById('renameLocFrom').value = name;
+        document.getElementById('renameLocFromDisplay').value = name;
+        document.getElementById('renameLocTo').value = name;
+        new bootstrap.Modal(document.getElementById('renameLocationModal')).show();
+        setTimeout(() => document.getElementById('renameLocTo').select(), 300);
+    }
+
+    async function openManageLocationModal(name) {
+        _mgrLocation = name;
+        document.getElementById('mgr-loc-name').textContent = name;
+        document.getElementById('mgr-loading').classList.remove('d-none');
+        document.getElementById('mgr-content').classList.add('d-none');
+        document.getElementById('mgr-error').classList.add('d-none');
+
+        _mgrModal = _mgrModal || new bootstrap.Modal(document.getElementById('manageLocationModal'));
+        _mgrModal.show();
+        await mgrLoad();
+    }
+
+    async function mgrLoad() {
+        try {
+            var res = await fetch('/Settings?handler=LocationItemsJson&location=' + encodeURIComponent(_mgrLocation));
+            var data = await res.json();
+            renderMgrAtList(data.atLocation);
+            renderMgrOthers(data.others);
+            document.getElementById('mgr-loading').classList.add('d-none');
+            document.getElementById('mgr-content').classList.remove('d-none');
+        } catch {
+            document.getElementById('mgr-loading').classList.add('d-none');
+            document.getElementById('mgr-error').textContent = 'Failed to load items.';
+            document.getElementById('mgr-error').classList.remove('d-none');
+        }
+    }
+
+    function renderMgrAtList(items) {
+        var el = document.getElementById('mgr-at-list');
+        if (!items.length) {
+            el.innerHTML = '<p class="text-muted small">No items at this location.</p>';
+            return;
+        }
+        el.innerHTML = items.map(function (i) {
+            return '<div class="d-flex justify-content-between align-items-center border rounded px-3 py-2 mb-1">' +
+                '<div><span class="fw-semibold">' + esc(i.name) + '</span>' +
+                (i.sku ? '<span class="text-muted small ms-2">' + esc(i.sku) + '</span>' : '') + '</div>' +
+                '<button class="btn btn-sm btn-outline-danger" onclick="mgrRemoveItem(' + i.id + ')">Remove</button>' +
+                '</div>';
+        }).join('');
+    }
+
+    function renderMgrOthers(items) {
+        var sel = document.getElementById('mgr-add-select');
+        sel.innerHTML = items.length
+            ? items.map(function (i) {
+                var label = esc(i.name) + (i.sku ? ' (' + esc(i.sku) + ')' : '') + (i.location ? ' - ' + esc(i.location) : '');
+                return '<option value="' + i.id + '">' + label + '</option>';
+              }).join('')
+            : '<option value="">All items are already at this location</option>';
+        sel.disabled = !items.length;
+    }
+
+    async function mgrRemoveItem(itemId) {
+        await mgrPost(itemId, '');
+    }
+
+    async function mgrAddItem() {
+        var sel = document.getElementById('mgr-add-select');
+        if (!sel.value) return;
+        await mgrPost(parseInt(sel.value), _mgrLocation);
+    }
+
+    async function mgrPost(itemId, newLocation) {
+        document.getElementById('mgr-error').classList.add('d-none');
+        var token = document.getElementById('af-token').value;
+        try {
+            var res = await fetch('/Settings?handler=SetItemLocation', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'RequestVerificationToken': token },
+                body: new URLSearchParams({ itemId: itemId, newLocation: newLocation, __RequestVerificationToken: token }).toString()
+            });
+            var data = await res.json();
+            if (data.success) {
+                await mgrLoad();
+            } else {
+                document.getElementById('mgr-error').textContent = data.error || 'Action failed.';
+                document.getElementById('mgr-error').classList.remove('d-none');
+            }
+        } catch {
+            document.getElementById('mgr-error').textContent = 'Network error.';
+            document.getElementById('mgr-error').classList.remove('d-none');
+        }
+    }
+
+    function esc(str) {
+        return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+    </script>
 }
 
 @if (Model.Tab == "publicview" && User.IsInRole("Admin"))
@@ -1132,6 +1391,98 @@ document.querySelectorAll('.js-edit-user').forEach(function (btn) {
     btn.addEventListener('click', function () { openEditModal(btn); });
 });
 
+var _mgrCatId = null;
+var _mgrCatModal = null;
+
+async function openManageCategoryModal(id, name) {
+    _mgrCatId = id;
+    document.getElementById('mgr-cat-name').textContent = name;
+    document.getElementById('mgr-cat-loading').classList.remove('d-none');
+    document.getElementById('mgr-cat-content').classList.add('d-none');
+    document.getElementById('mgr-cat-error').classList.add('d-none');
+
+    _mgrCatModal = _mgrCatModal || new bootstrap.Modal(document.getElementById('manageCategoryModal'));
+    _mgrCatModal.show();
+    await mgrCatLoad();
+}
+
+async function mgrCatLoad() {
+    try {
+        var res = await fetch('/Settings?handler=CategoryItemsJson&categoryId=' + _mgrCatId);
+        var data = await res.json();
+        renderMgrCatInList(data.inCategory);
+        renderMgrCatOthers(data.others);
+        document.getElementById('mgr-cat-loading').classList.add('d-none');
+        document.getElementById('mgr-cat-content').classList.remove('d-none');
+    } catch {
+        document.getElementById('mgr-cat-loading').classList.add('d-none');
+        document.getElementById('mgr-cat-error').textContent = 'Failed to load items.';
+        document.getElementById('mgr-cat-error').classList.remove('d-none');
+    }
+}
+
+function renderMgrCatInList(items) {
+    var el = document.getElementById('mgr-cat-in-list');
+    if (!items.length) {
+        el.innerHTML = '<p class="text-muted small">No items in this category.</p>';
+        return;
+    }
+    el.innerHTML = items.map(function (i) {
+        return '<div class="d-flex justify-content-between align-items-center border rounded px-3 py-2 mb-1">' +
+            '<div><span class="fw-semibold">' + escHtml(i.name) + '</span>' +
+            (i.sku ? '<span class="text-muted small ms-2">' + escHtml(i.sku) + '</span>' : '') + '</div>' +
+            '<button class="btn btn-sm btn-outline-danger" onclick="mgrCatRemoveItem(' + i.id + ')">Remove</button>' +
+            '</div>';
+    }).join('');
+}
+
+function renderMgrCatOthers(items) {
+    var sel = document.getElementById('mgr-cat-add-select');
+    sel.innerHTML = items.length
+        ? items.map(function (i) {
+            var label = escHtml(i.name) + (i.sku ? ' (' + escHtml(i.sku) + ')' : '') + (i.category ? ' - ' + escHtml(i.category) : '');
+            return '<option value="' + i.id + '">' + label + '</option>';
+          }).join('')
+        : '<option value="">All items are already in this category</option>';
+    sel.disabled = !items.length;
+}
+
+async function mgrCatRemoveItem(itemId) {
+    await mgrCatPost(itemId, 0);
+}
+
+async function mgrCatAddItem() {
+    var sel = document.getElementById('mgr-cat-add-select');
+    if (!sel.value) return;
+    await mgrCatPost(parseInt(sel.value), _mgrCatId);
+}
+
+async function mgrCatPost(itemId, newCategoryId) {
+    document.getElementById('mgr-cat-error').classList.add('d-none');
+    var token = document.getElementById('af-token').value;
+    try {
+        var res = await fetch('/Settings?handler=SetItemCategory', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'RequestVerificationToken': token },
+            body: new URLSearchParams({ itemId: itemId, newCategoryId: newCategoryId, __RequestVerificationToken: token }).toString()
+        });
+        var data = await res.json();
+        if (data.success) {
+            await mgrCatLoad();
+        } else {
+            document.getElementById('mgr-cat-error').textContent = data.error || 'Action failed.';
+            document.getElementById('mgr-cat-error').classList.remove('d-none');
+        }
+    } catch {
+        document.getElementById('mgr-cat-error').textContent = 'Network error.';
+        document.getElementById('mgr-cat-error').classList.remove('d-none');
+    }
+}
+
+function escHtml(str) {
+    return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
 function openEditCategoryModal(id, name, color) {
     document.getElementById('editCatId').value = id;
     document.getElementById('editCatName').value = name;
@@ -1233,3 +1584,6 @@ function checkForUpdates() {
 }
 </script>
 }
+
+</div>
+</div>

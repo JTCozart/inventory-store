@@ -12,7 +12,9 @@ using WinForms = System.Windows.Forms;
 
 namespace InventoryTracker.App;
 
-internal record CheckOutRequest(int ItemId, string CheckedOutBy, int Quantity, string? Notes);
+internal record CheckOutRequest(int ItemId, string CheckedOutBy, int Quantity, string? Notes, int? ClientId = null);
+internal record QuickAddRequest(string Name, int Quantity, int ItemType, string? Location, string? Sku);
+internal record QuickCreateClientRequest(string Name);
 internal record CheckInRequest(int RecordId, string? Notes);
 internal record MarkLostRequest(int RecordId, string? Notes);
 internal record ConsumeRequest(int ItemId, int Quantity, string? Notes);
@@ -243,12 +245,47 @@ internal class Program
                 return status is not null ? Results.Ok(status) : Results.Ok((object?)null);
             });
 
+            endpoints.MapGet("/api/inventory/status/{id:int}", [Authorize] async (int id, ICheckoutService svc) =>
+            {
+                try { var status = await svc.GetItemStatusAsync(id); return Results.Ok(status); }
+                catch { return Results.Ok((object?)null); }
+            });
+
+            endpoints.MapGet("/api/inventory/search", [Authorize] async (string? q, IInventoryService svc) =>
+            {
+                if (string.IsNullOrWhiteSpace(q)) return Results.Ok(Array.Empty<object>());
+                var results = await svc.SearchItemsAsync(q);
+                return Results.Ok(results.Select(i => new { i.Id, i.Name, i.Location, i.SKU, i.ItemType, i.AvailableQuantity, i.CategoryName, i.CategoryColor }));
+            });
+
+            endpoints.MapGet("/api/inventory/available", [Authorize] async (IInventoryService svc) =>
+            {
+                var items = await svc.GetAllItemsAsync();
+                var reusable = items
+                    .Where(i => i.ItemType == InventoryTracker.Domain.Enums.ItemType.Reusable)
+                    .OrderBy(i => i.Name);
+                return Results.Ok(reusable.Select(i => new { i.Id, i.Name, i.Location, i.SKU, i.AvailableQuantity, i.CategoryName, i.CategoryColor, i.IsLowStock }));
+            });
+
+            endpoints.MapPost("/api/inventory/quick-add", [Authorize(Roles = "Admin,Manager")] async (HttpContext ctx, IInventoryService inv, ICheckoutService checkout) =>
+            {
+                var dto = await ctx.Request.ReadFromJsonAsync<QuickAddRequest>();
+                if (dto is null || string.IsNullOrWhiteSpace(dto.Name)) return Results.BadRequest(new { error = "Name is required." });
+                var (uid, uname) = HttpContextExtensions.GetUser(ctx);
+                var itemType = dto.ItemType == 0 ? InventoryTracker.Domain.Enums.ItemType.Consumable : InventoryTracker.Domain.Enums.ItemType.Reusable;
+                var created = await inv.CreateItemAsync(
+                    new Application.DTOs.CreateInventoryItemDto(dto.Name, dto.Quantity, null, dto.Location, dto.Sku, 0, itemType, null, null, null),
+                    uid, uname);
+                var status = await checkout.GetItemStatusAsync(created.Id);
+                return Results.Ok(status);
+            });
+
             endpoints.MapPost("/api/inventory/checkout", [Authorize(Roles = "Admin,Manager")] async (HttpContext ctx, ICheckoutService svc) =>
             {
                 var dto = await ctx.Request.ReadFromJsonAsync<CheckOutRequest>();
                 if (dto is null) return Results.BadRequest();
                 var (uid, uname) = HttpContextExtensions.GetUser(ctx);
-                var record = await svc.CheckOutAsync(new Application.DTOs.CheckOutItemDto(dto.ItemId, dto.CheckedOutBy, dto.Quantity, dto.Notes), uid, uname);
+                var record = await svc.CheckOutAsync(new Application.DTOs.CheckOutItemDto(dto.ItemId, dto.CheckedOutBy, dto.Quantity, dto.Notes, dto.ClientId), uid, uname);
                 return Results.Ok(record);
             });
 
@@ -286,6 +323,53 @@ internal class Program
                 var (uid, uname) = HttpContextExtensions.GetUser(ctx);
                 await svc.RestockAsync(new Application.DTOs.RestockItemDto(dto.ItemId, dto.Quantity, dto.Notes), uid, uname);
                 return Results.Ok();
+            });
+
+            // ── Clients API ───────────────────────────────────────────────
+            endpoints.MapGet("/api/clients/search", [Authorize] async (string? q, IClientService svc) =>
+            {
+                if (string.IsNullOrWhiteSpace(q)) return Results.Ok(Array.Empty<object>());
+                var clients = await svc.SearchAsync(q);
+                return Results.Ok(clients.Select(c => new { c.Id, c.DisplayName, c.FirstName, c.LastName, c.Phone }));
+            });
+
+            endpoints.MapGet("/api/clients/{id:int}", [Authorize] async (int id, IClientService svc) =>
+            {
+                var client = await svc.GetByIdAsync(id);
+                return client is not null ? Results.Ok(client) : Results.NotFound();
+            });
+
+            endpoints.MapPost("/api/clients", [Authorize(Roles = "Admin,Manager")] async (HttpContext ctx, IClientService svc) =>
+            {
+                var dto = await ctx.Request.ReadFromJsonAsync<Application.DTOs.CreateClientDto>();
+                if (dto is null || string.IsNullOrWhiteSpace(dto.FirstName))
+                    return Results.BadRequest(new { error = "FirstName is required." });
+                var client = await svc.CreateAsync(dto);
+                return Results.Ok(client);
+            });
+
+            endpoints.MapPut("/api/clients/{id:int}", [Authorize(Roles = "Admin,Manager")] async (int id, HttpContext ctx, IClientService svc) =>
+            {
+                var dto = await ctx.Request.ReadFromJsonAsync<Application.DTOs.UpdateClientDto>();
+                if (dto is null || string.IsNullOrWhiteSpace(dto.FirstName))
+                    return Results.BadRequest(new { error = "FirstName is required." });
+                try { await svc.UpdateAsync(id, dto); return Results.Ok(); }
+                catch (KeyNotFoundException) { return Results.NotFound(); }
+            });
+
+            endpoints.MapDelete("/api/clients/{id:int}", [Authorize(Roles = "Admin,Manager")] async (int id, IClientService svc) =>
+            {
+                await svc.DeleteAsync(id);
+                return Results.Ok();
+            });
+
+            endpoints.MapPost("/api/clients/quick-create", [Authorize(Roles = "Admin,Manager")] async (HttpContext ctx, IClientService svc) =>
+            {
+                var body = await ctx.Request.ReadFromJsonAsync<QuickCreateClientRequest>();
+                if (body is null || string.IsNullOrWhiteSpace(body.Name))
+                    return Results.BadRequest(new { error = "Name is required." });
+                var client = await svc.QuickCreateAsync(body.Name);
+                return Results.Ok(client);
             });
         });
 

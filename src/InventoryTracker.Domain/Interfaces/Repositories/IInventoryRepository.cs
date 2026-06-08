@@ -14,4 +14,6 @@ public interface IInventoryRepository
     Task DeleteAsync(int id);
     Task<int> CountAsync();
     Task<int> TotalQuantityAsync();
+    Task<IEnumerable<(string Location, int Count)>> GetAllLocationsAsync();
+    Task BulkUpdateLocationAsync(string from, string? to);
 }

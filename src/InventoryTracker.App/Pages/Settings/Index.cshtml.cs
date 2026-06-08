@@ -28,6 +28,7 @@ public class IndexModel : PageModel
     public string? ErrorMessage { get; private set; }
     public IEnumerable<UserDto> Users { get; private set; } = [];
     public IEnumerable<CategoryDto> Categories { get; private set; } = [];
+    public IEnumerable<LocationSummaryDto> Locations { get; private set; } = [];
     public string LocalIpAddress { get; private set; } = "localhost";
 
     // Tunnel state (read from singleton, used for initial render)
@@ -76,6 +77,9 @@ public class IndexModel : PageModel
 
         if (tab == "categories")
             Categories = await _categoryService.GetAllAsync();
+
+        if (tab == "locations")
+            Locations = await _inventoryService.GetAllLocationsAsync();
 
         if (tab == "tunnel")
         {
@@ -184,6 +188,102 @@ public class IndexModel : PageModel
             return RedirectWithMessage("users", success: "User deleted.");
         }
         catch (Exception ex) { return RedirectWithMessage("users", error: ex.Message); }
+    }
+
+    public async Task<IActionResult> OnPostRenameLocationAsync(string from, string to)
+    {
+        if (!User.IsInRole("Admin") && !User.IsInRole("Manager")) return Forbid();
+        if (string.IsNullOrWhiteSpace(from) || string.IsNullOrWhiteSpace(to))
+            return RedirectWithMessage("locations", error: "Both current and new location names are required.");
+        try
+        {
+            var (uid, uname) = User.GetIdentity();
+            await _inventoryService.RenameLocationAsync(from, to, uid, uname);
+            return RedirectWithMessage("locations", success: $"Location '{from}' renamed to '{to}'.");
+        }
+        catch (Exception ex) { return RedirectWithMessage("locations", error: ex.Message); }
+    }
+
+    public async Task<IActionResult> OnPostClearLocationAsync(string location)
+    {
+        if (!User.IsInRole("Admin") && !User.IsInRole("Manager")) return Forbid();
+        try
+        {
+            var (uid, uname) = User.GetIdentity();
+            await _inventoryService.ClearLocationAsync(location, uid, uname);
+            return RedirectWithMessage("locations", success: $"Location '{location}' removed from all items.");
+        }
+        catch (Exception ex) { return RedirectWithMessage("locations", error: ex.Message); }
+    }
+
+    public async Task<IActionResult> OnGetCategoryItemsJsonAsync(int categoryId)
+    {
+        if (!User.IsInRole("Admin") && !User.IsInRole("Manager")) return Forbid();
+        var all = await _inventoryService.GetAllItemsAsync();
+        var inCategory = all
+            .Where(i => i.CategoryId == categoryId)
+            .Select(i => new { i.Id, i.Name, i.SKU })
+            .ToList();
+        var others = all
+            .Where(i => i.CategoryId != categoryId)
+            .OrderBy(i => i.Name)
+            .Select(i => new { i.Id, i.Name, i.SKU, Category = i.CategoryName ?? "" })
+            .ToList();
+        return new JsonResult(new { inCategory, others }, InventoryTracker.App.Infrastructure.AppJsonOptions.Web);
+    }
+
+    public async Task<IActionResult> OnPostSetItemCategoryAsync(int itemId, int? newCategoryId)
+    {
+        if (!User.IsInRole("Admin") && !User.IsInRole("Manager"))
+            return new JsonResult(new { success = false, error = "Insufficient permissions." }) { StatusCode = 403 };
+        try
+        {
+            var (uid, uname) = User.GetIdentity();
+            await _inventoryService.SetItemCategoryAsync(itemId, newCategoryId == 0 ? null : newCategoryId, uid, uname);
+            return new JsonResult(new { success = true });
+        }
+        catch (Exception ex)
+        {
+            return new JsonResult(new { success = false, error = ex.Message });
+        }
+    }
+
+    public async Task<IActionResult> OnGetLocationItemsJsonAsync(string location)
+    {
+        if (!User.IsInRole("Admin") && !User.IsInRole("Manager")) return Forbid();
+        var all = await _inventoryService.GetAllItemsAsync();
+        var atLocation = all
+            .Where(i => i.Location == location)
+            .Select(i => new { i.Id, i.Name, i.SKU })
+            .ToList();
+        var others = all
+            .Where(i => i.Location != location)
+            .OrderBy(i => i.Name)
+            .Select(i => new { i.Id, i.Name, i.SKU, Location = i.Location ?? "" })
+            .ToList();
+        return new JsonResult(new { atLocation, others }, InventoryTracker.App.Infrastructure.AppJsonOptions.Web);
+    }
+
+    public async Task<IActionResult> OnPostSetItemLocationAsync(int itemId, string? newLocation)
+    {
+        if (!User.IsInRole("Admin") && !User.IsInRole("Manager"))
+            return new JsonResult(new { success = false, error = "Insufficient permissions." }) { StatusCode = 403 };
+        try
+        {
+            var (uid, uname) = User.GetIdentity();
+            await _inventoryService.SetItemLocationAsync(itemId, newLocation, uid, uname);
+            return new JsonResult(new { success = true });
+        }
+        catch (Exception ex)
+        {
+            return new JsonResult(new { success = false, error = ex.Message });
+        }
+    }
+
+    public async Task<IActionResult> OnGetLocationsJsonAsync()
+    {
+        var locations = await _inventoryService.GetAllLocationsAsync();
+        return new JsonResult(locations.Select(l => l.Name));
     }
 
     public async Task<IActionResult> OnPostAddCategoryAsync(string name, string? color)

@@ -26,45 +26,76 @@
     </div>
 </div>
 
-<ul class="nav nav-tabs mb-4 no-print">
-    <li class="nav-item"><a class="nav-link @tStock"     href="/Reports?tab=stock">    <i class="bi bi-bar-chart me-1"></i>Stock Levels</a></li>
-    <li class="nav-item"><a class="nav-link @tCheckout"  href="/Reports?tab=checkout"> <i class="bi bi-box-arrow-up-right me-1"></i>Checked Out</a></li>
-    <li class="nav-item"><a class="nav-link @tLost"      href="/Reports?tab=lost">     <i class="bi bi-x-circle me-1"></i>Lost Items</a></li>
-    <li class="nav-item"><a class="nav-link @tInventory" href="/Reports?tab=inventory"><i class="bi bi-clipboard-check me-1"></i>Take Inventory</a></li>
-    <li class="nav-item"><a class="nav-link @tExpiry"    href="/Reports?tab=expiry">   <i class="bi bi-calendar-x me-1"></i>Expiry</a></li>
-    <li class="nav-item"><a class="nav-link @tBarcodes"  href="/Reports?tab=barcodes"> <i class="bi bi-upc me-1"></i>Barcode Sheet</a></li>
-    <li class="nav-item"><a class="nav-link @tActivity"  href="/Reports?tab=activity"> <i class="bi bi-clock-history me-1"></i>Activity Log</a></li>
-</ul>
+<select class="form-select page-sidenav-select no-print" onchange="location.href=this.value">
+    <option value="/Reports?tab=stock"     selected="@(Model.Tab=="stock")">Stock Levels</option>
+    <option value="/Reports?tab=checkout"  selected="@(Model.Tab=="checkout")">Checked Out</option>
+    <option value="/Reports?tab=lost"      selected="@(Model.Tab=="lost")">Lost Items</option>
+    <option value="/Reports?tab=inventory" selected="@(Model.Tab=="inventory")">Take Inventory</option>
+    <option value="/Reports?tab=expiry"    selected="@(Model.Tab=="expiry")">Expiry</option>
+    <option value="/Reports?tab=barcodes"  selected="@(Model.Tab=="barcodes")">Barcode Sheet</option>
+    <option value="/Reports?tab=activity"  selected="@(Model.Tab=="activity")">Activity Log</option>
+</select>
+
+<div class="page-layout">
+<nav class="page-sidenav no-print">
+    <a href="/Reports?tab=stock"     class="nav-link @tStock">    <i class="bi bi-bar-chart"></i> Stock Levels</a>
+    <a href="/Reports?tab=checkout"  class="nav-link @tCheckout"> <i class="bi bi-box-arrow-up-right"></i> Checked Out</a>
+    <a href="/Reports?tab=lost"      class="nav-link @tLost">     <i class="bi bi-x-circle"></i> Lost Items</a>
+    <a href="/Reports?tab=inventory" class="nav-link @tInventory"><i class="bi bi-clipboard-check"></i> Take Inventory</a>
+    <a href="/Reports?tab=expiry"    class="nav-link @tExpiry">   <i class="bi bi-calendar-x"></i> Expiry</a>
+    <a href="/Reports?tab=barcodes"  class="nav-link @tBarcodes"> <i class="bi bi-upc"></i> Barcode Sheet</a>
+    <a href="/Reports?tab=activity"  class="nav-link @tActivity"> <i class="bi bi-clock-history"></i> Activity Log</a>
+</nav>
+<div class="page-content">
 
 @if (Model.Tab == "stock" && Model.StockReport is not null)
 {
     <div class="print-title d-none">Stock Levels Report - @Model.StockReport.GeneratedAt.ToLocalTime().ToString("MMM d, yyyy")</div>
-    <div class="row g-3 mb-4 no-print">
-        <div class="col-sm-4"><div class="card text-center p-3"><div class="display-6 fw-bold text-primary">@Model.StockReport.TotalItems</div><div class="text-muted small">Total Items</div></div></div>
-        <div class="col-sm-4"><div class="card text-center p-3"><div class="display-6 fw-bold text-success">@Model.StockReport.TotalQuantity</div><div class="text-muted small">Total Quantity</div></div></div>
-        <div class="col-sm-4"><div class="card text-center p-3"><div class="display-6 fw-bold text-warning">@Model.StockReport.LowStockCount</div><div class="text-muted small">Low Stock</div></div></div>
+    <div class="row g-2 g-sm-3 mb-4 no-print">
+        <div class="col-4"><div class="card text-center p-2 p-sm-3"><div class="fs-4 fs-sm-1 fw-bold text-primary">@Model.StockReport.TotalItems</div><div class="text-muted small">Total Items</div></div></div>
+        <div class="col-4"><div class="card text-center p-2 p-sm-3"><div class="fs-4 fw-bold text-success">@Model.StockReport.TotalQuantity</div><div class="text-muted small">In Stock</div></div></div>
+        <div class="col-4"><div class="card text-center p-2 p-sm-3"><div class="fs-4 fw-bold text-warning">@Model.StockReport.LowStockCount</div><div class="text-muted small">Low Stock</div></div></div>
     </div>
 
-    <div class="d-flex gap-2 mb-3 align-items-center flex-wrap no-print">
-        <input type="search" id="f-stock-q" class="form-control form-control-sm" style="max-width:260px"
-               placeholder="Search name, SKU, location...">
-        <select id="f-stock-type" class="form-select form-select-sm" style="max-width:150px">
-            <option value="">All Types</option>
-            <option value="Reusable">Reusable</option>
-            <option value="Consumable">Consumable</option>
-        </select>
-        <div class="form-check mb-0">
-            <input class="form-check-input" type="checkbox" id="f-stock-low">
-            <label class="form-check-label small" for="f-stock-low">Low Stock Only</label>
+    <div class="row g-2 mb-3 no-print">
+        <div class="col-12 col-sm-auto flex-sm-grow-1">
+            <input type="search" id="f-stock-q" class="form-control form-control-sm w-100"
+                   placeholder="Search name, SKU, location...">
         </div>
-        <span class="text-muted small ms-auto" id="f-stock-count"></span>
+        <div class="col-6 col-sm-auto">
+            <select id="f-stock-type" class="form-select form-select-sm w-100">
+                <option value="">All Types</option>
+                <option value="Reusable">Reusable</option>
+                <option value="Consumable">Consumable</option>
+            </select>
+        </div>
+        <div class="col-6 col-sm-auto d-flex align-items-center">
+            <div class="form-check mb-0">
+                <input class="form-check-input" type="checkbox" id="f-stock-low">
+                <label class="form-check-label small" for="f-stock-low">Low Stock Only</label>
+            </div>
+        </div>
+        <div class="col-12 col-sm-auto ms-sm-auto">
+            <span class="text-muted small" id="f-stock-count"></span>
+        </div>
     </div>
 
     <div class="card">
         <div class="table-responsive">
             <table class="table table-sm mb-0" id="stock-table">
                 <thead class="table-light">
-                    <tr><th>Name</th><th>Type</th><th>SKU</th><th>Location</th><th class="text-end">Total Qty</th><th class="text-end">Available</th><th class="text-end">Out</th><th class="text-end">Lost</th><th>Expiry</th><th>Status</th></tr>
+                    <tr>
+                        <th>Name</th>
+                        <th class="d-none d-md-table-cell">Type</th>
+                        <th class="d-none d-lg-table-cell">SKU</th>
+                        <th class="d-none d-md-table-cell">Location</th>
+                        <th class="text-end d-none d-lg-table-cell">Qty</th>
+                        <th class="text-end">Available</th>
+                        <th class="text-end d-none d-lg-table-cell">Out</th>
+                        <th class="text-end d-none d-lg-table-cell">Lost</th>
+                        <th class="d-none d-md-table-cell">Expiry</th>
+                        <th>Status</th>
+                    </tr>
                 </thead>
                 <tbody>
                     @foreach (var item in Model.StockReport.AllItems)
@@ -74,14 +105,14 @@
                             data-low="@item.IsLowStock.ToString().ToLower()"
                             data-search="@item.Name @(item.SKU ?? "") @(item.Location ?? "")">
                             <td class="fw-semibold">@item.Name</td>
-                            <td><span class="badge @(item.ItemType == ItemType.Reusable ? "bg-info" : "bg-secondary")">@item.ItemType</span></td>
-                            <td class="text-muted small">@(item.SKU ?? "-")</td>
-                            <td class="text-muted small">@(item.Location ?? "-")</td>
-                            <td class="text-end">@item.Quantity</td>
+                            <td class="d-none d-md-table-cell"><span class="badge @(item.ItemType == ItemType.Reusable ? "bg-info" : "bg-secondary")">@item.ItemType</span></td>
+                            <td class="text-muted small d-none d-lg-table-cell">@(item.SKU ?? "-")</td>
+                            <td class="text-muted small d-none d-md-table-cell">@(item.Location ?? "-")</td>
+                            <td class="text-end d-none d-lg-table-cell">@item.Quantity</td>
                             <td class="text-end fw-semibold @(item.IsLowStock ? "text-danger" : "text-success")">@item.AvailableQuantity</td>
-                            <td class="text-end text-warning">@(item.CheckedOutCount > 0 ? item.CheckedOutCount.ToString() : "-")</td>
-                            <td class="text-end text-danger">@(item.LostCount > 0 ? item.LostCount.ToString() : "-")</td>
-                            <td class="small text-nowrap">
+                            <td class="text-end text-warning d-none d-lg-table-cell">@(item.CheckedOutCount > 0 ? item.CheckedOutCount.ToString() : "-")</td>
+                            <td class="text-end text-danger d-none d-lg-table-cell">@(item.LostCount > 0 ? item.LostCount.ToString() : "-")</td>
+                            <td class="small text-nowrap d-none d-md-table-cell">
                                 @{
                                     var rToday = DateOnly.FromDateTime(DateTime.Today);
                                     if (item.ExpiryDate.HasValue)
@@ -118,20 +149,34 @@
     </div>
     @if (Model.CheckedOut.Items.Any())
     {
-        <div class="d-flex gap-2 mb-3 align-items-center flex-wrap no-print">
-            <input type="search" id="f-co-q" class="form-control form-control-sm" style="max-width:280px"
-                   placeholder="Search item or person...">
-            <div class="form-check mb-0">
-                <input class="form-check-input" type="checkbox" id="f-co-overdue">
-                <label class="form-check-label small" for="f-co-overdue">Overdue Only (&gt;7 days)</label>
+        <div class="row g-2 mb-3 no-print">
+            <div class="col-12 col-sm-auto flex-sm-grow-1">
+                <input type="search" id="f-co-q" class="form-control form-control-sm w-100"
+                       placeholder="Search item or person...">
             </div>
-            <span class="text-muted small ms-auto" id="f-co-count"></span>
+            <div class="col-6 col-sm-auto d-flex align-items-center">
+                <div class="form-check mb-0">
+                    <input class="form-check-input" type="checkbox" id="f-co-overdue">
+                    <label class="form-check-label small" for="f-co-overdue">Overdue Only (&gt;7 days)</label>
+                </div>
+            </div>
+            <div class="col-6 col-sm-auto ms-sm-auto">
+                <span class="text-muted small" id="f-co-count"></span>
+            </div>
         </div>
         <div class="card">
             <div class="table-responsive">
                 <table class="table table-sm mb-0" id="checkout-table">
                     <thead class="table-light">
-                        <tr><th>Item</th><th>Location</th><th>SKU</th><th>Checked Out By</th><th class="text-end">Qty</th><th>Date Out</th><th class="text-end">Days Out <span class="text-muted fw-normal" style="font-size:.75rem">(>7 = overdue)</span></th></tr>
+                        <tr>
+                            <th>Item</th>
+                            <th class="d-none d-md-table-cell">Location</th>
+                            <th class="d-none d-lg-table-cell">SKU</th>
+                            <th>Checked Out By</th>
+                            <th class="text-end d-none d-sm-table-cell">Qty</th>
+                            <th class="d-none d-md-table-cell">Date Out</th>
+                            <th class="text-end">Days Out</th>
+                        </tr>
                     </thead>
                     <tbody>
                         @foreach (var row in Model.CheckedOut.Items)
@@ -140,11 +185,11 @@
                                 data-overdue="@((row.DaysOut > 7).ToString().ToLower())"
                                 data-search="@row.ItemName @row.CheckedOutBy @(row.ItemLocation ?? "") @(row.SKU ?? "")">
                                 <td class="fw-semibold">@row.ItemName</td>
-                                <td class="text-muted small">@(row.ItemLocation ?? "-")</td>
-                                <td class="text-muted small">@(row.SKU ?? "-")</td>
+                                <td class="text-muted small d-none d-md-table-cell">@(row.ItemLocation ?? "-")</td>
+                                <td class="text-muted small d-none d-lg-table-cell">@(row.SKU ?? "-")</td>
                                 <td>@row.CheckedOutBy</td>
-                                <td class="text-end">@row.Quantity</td>
-                                <td class="small">@row.CheckedOutAt.ToLocalTime().ToString("MMM d, yyyy")</td>
+                                <td class="text-end d-none d-sm-table-cell">@row.Quantity</td>
+                                <td class="small d-none d-md-table-cell">@row.CheckedOutAt.ToLocalTime().ToString("MMM d, yyyy")</td>
                                 <td class="@(row.DaysOut > 7 ? "text-end text-warning fw-bold" : "text-end")">@row.DaysOut</td>
                             </tr>
                         }
@@ -170,10 +215,14 @@
     </div>
     @if (Model.LostItems.Items.Any())
     {
-        <div class="d-flex gap-2 mb-3 align-items-center flex-wrap no-print">
-            <input type="search" id="f-lost-q" class="form-control form-control-sm" style="max-width:280px"
-                   placeholder="Search item or person...">
-            <span class="text-muted small ms-auto" id="f-lost-count"></span>
+        <div class="row g-2 mb-3 no-print">
+            <div class="col-12 col-sm-auto flex-sm-grow-1">
+                <input type="search" id="f-lost-q" class="form-control form-control-sm w-100"
+                       placeholder="Search item or person...">
+            </div>
+            <div class="col-12 col-sm-auto ms-sm-auto">
+                <span class="text-muted small" id="f-lost-count"></span>
+            </div>
         </div>
         <div class="card">
             <div class="table-responsive">
@@ -208,25 +257,33 @@
     <div class="print-title">Take Inventory - @Model.TakeInventory.GeneratedAt.ToLocalTime().ToString("MMM d, yyyy h:mm tt")</div>
     <p class="text-muted small no-print">Print this page and walk the warehouse to confirm quantities.</p>
 
-    <div class="d-flex gap-2 mb-3 align-items-center flex-wrap no-print">
-        <input type="search" id="f-inv-q" class="form-control form-control-sm" style="max-width:250px"
-               placeholder="Search name or SKU...">
-        <select id="f-inv-type" class="form-select form-select-sm" style="max-width:150px">
-            <option value="">All Types</option>
-            <option value="Reusable">Reusable</option>
-            <option value="Consumable">Consumable</option>
-        </select>
+    <div class="row g-2 mb-3 no-print">
+        <div class="col-12 col-sm-auto flex-sm-grow-1">
+            <input type="search" id="f-inv-q" class="form-control form-control-sm w-100"
+                   placeholder="Search name or SKU...">
+        </div>
+        <div class="col-6 col-sm-auto">
+            <select id="f-inv-type" class="form-select form-select-sm w-100">
+                <option value="">All Types</option>
+                <option value="Reusable">Reusable</option>
+                <option value="Consumable">Consumable</option>
+            </select>
+        </div>
         @if (invLocations.Any())
         {
-            <select id="f-inv-location" class="form-select form-select-sm" style="max-width:180px">
-                <option value="">All Locations</option>
-                @foreach (var loc in invLocations)
-                {
-                    <option value="@loc">@loc</option>
-                }
-            </select>
+            <div class="col-6 col-sm-auto">
+                <select id="f-inv-location" class="form-select form-select-sm w-100">
+                    <option value="">All Locations</option>
+                    @foreach (var loc in invLocations)
+                    {
+                        <option value="@loc">@loc</option>
+                    }
+                </select>
+            </div>
         }
-        <span class="text-muted small ms-auto" id="f-inv-count"></span>
+        <div class="col-12 col-sm-auto ms-sm-auto">
+            <span class="text-muted small" id="f-inv-count"></span>
+        </div>
     </div>
 
     <div class="card">
@@ -234,10 +291,16 @@
             <table class="table table-sm mb-0 take-inventory-table" id="inventory-table">
                 <thead class="table-light">
                     <tr>
-                        <th>Item Name</th><th>SKU</th><th>Location</th><th>Type</th>
-                        <th class="text-end">Expected</th><th class="text-end">Available</th>
-                        <th class="text-end">Out</th><th class="text-end">Lost</th>
-                        <th style="width:120px">Actual Count</th><th style="width:160px">Notes</th>
+                        <th>Name</th>
+                        <th class="d-none d-md-table-cell">SKU</th>
+                        <th class="d-none d-md-table-cell">Location</th>
+                        <th class="d-none d-md-table-cell">Type</th>
+                        <th class="text-end d-none d-sm-table-cell">Expected</th>
+                        <th class="text-end">Available</th>
+                        <th class="text-end d-none d-lg-table-cell">Out</th>
+                        <th class="text-end d-none d-lg-table-cell">Lost</th>
+                        <th class="d-none d-print-table-cell" style="width:120px">Actual Count</th>
+                        <th class="d-none d-print-table-cell" style="width:160px">Notes</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -247,15 +310,15 @@
                             data-location="@(row.Location ?? "")"
                             data-search="@row.Name @(row.SKU ?? "") @(row.Location ?? "")">
                             <td class="fw-semibold">@row.Name</td>
-                            <td class="text-muted small">@(row.SKU ?? "-")</td>
-                            <td class="text-muted small">@(row.Location ?? "-")</td>
-                            <td><span class="badge @(row.ItemType == "Reusable" ? "bg-info" : "bg-secondary") small">@row.ItemType</span></td>
-                            <td class="text-end">@row.ExpectedQuantity</td>
+                            <td class="text-muted small d-none d-md-table-cell">@(row.SKU ?? "-")</td>
+                            <td class="text-muted small d-none d-md-table-cell">@(row.Location ?? "-")</td>
+                            <td class="d-none d-md-table-cell"><span class="badge @(row.ItemType == "Reusable" ? "bg-info" : "bg-secondary") small">@row.ItemType</span></td>
+                            <td class="text-end d-none d-sm-table-cell">@row.ExpectedQuantity</td>
                             <td class="text-end">@row.AvailableQuantity</td>
-                            <td class="text-end">@(row.CheckedOutCount > 0 ? row.CheckedOutCount.ToString() : "-")</td>
-                            <td class="text-end">@(row.LostCount > 0 ? row.LostCount.ToString() : "-")</td>
-                            <td><div class="print-input-box"></div></td>
-                            <td><div class="print-input-box wide"></div></td>
+                            <td class="text-end d-none d-lg-table-cell">@(row.CheckedOutCount > 0 ? row.CheckedOutCount.ToString() : "-")</td>
+                            <td class="text-end d-none d-lg-table-cell">@(row.LostCount > 0 ? row.LostCount.ToString() : "-")</td>
+                            <td class="d-none d-print-table-cell"><div class="print-input-box"></div></td>
+                            <td class="d-none d-print-table-cell"><div class="print-input-box wide"></div></td>
                         </tr>
                     }
                 </tbody>
@@ -604,3 +667,6 @@
 })();
 </script>
 }
+
+</div>
+</div>

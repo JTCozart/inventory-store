@@ -29,10 +29,10 @@ public class AuthenticationService : IUserAuthService
     {
         var admin = new User
         {
-            Username = username,
-            FirstName = firstName,
-            LastName = lastName,
-            Email = email,
+            Username = username.Trim(),
+            FirstName = firstName?.Trim(),
+            LastName = lastName?.Trim(),
+            Email = email?.Trim(),
             PasswordHash = _passwordHasher.Hash(password),
             Role = UserRole.Admin,
             IsActive = true,
@@ -105,6 +105,7 @@ public class AuthenticationService : IUserAuthService
 
     public async Task<UserDto> CreateUserAsync(CreateUserDto dto)
     {
+        dto = dto with { Username = dto.Username.Trim() };
         var existing = await _userRepository.GetByUsernameAsync(dto.Username);
         if (existing is not null)
             throw new InvalidOperationException($"Username '{dto.Username}' is already taken.");
@@ -112,9 +113,9 @@ public class AuthenticationService : IUserAuthService
         var user = new User
         {
             Username = dto.Username,
-            FirstName = dto.FirstName,
-            LastName = dto.LastName,
-            Email = dto.Email,
+            FirstName = dto.FirstName?.Trim(),
+            LastName = dto.LastName?.Trim(),
+            Email = dto.Email?.Trim(),
             PasswordHash = _passwordHasher.Hash(dto.Password),
             Role = dto.Role,
             IsActive = true,
@@ -141,9 +142,9 @@ public class AuthenticationService : IUserAuthService
         var user = await _userRepository.GetByIdAsync(id)
             ?? throw new KeyNotFoundException($"User {id} not found.");
 
-        user.FirstName = dto.FirstName;
-        user.LastName = dto.LastName;
-        user.Email = dto.Email;
+        user.FirstName = dto.FirstName?.Trim();
+        user.LastName = dto.LastName?.Trim();
+        user.Email = dto.Email?.Trim();
         user.Role = dto.Role;
         user.IsActive = dto.IsActive;
         await _userRepository.UpdateAsync(user);

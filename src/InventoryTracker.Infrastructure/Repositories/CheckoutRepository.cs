@@ -36,6 +36,12 @@ public class CheckoutRepository : ICheckoutRepository
             .OrderByDescending(r => r.CheckedOutAt)
             .ToListAsync();
 
+    public async Task<IEnumerable<CheckoutRecord>> GetLostByItemAsync(int inventoryItemId) =>
+        await _context.CheckoutRecords
+            .Where(r => r.InventoryItemId == inventoryItemId && r.IsLost)
+            .OrderByDescending(r => r.CheckedInAt)
+            .ToListAsync();
+
     public async Task<IEnumerable<CheckoutRecord>> GetAllByItemAsync(int inventoryItemId) =>
         await _context.CheckoutRecords
             .Where(r => r.InventoryItemId == inventoryItemId)
