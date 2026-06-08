@@ -73,17 +73,19 @@
       padding: .65rem 1rem; justify-content: center;
     }
 
-    .page-hero {
-      background: linear-gradient(160deg, #eff6ff 0%, #fff 60%);
-      padding: 4rem 2rem 3rem; text-align: center;
+    .content-hero {
+      padding: 2.5rem 0 2rem;
+      border-bottom: 2px solid var(--border);
+      margin-bottom: 2.5rem;
     }
-    .page-hero h1 { font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 800; margin-bottom: .75rem; }
-    .page-hero p { color: var(--gray); font-size: 1.05rem; max-width: 560px; margin: 0 auto; }
+    .content-hero h1 { font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 800; margin-bottom: .5rem; }
+    .content-hero p { color: var(--gray); font-size: 1.05rem; }
 
     .layout { display: grid; grid-template-columns: 240px 1fr; gap: 0; max-width: 1200px; margin: 0 auto; }
 
     .sidebar-nav {
-      position: sticky; top: 65px; height: calc(100vh - 75px); overflow-y: auto;
+      display: block;
+      position: sticky; top: 65px; height: calc(100vh - 65px); overflow-y: auto;
       overscroll-behavior: contain;
       border-right: 1px solid var(--border); padding: 1rem 1.25rem;
     }
@@ -96,7 +98,7 @@
     .sidebar-nav a:hover { color: var(--blue); background: #eff6ff; text-decoration: none; }
     .sidebar-nav .section-label {
       font-size: .7rem; font-weight: 700; text-transform: uppercase;
-      letter-spacing: .08em; color: #94a3b8; margin: .8rem 0 .25rem .5rem;
+      letter-spacing: .08em; color: #475569; margin: .8rem 0 .25rem .5rem;
     }
 
     .content { padding: 3rem 3rem 5rem; }
@@ -188,11 +190,6 @@
   </div>
 </nav>
 
-<div class="page-hero">
-  <h1>User Guide</h1>
-  <p>Everything you need to know about using Inventory Tracker day to day.</p>
-</div>
-
 <div class="layout">
 
   <!-- Sidebar TOC -->
@@ -235,6 +232,11 @@
 
   <!-- Main content -->
   <main class="content">
+
+    <div class="content-hero">
+      <h1>User Guide</h1>
+      <p>Everything you need to know about using Inventory Tracker day to day.</p>
+    </div>
 
     <section id="installation">
       <h2><i class="fa-solid fa-download"></i> Installation</h2>
