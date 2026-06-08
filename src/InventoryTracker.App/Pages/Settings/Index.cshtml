@@ -49,11 +49,30 @@
             </a>
         </li>
     }
-    <li class="nav-item">
-        <a class="nav-link @(Model.Tab == "categories" ? "active" : "")" href="/Settings?tab=categories">
-            <i class="bi bi-tags me-1"></i> Categories
-        </a>
-    </li>
+    @if (User.IsInRole("Admin") || User.IsInRole("Manager"))
+    {
+        <li class="nav-item">
+            <a class="nav-link @(Model.Tab == "categories" ? "active" : "")" href="/Settings?tab=categories">
+                <i class="bi bi-tags me-1"></i> Categories
+            </a>
+        </li>
+    }
+    @if (User.IsInRole("Admin"))
+    {
+        <li class="nav-item">
+            <a class="nav-link @(Model.Tab == "publicview" ? "active" : "")" href="/Settings?tab=publicview">
+                <i class="bi bi-eye me-1"></i> Public View
+            </a>
+        </li>
+    }
+    @if (User.IsInRole("Admin"))
+    {
+        <li class="nav-item">
+            <a class="nav-link @(Model.Tab == "database" ? "active" : "")" href="/Settings?tab=database">
+                <i class="bi bi-database me-1"></i> Database
+            </a>
+        </li>
+    }
     <li class="nav-item">
         <a class="nav-link @(Model.Tab == "info" ? "active" : "")" href="/Settings?tab=info">
             <i class="bi bi-info-circle me-1"></i> App Info
@@ -142,12 +161,18 @@
                                 @(user.LastLoginAt.HasValue ? user.LastLoginAt.Value.ToLocalTime().ToString("MMM d, yyyy h:mm tt") : "Never")
                             </td>
                             <td class="text-end">
-                                <button class="btn btn-sm btn-outline-secondary me-1"
-                                        onclick="openEditModal(@user.Id, '@user.Username', '@(user.FirstName ?? "")', '@(user.LastName ?? "")', '@(user.Email ?? "")', @((int)user.Role), @user.IsActive.ToString().ToLower())"
+                                <button class="btn btn-sm btn-outline-secondary me-1 js-edit-user"
+                                        data-id="@user.Id"
+                                        data-username="@user.Username"
+                                        data-firstname="@(user.FirstName ?? "")"
+                                        data-lastname="@(user.LastName ?? "")"
+                                        data-email="@(user.Email ?? "")"
+                                        data-role="@((int)user.Role)"
+                                        data-active="@user.IsActive.ToString().ToLower()"
                                         title="Edit">
                                     <i class="bi bi-pencil"></i>
                                 </button>
-                                @if (user.Role != UserRole.Admin)
+                                @if (user.Id != Model.CurrentUserId)
                                 {
                                     <form method="post" asp-page-handler="ToggleSuspend" class="d-inline me-1"
                                           onsubmit="return confirm('@(user.IsActive ? $"Suspend {user.Username}? They will be unable to log in." : $"Reactivate {user.Username}?")')">
@@ -524,7 +549,7 @@
     </div>
 }
 
-@if (Model.Tab == "categories")
+@if (Model.Tab == "categories" && (User.IsInRole("Admin") || User.IsInRole("Manager")))
 {
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h5 class="mb-0">Categories</h5>
@@ -657,6 +682,175 @@
                 </form>
             </div>
         </div>
+    </div>
+}
+
+@if (Model.Tab == "publicview" && User.IsInRole("Admin"))
+{
+    <div class="row g-4">
+
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header fw-semibold d-flex align-items-center justify-content-between">
+                    <span><i class="bi bi-eye me-2"></i>Public View</span>
+                    <span class="badge @(Model.PublicViewEnabled ? "bg-success" : "bg-secondary")">
+                        @(Model.PublicViewEnabled ? "Enabled" : "Disabled")
+                    </span>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small mb-3">
+                        When enabled, a public read-only page at <code>/public</code> shows items you mark below.
+                        Embed it anywhere with an <code>&lt;iframe&gt;</code> — no login required.
+                    </p>
+                    <form method="post" asp-page-handler="SavePublicViewSetting" class="d-flex align-items-center gap-3 mb-0">
+                        <div class="form-check form-switch mb-0">
+                            <input class="form-check-input" type="checkbox" role="switch"
+                                   id="publicViewEnabled" name="enabled" value="true"
+                                   @(Model.PublicViewEnabled ? "checked" : "") />
+                            <label class="form-check-label fw-semibold" for="publicViewEnabled">
+                                Enable public view
+                            </label>
+                        </div>
+                        <button type="submit" class="btn btn-sm btn-primary">Save</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        @if (Model.PublicViewEnabled)
+        {
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header fw-semibold"><i class="bi bi-code-slash me-2"></i>Embed Code</div>
+                    <div class="card-body">
+                        <p class="text-muted small mb-2">
+                            Copy this tag into any web page. Use your tunnel URL for external access.
+                        </p>
+                        <div class="input-group input-group-sm mb-2">
+                            <input type="text" id="embed-code" readonly class="form-control font-monospace small"
+                                   value='&lt;iframe src="@Model.PublicViewUrl" width="100%" height="600" frameborder="0" style="border:none;border-radius:8px;"&gt;&lt;/iframe&gt;' />
+                            <button class="btn btn-outline-secondary" type="button" onclick="copyEmbedCode(this)" title="Copy">
+                                <i class="bi bi-clipboard"></i>
+                            </button>
+                        </div>
+                        <div class="form-text">
+                            <i class="bi bi-link-45deg me-1"></i>
+                            Direct link: <a href="@Model.PublicViewUrl" target="_blank">@Model.PublicViewUrl</a>
+                            @if (Model.TunnelPublicUrl is not null)
+                            {
+                                <span class="ms-3">
+                                    <i class="bi bi-cloud me-1"></i>Tunnel:
+                                    <a href="@(Model.TunnelPublicUrl)/public" target="_blank">@(Model.TunnelPublicUrl)/public</a>
+                                </span>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header fw-semibold d-flex align-items-center justify-content-between">
+                        <span><i class="bi bi-boxes me-2"></i>Visible Items</span>
+                        <span class="text-muted small">@Model.AllItems.Count(i => i.IsPublic) of @Model.AllItems.Count() shown</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width:48px">Show</th>
+                                    <th>Name</th>
+                                    <th>Type</th>
+                                    <th>Category</th>
+                                    <th>Qty</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in Model.AllItems.OrderBy(i => i.Name))
+                                {
+                                    <tr>
+                                        <td>
+                                            <div class="form-check form-switch mb-0">
+                                                <input class="form-check-input public-item-toggle" type="checkbox"
+                                                       role="switch"
+                                                       data-item-id="@item.Id"
+                                                       @(item.IsPublic ? "checked" : "")
+                                                       title="Toggle public visibility" />
+                                            </div>
+                                        </td>
+                                        <td class="fw-semibold">@item.Name</td>
+                                        <td>
+                                            <span class="badge @(item.ItemType == InventoryTracker.Domain.Enums.ItemType.Reusable ? "bg-primary" : "bg-success") bg-opacity-75">
+                                                @item.ItemType
+                                            </span>
+                                        </td>
+                                        <td>
+                                            @if (!string.IsNullOrEmpty(item.CategoryName))
+                                            {
+                                                <span class="badge rounded-pill" style="background:@(item.CategoryColor ?? "#6c757d");font-weight:500">
+                                                    @item.CategoryName
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted small">—</span>
+                                            }
+                                        </td>
+                                        <td>@item.AvailableQuantity</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        }
+
+    </div>
+}
+
+@if (Model.Tab == "database" && User.IsInRole("Admin"))
+{
+    <div class="row g-4" style="max-width: 620px;">
+
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header fw-semibold"><i class="bi bi-download me-2"></i>Backup</div>
+                <div class="card-body">
+                    <p class="text-muted small mb-3">
+                        Downloads a consistent snapshot of the current database as a <code>.db</code> file.
+                        The app continues running normally during the backup.
+                    </p>
+                    <a href="/Settings?handler=DownloadBackup" class="btn btn-primary">
+                        <i class="bi bi-download me-1"></i> Download Backup
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12">
+            <div class="card border-danger">
+                <div class="card-header fw-semibold text-danger"><i class="bi bi-upload me-2"></i>Restore from Backup</div>
+                <div class="card-body">
+                    <div class="alert alert-warning py-2 small mb-3">
+                        <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                        <strong>This replaces all current data.</strong> Download a backup first. This action cannot be undone.
+                    </div>
+                    <form method="post" asp-page-handler="RestoreBackup" enctype="multipart/form-data"
+                          onsubmit="return confirm('Replace the current database with this backup? All data since the backup will be lost.')">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Backup File <span class="text-danger">*</span></label>
+                            <input type="file" name="backupFile" class="form-control" accept=".db" required />
+                            <div class="form-text">Must be a <code>.db</code> file created by the Download Backup function.</div>
+                        </div>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-arrow-counterclockwise me-1"></i> Restore Database
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
     </div>
 }
 
@@ -887,16 +1081,21 @@
 }
 
 <script>
-function openEditModal(id, username, firstName, lastName, email, role, isActive) {
-    document.getElementById('editUserId').value = id;
-    document.getElementById('editModalUsername').textContent = username;
-    document.getElementById('editFirstName').value = firstName;
-    document.getElementById('editLastName').value = lastName;
-    document.getElementById('editEmail').value = email;
-    document.getElementById('editRole').value = role;
-    document.getElementById('editIsActive').checked = isActive;
+function openEditModal(btn) {
+    const d = btn.dataset;
+    document.getElementById('editUserId').value = d.id;
+    document.getElementById('editModalUsername').textContent = d.username;
+    document.getElementById('editFirstName').value = d.firstname;
+    document.getElementById('editLastName').value = d.lastname;
+    document.getElementById('editEmail').value = d.email;
+    document.getElementById('editRole').value = d.role;
+    document.getElementById('editIsActive').checked = d.active === 'true';
     new bootstrap.Modal(document.getElementById('editUserModal')).show();
 }
+
+document.querySelectorAll('.js-edit-user').forEach(function (btn) {
+    btn.addEventListener('click', function () { openEditModal(btn); });
+});
 
 function openEditCategoryModal(id, name, color) {
     document.getElementById('editCatId').value = id;
@@ -929,6 +1128,43 @@ function selectSwatch(containerId, inputId, color) {
     }
     initSwatches('addCatSwatches', 'addCatColor');
     initSwatches('editCatSwatches', 'editCatColor');
+})();
+</script>
+
+<script>
+function copyEmbedCode(btn) {
+    var input = document.getElementById('embed-code');
+    if (!input) return;
+    navigator.clipboard.writeText(input.value).then(function () {
+        btn.innerHTML = '<i class="bi bi-check"></i> Copied';
+        setTimeout(function () { btn.innerHTML = '<i class="bi bi-clipboard"></i>'; }, 2000);
+    });
+}
+
+(function () {
+    var afToken = document.getElementById('af-token');
+    document.querySelectorAll('.public-item-toggle').forEach(function (chk) {
+        chk.addEventListener('change', function () {
+            var itemId   = chk.dataset.itemId;
+            var isPublic = chk.checked;
+            var fd = new FormData();
+            fd.append('itemId',   itemId);
+            fd.append('isPublic', isPublic);
+            if (afToken) fd.append('__RequestVerificationToken', afToken.value);
+            fetch('?handler=TogglePublicItem', { method: 'POST', body: fd, credentials: 'include' })
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    if (!d.success) { chk.checked = !isPublic; }
+                    var countEl = document.querySelector('.card-header .text-muted.small');
+                    if (countEl) {
+                        var checks = document.querySelectorAll('.public-item-toggle:checked').length;
+                        var total  = document.querySelectorAll('.public-item-toggle').length;
+                        countEl.textContent = checks + ' of ' + total + ' shown';
+                    }
+                })
+                .catch(function () { chk.checked = !isPublic; });
+        });
+    });
 })();
 </script>
 }

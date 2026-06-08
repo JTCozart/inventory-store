@@ -13,6 +13,7 @@ public abstract class InventoryItem
     public DateOnly? ExpiryDate { get; set; }
     public int? CategoryId { get; set; }
     public Category? Category { get; set; }
+    public bool IsPublic { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public int CreatedByUserId { get; set; }

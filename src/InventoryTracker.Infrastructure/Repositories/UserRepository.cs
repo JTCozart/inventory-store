@@ -50,5 +50,8 @@ public class UserRepository : IUserRepository
     public Task<bool> AnyAsync() => _context.Users.AnyAsync();
 
     public async Task<User?> GetAdminAsync() =>
-        await _context.Users.FirstOrDefaultAsync(u => u.Role == UserRole.Admin);
+        await _context.Users
+            .Where(u => u.Role == UserRole.Admin)
+            .OrderBy(u => u.Id)
+            .FirstOrDefaultAsync();
 }

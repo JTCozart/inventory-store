@@ -3,18 +3,22 @@
 @{
     ViewData["Title"] = "Inventory";
     ViewData["ActivePage"] = "Inventory";
+    var canWrite = User.IsInRole("Admin") || User.IsInRole("Manager");
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h1 class="h3 mb-0">Inventory</h1>
-    <div class="d-flex gap-2">
-        <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#importModal">
-            <i class="bi bi-upload me-1"></i> Import
-        </button>
-        <a href="/Inventory/Create" class="btn btn-primary">
-            <i class="bi bi-plus-lg me-1"></i> Add Item
-        </a>
-    </div>
+    @if (canWrite)
+    {
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#importModal">
+                <i class="bi bi-upload me-1"></i> Import
+            </button>
+            <a href="/Inventory/Create" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-1"></i> Add Item
+            </a>
+        </div>
+    }
 </div>
 
 @if (!string.IsNullOrEmpty(Model.ImportResult))
@@ -149,14 +153,22 @@ else
                                     <span class="badge bg-success">OK</span>
                                 }
                             </td>
-                            <td class="text-end" onclick="event.stopPropagation()">
-                                <button type="button" class="btn btn-sm btn-outline-danger"
-                                        onclick="confirmDelete(@item.Id, '@item.Name.Replace("'", "\\'")')"
-                                        title="Delete @item.Name"
-                                        aria-label="Delete @item.Name">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            </td>
+                                @if (canWrite)
+                            {
+                                <td class="text-end" onclick="event.stopPropagation()">
+                                    <button type="button" class="btn btn-sm btn-outline-danger"
+                                            data-item-id="@item.Id" data-item-name="@item.Name"
+                                            onclick="confirmDelete(this)"
+                                            title="Delete @item.Name"
+                                            aria-label="Delete @item.Name">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </td>
+                            }
+                            else
+                            {
+                                <td></td>
+                            }
                         </tr>
                     }
                 </tbody>
@@ -166,6 +178,8 @@ else
     <div class="text-muted small mt-2">Showing @Model.Items.Count() items</div>
 }
 
+@if (canWrite)
+{
 <!-- Import CSV modal -->
 <div class="modal fade" id="importModal" tabindex="-1">
     <div class="modal-dialog">
@@ -216,6 +230,7 @@ else
         </div>
     </div>
 </div>
+} @* end canWrite *@
 
 @section Scripts {
 <script>
@@ -246,9 +261,9 @@ else
     });
 })();
 
-function confirmDelete(id, name) {
-    document.getElementById('deleteItemId').value = id;
-    document.getElementById('deleteItemName').textContent = name;
+function confirmDelete(btn) {
+    document.getElementById('deleteItemId').value = btn.dataset.itemId;
+    document.getElementById('deleteItemName').textContent = btn.dataset.itemName;
     new bootstrap.Modal(document.getElementById('deleteModal')).show();
 }
 @if (Model.Open.HasValue)

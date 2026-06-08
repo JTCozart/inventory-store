@@ -169,8 +169,6 @@ public class AuthenticationService : IUserAuthService
         var user = await _userRepository.GetByIdAsync(id)
             ?? throw new KeyNotFoundException($"User {id} not found.");
 
-        if (user.Role == UserRole.Admin && suspended)
-            throw new InvalidOperationException("Cannot suspend the admin user.");
 
         user.IsActive = !suspended;
         await _userRepository.UpdateAsync(user);
@@ -191,8 +189,6 @@ public class AuthenticationService : IUserAuthService
         var user = await _userRepository.GetByIdAsync(id)
             ?? throw new KeyNotFoundException($"User {id} not found.");
 
-        if (user.Role == UserRole.Admin)
-            throw new InvalidOperationException("Cannot delete the admin user.");
 
         await _userRepository.DeleteAsync(id);
     }

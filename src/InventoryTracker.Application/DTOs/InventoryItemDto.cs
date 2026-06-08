@@ -20,7 +20,9 @@ public record InventoryItemDto(
     DateTime UpdatedAt,
     int? CategoryId,
     string? CategoryName,
-    DateOnly? ExpiryDate
+    DateOnly? ExpiryDate,
+    bool IsPublic,
+    string? CategoryColor
 );
 
 public record CreateInventoryItemDto(

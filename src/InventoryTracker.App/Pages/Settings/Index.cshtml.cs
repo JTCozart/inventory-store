@@ -7,6 +7,8 @@ using InventoryTracker.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Data.Sqlite;
 
 namespace InventoryTracker.App.Pages.Settings;
 
@@ -17,6 +19,9 @@ public class IndexModel : PageModel
     private readonly ISettingsService _settingsService;
     private readonly TunnelService _tunnel;
     private readonly ICategoryService _categoryService;
+    private readonly IInventoryService _inventoryService;
+    private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly ILogger<IndexModel> _logger;
 
     public string Tab { get; private set; } = "account";
     public string? SuccessMessage { get; private set; }
@@ -37,12 +42,25 @@ public class IndexModel : PageModel
     public string? SavedServeoSubdomain  { get; private set; }
     public string? ServeoPublicKey       { get; private set; }
 
-    public IndexModel(IUserAuthService authService, ISettingsService settingsService, TunnelService tunnel, ICategoryService categoryService)
+    // Public view tab
+    public bool PublicViewEnabled          { get; private set; }
+    public string PublicViewUrl            { get; private set; } = string.Empty;
+    public IEnumerable<InventoryItemDto> AllItems { get; private set; } = [];
+
+    // Current user id — used to prevent self-modification in user management
+    public int CurrentUserId               { get; private set; }
+
+    public IndexModel(IUserAuthService authService, ISettingsService settingsService, TunnelService tunnel,
+        ICategoryService categoryService, IInventoryService inventoryService,
+        IHttpContextAccessor httpContextAccessor, ILogger<IndexModel> logger)
     {
-        _authService     = authService;
-        _settingsService = settingsService;
-        _tunnel          = tunnel;
-        _categoryService = categoryService;
+        _authService          = authService;
+        _settingsService      = settingsService;
+        _tunnel               = tunnel;
+        _categoryService      = categoryService;
+        _inventoryService     = inventoryService;
+        _httpContextAccessor  = httpContextAccessor;
+        _logger               = logger;
     }
 
     public async Task OnGetAsync(string tab = "account", string? success = null, string? error = null)
@@ -51,6 +69,7 @@ public class IndexModel : PageModel
         SuccessMessage = success;
         ErrorMessage   = error;
         LocalIpAddress = NetworkUtility.GetLocalIpAddress();
+        CurrentUserId  = User.GetIdentity().userId;
 
         if (tab == "users")
             Users = await _authService.GetAllUsersAsync();
@@ -66,6 +85,16 @@ public class IndexModel : PageModel
             SavedAutostart       = await _settingsService.GetAsync("tunnel.autostart");
             SavedServeoSubdomain = await _settingsService.GetAsync("tunnel.serveo.subdomain");
             ServeoPublicKey      = await _tunnel.GetServeoPublicKeyAsync();
+        }
+
+        if (tab == "publicview")
+        {
+            PublicViewEnabled = await _settingsService.GetAsync("public.view.enabled") == "true";
+            AllItems          = await _inventoryService.GetAllItemsAsync();
+            var req           = _httpContextAccessor.HttpContext?.Request;
+            PublicViewUrl     = req is not null
+                ? $"{req.Scheme}://{req.Host}/public"
+                : "/public";
         }
     }
 
@@ -134,6 +163,8 @@ public class IndexModel : PageModel
     public async Task<IActionResult> OnPostToggleSuspendAsync(int userId, bool suspend)
     {
         if (!User.IsInRole("Admin")) return Forbid();
+        if (userId == User.GetIdentity().userId)
+            return RedirectWithMessage("users", error: "You cannot suspend your own account.");
         try
         {
             await _authService.SetUserSuspendedAsync(userId, suspend);
@@ -145,6 +176,8 @@ public class IndexModel : PageModel
     public async Task<IActionResult> OnPostDeleteUserAsync(int userId)
     {
         if (!User.IsInRole("Admin")) return Forbid();
+        if (userId == User.GetIdentity().userId)
+            return RedirectWithMessage("users", error: "You cannot delete your own account.");
         try
         {
             await _authService.DeleteUserAsync(userId);
@@ -184,6 +217,116 @@ public class IndexModel : PageModel
             return RedirectWithMessage("categories", success: "Category deleted.");
         }
         catch (Exception ex) { return RedirectWithMessage("categories", error: ex.Message); }
+    }
+
+    public async Task<IActionResult> OnGetDownloadBackupAsync()
+    {
+        if (!User.IsInRole("Admin")) return Forbid();
+
+        var dbPath = GetDbPath();
+        if (!System.IO.File.Exists(dbPath))
+            return RedirectWithMessage("database", error: "Database file not found.");
+
+        // Use a path with no SQL-special characters so we can safely embed it in VACUUM INTO.
+        var tempPath = Path.Combine(Path.GetTempPath(), $"invt_{Guid.NewGuid():N}.db");
+        try
+        {
+            try
+            {
+                // VACUUM INTO creates a clean, WAL-free snapshot in one operation.
+                // Unlike BackupDatabase(), it does not leave journal files behind,
+                // so the temp file is fully released when this connection disposes.
+                using var conn = new SqliteConnection($"Data Source={dbPath}");
+                await conn.OpenAsync();
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = $"VACUUM INTO '{tempPath.Replace("'", "''")}'";
+                await cmd.ExecuteNonQueryAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Database backup failed.");
+                return RedirectWithMessage("database", error: "Backup failed: " + ex.Message);
+            }
+
+            var bytes    = await System.IO.File.ReadAllBytesAsync(tempPath);
+            var filename = $"inventory_backup_{DateTime.Now:yyyyMMdd_HHmmss}.db";
+            return File(bytes, "application/octet-stream", filename);
+        }
+        finally
+        {
+            try { System.IO.File.Delete(tempPath); } catch { /* temp file, best-effort */ }
+        }
+    }
+
+    public async Task<IActionResult> OnPostRestoreBackupAsync(IFormFile? backupFile)
+    {
+        if (!User.IsInRole("Admin")) return Forbid();
+
+        if (backupFile is null || backupFile.Length == 0)
+            return RedirectWithMessage("database", error: "No file selected.");
+
+        // Validate SQLite magic bytes
+        var header = new byte[16];
+        await using (var peek = backupFile.OpenReadStream())
+            _ = await peek.ReadAsync(header.AsMemory(0, 16));
+
+        if (System.Text.Encoding.ASCII.GetString(header, 0, 15) != "SQLite format 3")
+            return RedirectWithMessage("database", error: "Invalid file — please upload a valid SQLite database backup (.db).");
+
+        var dbPath  = GetDbPath();
+        var bakPath = dbPath + ".bak";
+        var tmpPath = Path.Combine(Path.GetTempPath(), $"restore_{Guid.NewGuid():N}.db");
+
+        try
+        {
+            await using (var src  = backupFile.OpenReadStream())
+            await using (var dest = System.IO.File.OpenWrite(tmpPath))
+                await src.CopyToAsync(dest);
+
+            // Release all pooled SQLite connections so the file can be replaced
+            SqliteConnection.ClearAllPools();
+
+            if (System.IO.File.Exists(dbPath))
+                System.IO.File.Copy(dbPath, bakPath, overwrite: true);
+
+            System.IO.File.Copy(tmpPath, dbPath, overwrite: true);
+
+            // Remove stale WAL/SHM files from the old database
+            foreach (var ext in new[] { "-wal", "-shm" })
+            {
+                var f = dbPath + ext;
+                if (System.IO.File.Exists(f)) System.IO.File.Delete(f);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Database restore failed.");
+            return RedirectWithMessage("database", error: "Restore failed: " + ex.Message);
+        }
+        finally
+        {
+            if (System.IO.File.Exists(tmpPath)) System.IO.File.Delete(tmpPath);
+        }
+
+        return RedirectWithMessage("database", success: "Database restored successfully. A backup of the previous database was saved alongside it.");
+    }
+
+    private static string GetDbPath() => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+        "InventoryTracker", "inventory.db");
+
+    public async Task<IActionResult> OnPostSavePublicViewSettingAsync(bool enabled)
+    {
+        if (!User.IsInRole("Admin")) return Forbid();
+        await _settingsService.SetAsync("public.view.enabled", enabled ? "true" : null);
+        return RedirectWithMessage("publicview", success: enabled ? "Public view enabled." : "Public view disabled.");
+    }
+
+    public async Task<IActionResult> OnPostTogglePublicItemAsync(int itemId, bool isPublic)
+    {
+        if (!User.IsInRole("Admin") && !User.IsInRole("Manager")) return Forbid();
+        await _inventoryService.SetItemPublicAsync(itemId, isPublic);
+        return new JsonResult(new { success = true });
     }
 
     private IActionResult RedirectWithMessage(string tab, string? success = null, string? error = null) =>

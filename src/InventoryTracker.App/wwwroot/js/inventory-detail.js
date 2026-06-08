@@ -3,6 +3,7 @@
 let _currentItemId = null;
 let _needsReload = false;
 let _detailModal = null;
+let _canWrite = false;
 
 document.addEventListener('DOMContentLoaded', () => {
     // Row click -> open modal in view mode
@@ -14,6 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const el = document.getElementById('itemDetailModal');
     if (el) {
         _detailModal = new bootstrap.Modal(el);
+        _canWrite = el.dataset.canWrite === '1';
         el.addEventListener('hidden.bs.modal', () => {
             if (_needsReload) location.reload();
         });
@@ -54,7 +56,7 @@ function populateView(s) {
     typeBadge.className = `badge ms-2 ${isReusable ? 'bg-info' : 'bg-secondary'}`;
     const stockBadge = document.getElementById('modal-stock-badge');
     stockBadge.classList.toggle('d-none', !s.isLowStock);
-    document.getElementById('btn-switch-edit').classList.remove('d-none');
+    if (_canWrite) document.getElementById('btn-switch-edit').classList.remove('d-none');
 
     // Stats
     document.getElementById('modal-stat-qty').textContent = s.quantity;
@@ -143,6 +145,7 @@ function buildActiveCheckouts(checkouts) {
                     <span class="text-muted small ms-2">${dayLabel}</span>
                     ${c.notes ? `<span class="text-muted small ms-2">${esc(c.notes)}</span>` : ''}
                 </div>
+                ${_canWrite ? `
                 <div class="d-flex gap-2 align-items-center flex-wrap">
                     <input type="text" id="ci-notes-${c.id}" class="form-control form-control-sm"
                            style="width:140px" placeholder="Notes">
@@ -154,7 +157,7 @@ function buildActiveCheckouts(checkouts) {
                             onclick="handleMarkLost(${c.id})">
                         <i class="bi bi-x-circle me-1"></i>Mark Lost
                     </button>
-                </div>
+                </div>` : ''}
             </div>
         </div>`;
     }).join('');
@@ -165,7 +168,7 @@ function showViewMode(focus = true) {
     document.getElementById('modal-edit-body').classList.add('d-none');
     document.getElementById('modal-view-footer').classList.add('d-none');
     document.getElementById('modal-edit-footer').classList.add('d-none');
-    document.getElementById('btn-switch-edit').classList.remove('d-none');
+    if (_canWrite) document.getElementById('btn-switch-edit').classList.remove('d-none');
     clearAlert('edit-alert');
 }
 

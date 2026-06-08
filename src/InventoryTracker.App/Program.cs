@@ -229,7 +229,7 @@ internal class Program
                 return status is not null ? Results.Ok(status) : Results.Ok((object?)null);
             });
 
-            endpoints.MapPost("/api/inventory/checkout", [Authorize] async (HttpContext ctx, ICheckoutService svc) =>
+            endpoints.MapPost("/api/inventory/checkout", [Authorize(Roles = "Admin,Manager")] async (HttpContext ctx, ICheckoutService svc) =>
             {
                 var dto = await ctx.Request.ReadFromJsonAsync<CheckOutRequest>();
                 if (dto is null) return Results.BadRequest();
@@ -238,7 +238,7 @@ internal class Program
                 return Results.Ok(record);
             });
 
-            endpoints.MapPost("/api/inventory/checkin", [Authorize] async (HttpContext ctx, ICheckoutService svc) =>
+            endpoints.MapPost("/api/inventory/checkin", [Authorize(Roles = "Admin,Manager")] async (HttpContext ctx, ICheckoutService svc) =>
             {
                 var dto = await ctx.Request.ReadFromJsonAsync<CheckInRequest>();
                 if (dto is null) return Results.BadRequest();
@@ -247,7 +247,7 @@ internal class Program
                 return Results.Ok(record);
             });
 
-            endpoints.MapPost("/api/inventory/lost", [Authorize] async (HttpContext ctx, ICheckoutService svc) =>
+            endpoints.MapPost("/api/inventory/lost", [Authorize(Roles = "Admin,Manager")] async (HttpContext ctx, ICheckoutService svc) =>
             {
                 var dto = await ctx.Request.ReadFromJsonAsync<MarkLostRequest>();
                 if (dto is null) return Results.BadRequest();
@@ -256,7 +256,7 @@ internal class Program
                 return Results.Ok(record);
             });
 
-            endpoints.MapPost("/api/inventory/consume", [Authorize] async (HttpContext ctx, ICheckoutService svc) =>
+            endpoints.MapPost("/api/inventory/consume", [Authorize(Roles = "Admin,Manager")] async (HttpContext ctx, ICheckoutService svc) =>
             {
                 var dto = await ctx.Request.ReadFromJsonAsync<ConsumeRequest>();
                 if (dto is null) return Results.BadRequest();
@@ -265,7 +265,7 @@ internal class Program
                 return Results.Ok();
             });
 
-            endpoints.MapPost("/api/inventory/restock", [Authorize] async (HttpContext ctx, ICheckoutService svc) =>
+            endpoints.MapPost("/api/inventory/restock", [Authorize(Roles = "Admin,Manager")] async (HttpContext ctx, ICheckoutService svc) =>
             {
                 var dto = await ctx.Request.ReadFromJsonAsync<RestockRequest>();
                 if (dto is null) return Results.BadRequest();

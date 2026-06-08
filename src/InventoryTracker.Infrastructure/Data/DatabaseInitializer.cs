@@ -52,6 +52,7 @@ public class DatabaseInitializer
         await EnsureCategoriesTableAsync(conn);
         await AddColumnIfMissingAsync(conn, "InventoryItems", "CategoryId",   "INTEGER NULL");
         await AddColumnIfMissingAsync(conn, "InventoryItems", "ExpiryDate",   "TEXT NULL");
+        await AddColumnIfMissingAsync(conn, "InventoryItems", "IsPublic",     "INTEGER NOT NULL DEFAULT 0");
     }
 
     private static async Task MakeUsersEmailNullableAsync(SqliteConnection conn)
@@ -116,7 +117,7 @@ public class DatabaseInitializer
         { "Users", "InventoryItems" };
 
     private static readonly HashSet<string> _allowedColumns = new(StringComparer.OrdinalIgnoreCase)
-        { "FirstName", "LastName", "ItemType", "CheckedOutCount", "LostCount", "ScanWarning", "CategoryId", "ExpiryDate" };
+        { "FirstName", "LastName", "ItemType", "CheckedOutCount", "LostCount", "ScanWarning", "CategoryId", "ExpiryDate", "IsPublic" };
 
     private static async Task AddColumnIfMissingAsync(
         SqliteConnection conn, string table, string column, string definition)

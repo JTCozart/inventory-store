@@ -61,7 +61,10 @@
       "Remote access via Serveo or Cloudflare Tunnel",
       "Multi-user roles (Admin, Manager, Viewer)",
       "Auto-update notifications",
-      "Windows service installer"
+      "Windows service installer",
+      "Public view with iframe embed for external websites",
+      "Dark mode with per-browser preference",
+      "Database backup and restore with one-click download"
     ]
   }
   </script>
@@ -116,6 +119,27 @@
       padding: .45rem 1rem; border-radius: 8px; font-weight: 600;
     }
     .btn-nav:hover { background: var(--blue-d); }
+    .nav-toggle {
+      display: none; background: none; border: none; cursor: pointer;
+      padding: .35rem; color: var(--dark); font-size: 1.35rem; line-height: 1;
+    }
+    .nav-mobile {
+      display: none; position: absolute; top: 100%; left: 0; right: 0;
+      background: #fff; border-bottom: 1px solid var(--border);
+      padding: .75rem 1.5rem 1rem; flex-direction: column;
+      box-shadow: 0 6px 16px rgba(0,0,0,.08);
+    }
+    .nav-mobile.open { display: flex; }
+    .nav-mobile a {
+      color: var(--gray); font-size: .95rem; font-weight: 500;
+      padding: .65rem .25rem; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: .5rem;
+    }
+    .nav-mobile a:hover { color: var(--dark); text-decoration: none; }
+    .nav-mobile .btn-nav {
+      margin-top: .5rem; border-bottom: none; border-radius: 8px;
+      padding: .65rem 1rem; justify-content: center;
+    }
 
     /* Hero */
     .hero {
@@ -251,7 +275,8 @@
       .ui-mock { grid-template-columns: 1fr; }
       .ui-sidebar { display: none; }
       nav { padding: 1rem; }
-      .nav-links a:not(.btn-nav) { display: none; }
+      .nav-links { display: none; }
+      .nav-toggle { display: block; }
     }
   </style>
 </head>
@@ -270,6 +295,16 @@
     <a href="https://github.com/JTCozart/inventory-tracker/releases/latest" class="btn-nav" target="_blank" rel="noopener noreferrer">
       <i class="fa-solid fa-download"></i> Download
     </a>
+  </div>
+  <button class="nav-toggle" aria-label="Open menu" aria-expanded="false">
+    <i class="fa-solid fa-bars"></i>
+  </button>
+  <div class="nav-mobile" role="menu">
+    <a href="#features"><i class="fa-solid fa-star fa-fw"></i> Features</a>
+    <a href="#how-it-works"><i class="fa-solid fa-list-check fa-fw"></i> How it works</a>
+    <a href="user-guide.html"><i class="fa-solid fa-book fa-fw"></i> User Guide</a>
+    <a href="https://github.com/JTCozart/inventory-tracker" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-github fa-fw"></i> GitHub</a>
+    <a href="https://github.com/JTCozart/inventory-tracker/releases/latest" class="btn-nav" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-download"></i> Download</a>
   </div>
 </nav>
 
@@ -411,6 +446,21 @@
         <h3>Fast installer</h3>
         <p>Download one .exe and you're done. The installer stops the running service, upgrades the files, and restarts automatically.</p>
       </div>
+      <div class="feature-card">
+        <div class="feature-icon"><i class="fa-solid fa-eye"></i></div>
+        <h3>Public view &amp; iframe embed</h3>
+        <p>Publish a live read-only availability board to any website or intranet. Choose exactly which items appear and copy a single <code>&lt;iframe&gt;</code> tag — no login needed for visitors.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon"><i class="fa-solid fa-moon"></i></div>
+        <h3>Dark mode</h3>
+        <p>Full dark theme built in. Toggle with the sidebar button — preference is saved per browser and persists across sessions.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon"><i class="fa-solid fa-database"></i></div>
+        <h3>Database backup &amp; restore</h3>
+        <p>Download a consistent point-in-time backup of your entire database with one click. Restore from any previous backup — the current database is saved automatically before overwriting.</p>
+      </div>
     </div>
   </div>
 </section>
@@ -473,5 +523,30 @@
   </div>
 </footer>
 
+<script>
+  (function () {
+    var toggle = document.querySelector('.nav-toggle');
+    var menu   = document.querySelector('.nav-mobile');
+    toggle.addEventListener('click', function () {
+      var open = menu.classList.toggle('open');
+      toggle.setAttribute('aria-expanded', open);
+      toggle.querySelector('i').className = open ? 'fa-solid fa-xmark' : 'fa-solid fa-bars';
+    });
+    document.addEventListener('click', function (e) {
+      if (!e.target.closest('nav')) {
+        menu.classList.remove('open');
+        toggle.setAttribute('aria-expanded', 'false');
+        toggle.querySelector('i').className = 'fa-solid fa-bars';
+      }
+    });
+    menu.querySelectorAll('a').forEach(function (a) {
+      a.addEventListener('click', function () {
+        menu.classList.remove('open');
+        toggle.setAttribute('aria-expanded', 'false');
+        toggle.querySelector('i').className = 'fa-solid fa-bars';
+      });
+    });
+  })();
+</script>
 </body>
 </html>

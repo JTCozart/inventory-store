@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>User Guide | Inventory Tracker</title>
-  <meta name="description" content="Complete user guide for Inventory Tracker — item management, checkout tracking, categories, expiry dates, CSV import/export, remote access, and more." />
+  <meta name="description" content="Complete user guide for Inventory Tracker — item management, checkout tracking, categories, expiry dates, CSV import/export, remote access, public view, dark mode, database backup/restore, and more." />
   <meta name="robots" content="index, follow" />
   <link rel="canonical" href="https://jtcozart.github.io/inventory-tracker/user-guide.html" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -51,6 +51,27 @@
       padding: .45rem 1rem; border-radius: 8px; font-weight: 600;
     }
     .btn-nav:hover { background: var(--blue-d); }
+    .nav-toggle {
+      display: none; background: none; border: none; cursor: pointer;
+      padding: .35rem; color: var(--dark); font-size: 1.35rem; line-height: 1;
+    }
+    .nav-mobile {
+      display: none; position: absolute; top: 100%; left: 0; right: 0;
+      background: #fff; border-bottom: 1px solid var(--border);
+      padding: .75rem 1.5rem 1rem; flex-direction: column;
+      box-shadow: 0 6px 16px rgba(0,0,0,.08);
+    }
+    .nav-mobile.open { display: flex; }
+    .nav-mobile a {
+      color: var(--gray); font-size: .95rem; font-weight: 500;
+      padding: .65rem .25rem; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: .5rem;
+    }
+    .nav-mobile a:hover { color: var(--dark); text-decoration: none; }
+    .nav-mobile .btn-nav {
+      margin-top: .5rem; border-bottom: none; border-radius: 8px;
+      padding: .65rem 1rem; justify-content: center;
+    }
 
     .page-hero {
       background: linear-gradient(160deg, #eff6ff 0%, #fff 60%);
@@ -133,7 +154,8 @@
       .sidebar-nav { display: none; }
       .content { padding: 2rem 1.25rem 4rem; }
       nav { padding: 1rem; }
-      .nav-links a:not(.btn-nav) { display: none; }
+      .nav-links { display: none; }
+      .nav-toggle { display: block; }
     }
   </style>
 </head>
@@ -152,6 +174,16 @@
     <a href="https://github.com/JTCozart/inventory-tracker/releases/latest" class="btn-nav" target="_blank" rel="noopener noreferrer">
       <i class="fa-solid fa-download"></i> Download
     </a>
+  </div>
+  <button class="nav-toggle" aria-label="Open menu" aria-expanded="false">
+    <i class="fa-solid fa-bars"></i>
+  </button>
+  <div class="nav-mobile" role="menu">
+    <a href="index.html#features"><i class="fa-solid fa-star fa-fw"></i> Features</a>
+    <a href="index.html#how-it-works"><i class="fa-solid fa-list-check fa-fw"></i> How it works</a>
+    <a href="user-guide.html"><i class="fa-solid fa-book fa-fw"></i> User Guide</a>
+    <a href="https://github.com/JTCozart/inventory-tracker" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-github fa-fw"></i> GitHub</a>
+    <a href="https://github.com/JTCozart/inventory-tracker/releases/latest" class="btn-nav" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-download"></i> Download</a>
   </div>
 </nav>
 
@@ -188,6 +220,9 @@
       <li class="section-label">Settings</li>
       <li><a href="#users">User Management</a></li>
       <li><a href="#remote-access">Remote Access</a></li>
+      <li><a href="#public-view">Public View</a></li>
+      <li><a href="#dark-mode">Dark Mode</a></li>
+      <li><a href="#database">Database Backup</a></li>
       <li><a href="#updates">Updates</a></li>
 
       <li class="section-label">Reference</li>
@@ -252,7 +287,7 @@
 
     <section id="categories">
       <h2><i class="fa-solid fa-tags"></i> Categories</h2>
-      <p>Categories let you group items (e.g. Tools, Electronics, Safety) and filter the inventory list with one click. Each category can have an optional color for quick visual identification.</p>
+      <p>Categories let you group items (e.g. Tools, Electronics, Safety) and filter the inventory list with one click. Each category can have an optional color for quick visual identification. Managing categories requires Admin or Manager role — the Categories tab in Settings is not shown to Viewers.</p>
       <h3>Creating categories</h3>
       <ol>
         <li>Go to <strong>Settings → Categories</strong></li>
@@ -272,7 +307,7 @@
 
     <section id="adding-items">
       <h2><i class="fa-solid fa-plus"></i> Adding Items</h2>
-      <p>Click <strong>Inventory</strong> in the sidebar, then <strong>Add Item</strong>.</p>
+      <p>Click <strong>Inventory</strong> in the sidebar, then <strong>Add Item</strong>. Requires Admin or Manager role — the button is not shown to Viewers.</p>
       <table>
         <tr><th>Field</th><th>Required</th><th>Notes</th></tr>
         <tr><td>Name</td><td>Yes</td><td>Displayed everywhere; used in search</td></tr>
@@ -290,10 +325,10 @@
 
     <section id="editing-items">
       <h2><i class="fa-solid fa-pencil"></i> Editing Items</h2>
-      <p>Click an item row in the inventory list to open the <strong>detail panel</strong>, then click the <strong>Edit</strong> button (pencil icon) to go to the full edit form. All fields except Item Type can be changed.</p>
+      <p>Click an item row in the inventory list to open the <strong>detail panel</strong>, then click the <strong>Edit</strong> button (pencil icon) to go to the full edit form. All fields except Item Type can be changed. Requires Admin or Manager role — the Edit button is not shown to Viewers.</p>
       <p>You can also edit Name, Quantity, Location, SKU, Minimum Quantity, and Scan Warning directly from the detail panel without leaving the page — changes save via the API instantly.</p>
       <h3>Deleting items</h3>
-      <p>Click the trash icon on the item row and confirm. Deletion is permanent. Checkout history for the item is retained in the activity log.</p>
+      <p>Click the trash icon on the item row and confirm. Deletion is permanent. Checkout history for the item is retained in the activity log. Requires Admin or Manager role — the delete button is not shown to Viewers.</p>
     </section>
 
     <section id="expiry-dates">
@@ -316,7 +351,7 @@
 
     <section id="checkout">
       <h2><i class="fa-solid fa-box-arrow-up"></i> Check Out &amp; Check In</h2>
-      <p>Reusable items support check-out and check-in workflows.</p>
+      <p>Reusable items support check-out and check-in workflows. Requires Admin or Manager role. Viewers can open the item detail panel and see the Active Checkouts list (who has what, for how long) but cannot check out, check in, or mark items lost.</p>
       <h3>Checking out</h3>
       <ol>
         <li>Click an item row to open the detail panel</li>
@@ -337,7 +372,7 @@
 
     <section id="consumables">
       <h2><i class="fa-solid fa-box"></i> Consumables</h2>
-      <p>Consumable items track stock levels using Consume and Restock operations.</p>
+      <p>Consumable items track stock levels using Consume and Restock operations. Requires Admin or Manager role — Viewers can see quantities but the Consume and Restock controls are not shown to them.</p>
       <h3>Consuming stock</h3>
       <ol>
         <li>Click the item row to open the detail panel</li>
@@ -373,8 +408,9 @@
     <section id="csv">
       <h2><i class="fa-solid fa-file-csv"></i> CSV Import &amp; Export</h2>
       <h3>Exporting</h3>
-      <p>Go to <strong>Reports</strong> and click <strong>Export CSV</strong> (top right). A dated file is downloaded containing all items with all fields.</p>
+      <p>Go to <strong>Reports</strong> and click <strong>Export CSV</strong> (top right). A dated file is downloaded containing all items with all fields. Available to all roles.</p>
       <h3>Importing</h3>
+      <p>Requires Admin or Manager role. The Import button is not shown to Viewers.</p>
       <ol>
         <li>Go to <strong>Inventory</strong> and click <strong>Import</strong></li>
         <li>Prepare a CSV file. The first row must be the header:</li>
@@ -422,14 +458,15 @@
       <p>Click <strong>Add User</strong> and fill in the username, optional name/email, password, and role.</p>
       <h3>Editing users</h3>
       <p>Click the pencil icon on any user row. You can change their name, email, role, and password. Leave the password field blank to keep the existing password.</p>
-      <h3>Suspending users</h3>
-      <p>Click the pause icon to suspend a user. Suspended users cannot log in but their history is preserved. Click the play icon to reactivate.</p>
+      <h3>Suspending and deleting users</h3>
+      <p>Click the pause icon to suspend a user — suspended users cannot log in but their history is preserved. Click the play icon to reactivate. Click the trash icon to permanently delete a user.</p>
+      <p>Admins can suspend or delete <em>other</em> admins. You cannot suspend or delete your own account — the suspend and delete buttons are hidden on your own row as a safeguard against accidental lockout.</p>
       <h3>Roles</h3>
       <table>
         <tr><th>Role</th><th>Can do</th></tr>
-        <tr><td><strong>Admin</strong></td><td>Everything — manage users, settings, categories, and all inventory operations</td></tr>
-        <tr><td><strong>Manager</strong></td><td>All inventory operations (checkout, consume, restock, add/edit/delete items, manage categories); run all reports; cannot manage users or remote access settings</td></tr>
-        <tr><td><strong>Viewer</strong></td><td>View inventory and reports only — no write operations</td></tr>
+        <tr><td><strong>Admin</strong></td><td>Everything — manage users, settings, categories, database backup/restore, and all inventory operations</td></tr>
+        <tr><td><strong>Manager</strong></td><td>All inventory operations (checkout, consume, restock, add/edit/delete items, manage categories); run all reports; cannot manage users, remote access, or database settings</td></tr>
+        <tr><td><strong>Viewer</strong></td><td>View inventory and reports only — no write operations. Can see item details and active checkouts (read-only) but cannot check out, consume, edit, delete, or import items. The Categories settings tab and all write controls are hidden.</td></tr>
       </table>
     </section>
 
@@ -463,6 +500,81 @@
       <p>Click <strong>Stop Tunnel</strong> in the status card, or simply stop the Windows service.</p>
     </section>
 
+    <section id="public-view">
+      <h2><i class="fa-solid fa-eye"></i> Public View</h2>
+      <p>Public View exposes a read-only, login-free page at <code>/public</code> that shows whichever inventory items you choose. Embed it in any website or intranet portal with a single <code>&lt;iframe&gt;</code> tag.</p>
+
+      <h3>Enabling public view</h3>
+      <ol>
+        <li>Go to <strong>Settings → Public View</strong> (Admin only).</li>
+        <li>Check <strong>Enable public view</strong> and click <strong>Save</strong>.</li>
+        <li>An embed code and direct link appear immediately.</li>
+      </ol>
+
+      <h3>Selecting visible items</h3>
+      <p>With public view enabled, a table lists every item in your inventory. Toggle the switch on any row to make that item visible on the public page. Changes take effect instantly — no save button needed.</p>
+      <div class="callout">
+        <i class="fa-solid fa-circle-info"></i>
+        Items with no toggle enabled are not shown even if public view is on. Disabling public view hides <em>all</em> items regardless of individual toggles.
+      </div>
+
+      <h3>The embed code</h3>
+      <p>Copy the <code>&lt;iframe&gt;</code> snippet from the <strong>Embed Code</strong> card and paste it into any web page. The iframe shows item names, type (Reusable / Consumable), category, location, and live availability — it refreshes when the page is reloaded.</p>
+      <p>For external access, use your tunnel URL instead of the local address. The settings panel shows a ready-made tunnel link when a tunnel is active.</p>
+      <pre><code>&lt;iframe src="http://YOUR_HOST/public" width="100%" height="600"
+        frameborder="0" style="border:none;border-radius:8px;"&gt;&lt;/iframe&gt;</code></pre>
+
+      <h3>What visitors see</h3>
+      <ul>
+        <li>Items grouped by category, sorted alphabetically</li>
+        <li>A colored availability pill: <span class="badge-demo badge-green">X available</span> / <span class="badge-demo badge-yellow">X available</span> (low stock) / <span class="badge-demo badge-red">0 available</span></li>
+        <li>Item location (if set)</li>
+        <li>A small type indicator dot (blue = Reusable, green = Consumable)</li>
+      </ul>
+      <p>Visitors cannot log in, check out items, or modify anything from the public page.</p>
+
+      <h3>Permissions</h3>
+      <table>
+        <tr><th>Action</th><th>Admin</th><th>Manager</th><th>Viewer</th></tr>
+        <tr><td>Enable / disable public view</td><td>✓</td><td></td><td></td></tr>
+        <tr><td>Toggle individual item visibility</td><td>✓</td><td>✓</td><td></td></tr>
+      </table>
+    </section>
+
+    <section id="dark-mode">
+      <h2><i class="fa-solid fa-moon"></i> Dark Mode</h2>
+      <p>Inventory Tracker includes a built-in dark theme. Click the <strong>moon icon</strong> near the bottom of the sidebar (above the logout button) to switch to dark mode. Click the <strong>sun icon</strong> to return to light mode.</p>
+      <p>Your preference is saved in the browser and persists across sessions and page reloads. Each user's browser stores its own setting independently — changing dark mode on one device does not affect other devices or other users.</p>
+      <div class="callout">
+        <i class="fa-solid fa-circle-info"></i>
+        Dark mode applies to the full app UI including modals, tables, cards, and forms. It does not affect printed reports — those always print in light mode.
+      </div>
+    </section>
+
+    <section id="database">
+      <h2><i class="fa-solid fa-database"></i> Database Backup &amp; Restore</h2>
+      <p>Go to <strong>Settings → Database</strong> (Admin only) to download a backup of your data or restore from a previous backup.</p>
+
+      <h3>Downloading a backup</h3>
+      <p>Click <strong>Download Backup</strong>. The app creates a clean, consistent snapshot of the database using SQLite's <code>VACUUM INTO</code> operation — the app stays fully running during the backup — and downloads it as a <code>.db</code> file named with the current date and time.</p>
+      <div class="callout">
+        <i class="fa-solid fa-circle-info"></i>
+        Store backups in a safe location outside the server machine. A good habit is to download a backup before any major change (bulk import, user restructure) and before upgrading the app.
+      </div>
+
+      <h3>Restoring from a backup</h3>
+      <ol>
+        <li>Go to <strong>Settings → Database</strong>.</li>
+        <li>Click <strong>Choose File</strong> under <em>Restore from Backup</em> and select a <code>.db</code> file previously downloaded from this page.</li>
+        <li>Click <strong>Restore Database</strong> and confirm the prompt.</li>
+      </ol>
+      <p>Before overwriting, the app automatically saves the current database alongside it as <code>inventory.db.bak</code>, giving you a one-level safety net.</p>
+      <div class="callout warn">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <strong>Restore replaces all current data.</strong> Every item, user, checkout record, and setting is overwritten with the contents of the backup file. Always download a fresh backup immediately before restoring so you have a copy of the current state.
+      </div>
+    </section>
+
     <section id="updates">
       <h2><i class="fa-solid fa-arrow-up-circle"></i> Updates</h2>
       <p>Inventory Tracker checks for new releases on GitHub automatically — once at startup (after a 15-second delay) and every 24 hours thereafter.</p>
@@ -480,7 +592,7 @@
         <tr><td>Open Inventory Tracker</td><td>Open the web UI</td></tr>
         <tr><td>Local: http://...</td><td>Show the local network address — click to copy to clipboard</td></tr>
         <tr><td>Tunnel: ...</td><td>Show the active tunnel URL — click to copy to clipboard</td></tr>
-        <tr><td>Reset Admin Password</td><td>Reset the admin account password without logging in (useful if locked out)</td></tr>
+        <tr><td>Reset Admin Password</td><td>Reset the password of the <strong>first admin account created</strong> (lowest ID) without logging in — useful if locked out. Does not affect other admin accounts.</td></tr>
         <tr><td>Exit</td><td>Close the tray companion — the Windows service keeps running</td></tr>
       </table>
       <div class="callout">
@@ -494,13 +606,17 @@
       <table>
         <tr><th>Action</th><th>Admin</th><th>Manager</th><th>Viewer</th></tr>
         <tr><td>View inventory &amp; reports</td><td>✓</td><td>✓</td><td>✓</td></tr>
+        <tr><td>Export CSV</td><td>✓</td><td>✓</td><td>✓</td></tr>
         <tr><td>Check out / check in items</td><td>✓</td><td>✓</td><td></td></tr>
         <tr><td>Consume / restock items</td><td>✓</td><td>✓</td><td></td></tr>
         <tr><td>Add / edit / delete items</td><td>✓</td><td>✓</td><td></td></tr>
-        <tr><td>Import / export CSV</td><td>✓</td><td>✓</td><td>✓ (export only)</td></tr>
+        <tr><td>Import CSV</td><td>✓</td><td>✓</td><td></td></tr>
         <tr><td>Manage categories</td><td>✓</td><td>✓</td><td></td></tr>
         <tr><td>Manage users</td><td>✓</td><td></td><td></td></tr>
         <tr><td>Configure remote access</td><td>✓</td><td></td><td></td></tr>
+        <tr><td>Enable / disable public view</td><td>✓</td><td></td><td></td></tr>
+        <tr><td>Toggle item visibility in public view</td><td>✓</td><td>✓</td><td></td></tr>
+        <tr><td>Database backup &amp; restore</td><td>✓</td><td></td><td></td></tr>
         <tr><td>Change own password</td><td>✓</td><td>✓</td><td>✓</td></tr>
       </table>
     </section>
@@ -540,5 +656,30 @@
   </div>
 </footer>
 
+<script>
+  (function () {
+    var toggle = document.querySelector('.nav-toggle');
+    var menu   = document.querySelector('.nav-mobile');
+    toggle.addEventListener('click', function () {
+      var open = menu.classList.toggle('open');
+      toggle.setAttribute('aria-expanded', open);
+      toggle.querySelector('i').className = open ? 'fa-solid fa-xmark' : 'fa-solid fa-bars';
+    });
+    document.addEventListener('click', function (e) {
+      if (!e.target.closest('nav')) {
+        menu.classList.remove('open');
+        toggle.setAttribute('aria-expanded', 'false');
+        toggle.querySelector('i').className = 'fa-solid fa-bars';
+      }
+    });
+    menu.querySelectorAll('a').forEach(function (a) {
+      a.addEventListener('click', function () {
+        menu.classList.remove('open');
+        toggle.setAttribute('aria-expanded', 'false');
+        toggle.querySelector('i').className = 'fa-solid fa-bars';
+      });
+    });
+  })();
+</script>
 </body>
 </html>

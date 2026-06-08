@@ -249,11 +249,37 @@ public sealed partial class TunnelService : IAsyncDisposable
             State = TunnelState.Starting;
             await NotifyAsync();
 
-            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(15) };
+            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(20) };
             http.DefaultRequestHeaders.UserAgent.ParseAdd("InventoryTracker/1.0");
 
-            var info = await http.GetFromJsonAsync<LocalTunnelInfo>(
-                $"https://localtunnel.me/{Uri.EscapeDataString(subdomain)}");
+            LocalTunnelInfo? info = null;
+            int[] retryDelaysMs = [2000, 4000, 8000, 15000];
+            Exception? lastEx = null;
+
+            for (int attempt = 0; attempt <= retryDelaysMs.Length; attempt++)
+            {
+                try
+                {
+                    info = await http.GetFromJsonAsync<LocalTunnelInfo>(
+                        $"https://localtunnel.me/{Uri.EscapeDataString(subdomain)}");
+                    lastEx = null;
+                    break;
+                }
+                catch (Exception ex) when (ex is HttpRequestException or SocketException
+                    || ex.InnerException is SocketException)
+                {
+                    lastEx = ex;
+                    if (attempt < retryDelaysMs.Length)
+                    {
+                        _logger.LogWarning(ex,
+                            "localtunnel DNS/network not ready (attempt {Attempt}/{Total}), retrying in {Delay}ms...",
+                            attempt + 1, retryDelaysMs.Length + 1, retryDelaysMs[attempt]);
+                        await Task.Delay(retryDelaysMs[attempt]);
+                    }
+                }
+            }
+
+            if (lastEx is not null) throw lastEx;
 
             if (info is null || info.Port == 0)
                 throw new Exception("localtunnel.me returned an unexpected response.");

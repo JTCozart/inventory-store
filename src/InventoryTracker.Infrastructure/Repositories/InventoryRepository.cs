@@ -47,6 +47,13 @@ public class InventoryRepository : IInventoryRepository
             .OrderBy(i => i.AvailableQuantity);
     }
 
+    public async Task<IEnumerable<InventoryItem>> GetPublicAsync() =>
+        await _context.InventoryItems
+            .Include(i => i.Category)
+            .Where(i => i.IsPublic)
+            .OrderBy(i => i.Name)
+            .ToListAsync();
+
     public async Task<InventoryItem> CreateAsync(InventoryItem item)
     {
         _context.InventoryItems.Add(item);

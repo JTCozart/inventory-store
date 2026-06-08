@@ -54,6 +54,7 @@ public class IndexModel : PageModel
 
     public async Task<IActionResult> OnPostDeleteAsync(int id)
     {
+        if (!CanWrite()) return Forbid();
         var (uid, uname) = GetUser();
         await _inventoryService.DeleteItemAsync(id, uid, uname);
         return RedirectToPage();
@@ -63,6 +64,7 @@ public class IndexModel : PageModel
         int id, string name, int quantity, string? description, string? location,
         string? sku, int minimumQuantity, string? scanWarning)
     {
+        if (!CanWrite()) return new JsonResult(new { success = false, error = "Insufficient permissions." }) { StatusCode = 403 };
         var (uid, uname) = GetUser();
         var existing = await _inventoryService.GetItemAsync(id);
         await _inventoryService.UpdateItemAsync(id, new UpdateInventoryItemDto(
@@ -74,6 +76,7 @@ public class IndexModel : PageModel
 
     public async Task<IActionResult> OnPostImportCsvAsync(IFormFile? csvFile)
     {
+        if (!CanWrite()) return RedirectToPage();
         if (csvFile is null || csvFile.Length == 0)
             return RedirectToPage(new { importResult = "error:No file selected." });
 
@@ -90,6 +93,7 @@ public class IndexModel : PageModel
     public async Task<IActionResult> OnPostCheckOutItemAsync(
         int itemId, string checkedOutBy, int quantity, string? notes)
     {
+        if (!CanWrite()) return new JsonResult(new { success = false, error = "Insufficient permissions." }) { StatusCode = 403 };
         var (uid, uname) = GetUser();
         var record = await _checkoutService.CheckOutAsync(
             new CheckOutItemDto(itemId, checkedOutBy, quantity, notes), uid, uname);
@@ -98,6 +102,7 @@ public class IndexModel : PageModel
 
     public async Task<IActionResult> OnPostCheckInItemAsync(int recordId, string? notes)
     {
+        if (!CanWrite()) return new JsonResult(new { success = false, error = "Insufficient permissions." }) { StatusCode = 403 };
         var (uid, uname) = GetUser();
         await _checkoutService.CheckInAsync(new CheckInItemDto(recordId, notes), uid, uname);
         return new JsonResult(new { success = true });
@@ -105,6 +110,7 @@ public class IndexModel : PageModel
 
     public async Task<IActionResult> OnPostMarkLostItemAsync(int recordId, string? notes)
     {
+        if (!CanWrite()) return new JsonResult(new { success = false, error = "Insufficient permissions." }) { StatusCode = 403 };
         var (uid, uname) = GetUser();
         await _checkoutService.MarkLostAsync(new MarkLostDto(recordId, notes), uid, uname);
         return new JsonResult(new { success = true });
@@ -112,6 +118,7 @@ public class IndexModel : PageModel
 
     public async Task<IActionResult> OnPostConsumeItemAsync(int itemId, int quantity, string? notes)
     {
+        if (!CanWrite()) return new JsonResult(new { success = false, error = "Insufficient permissions." }) { StatusCode = 403 };
         var (uid, uname) = GetUser();
         await _checkoutService.ConsumeAsync(new ConsumeItemDto(itemId, quantity, notes), uid, uname);
         return new JsonResult(new { success = true });
@@ -119,10 +126,12 @@ public class IndexModel : PageModel
 
     public async Task<IActionResult> OnPostRestockItemAsync(int itemId, int quantity, string? notes)
     {
+        if (!CanWrite()) return new JsonResult(new { success = false, error = "Insufficient permissions." }) { StatusCode = 403 };
         var (uid, uname) = GetUser();
         await _checkoutService.RestockAsync(new RestockItemDto(itemId, quantity, notes), uid, uname);
         return new JsonResult(new { success = true });
     }
 
     private (int userId, string username) GetUser() => User.GetIdentity();
+    private bool CanWrite() => User.IsInRole("Admin") || User.IsInRole("Manager");
 }

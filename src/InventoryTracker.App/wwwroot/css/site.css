@@ -194,6 +194,12 @@ html, body {
     box-shadow: 0 1px 3px rgba(0,0,0,.06);
 }
 
+/* Let the text column shrink when the card is narrow */
+.stat-card > div:last-child {
+    min-width: 0;
+    overflow: hidden;
+}
+
 .stat-icon { font-size: 2rem; line-height: 1; }
 .stat-value { font-size: 1.75rem; font-weight: 700; line-height: 1; }
 .stat-label {
@@ -202,6 +208,17 @@ html, body {
     margin-top: 2px;
     text-transform: uppercase;
     letter-spacing: 0.04em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Modal item-detail stat cells — keep all labels on one line */
+#modal-content .row.g-2 .text-muted.small {
+    font-size: .7rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /* ── Cards ───────────────────────────────────── */
@@ -261,6 +278,49 @@ html, body {
     .barcode-grid       { grid-template-columns: repeat(4, 1fr); gap: 8px; }
     .barcode-card       { break-inside: avoid; }
     .take-inventory-table td, .take-inventory-table th { font-size: 0.8rem; padding: 4px 6px; }
+}
+
+/* ── Dark mode toggle button (in sidebar) ────── */
+
+.sidebar-theme-btn {
+    color: var(--sidebar-text);
+    text-decoration: none;
+    font-size: 0.85rem;
+}
+.sidebar-theme-btn:hover { color: #fff; }
+
+/* ── Dark mode overrides ─────────────────────── */
+
+[data-bs-theme="dark"] #content-wrapper {
+    background: #151b23;
+}
+
+[data-bs-theme="dark"] .stat-card {
+    background: var(--bs-card-bg);
+    border-color: var(--bs-card-border-color);
+    box-shadow: 0 1px 3px rgba(0,0,0,.25);
+}
+
+[data-bs-theme="dark"] .barcode-card {
+    background: var(--bs-card-bg);
+    border-color: var(--bs-card-border-color);
+}
+
+[data-bs-theme="dark"] footer {
+    color: var(--bs-secondary-color);
+    border-color: var(--bs-border-color) !important;
+}
+
+[data-bs-theme="dark"] .card {
+    border-color: var(--bs-card-border-color);
+}
+
+[data-bs-theme="dark"] .table-light {
+    --bs-table-color:        var(--bs-body-color);
+    --bs-table-bg:           var(--bs-tertiary-bg);
+    --bs-table-border-color: var(--bs-border-color);
+    --bs-table-striped-bg:   var(--bs-tertiary-bg);
+    --bs-table-hover-bg:     var(--bs-secondary-bg);
 }
 
 /* ── Sortable table headers ──────────────────── */

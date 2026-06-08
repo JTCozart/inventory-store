@@ -114,6 +114,18 @@ public class InventoryService : IInventoryService
     public async Task<IEnumerable<InventoryItemDto>> GetLowStockItemsAsync()
         => (await _inventoryRepository.GetLowStockAsync()).Select(MapToDto);
 
+    public async Task<IEnumerable<InventoryItemDto>> GetPublicItemsAsync()
+        => (await _inventoryRepository.GetPublicAsync()).Select(MapToDto);
+
+    public async Task SetItemPublicAsync(int id, bool isPublic)
+    {
+        var item = await _inventoryRepository.GetByIdAsync(id)
+            ?? throw new KeyNotFoundException($"Inventory item {id} not found.");
+        item.IsPublic  = isPublic;
+        item.UpdatedAt = DateTime.UtcNow;
+        await _inventoryRepository.UpdateAsync(item);
+    }
+
     internal static InventoryItemDto MapToDto(InventoryItem item)
     {
         var (itemType, checkedOut, lost) = item switch
@@ -128,7 +140,8 @@ public class InventoryService : IInventoryService
             item.Description, item.Location, item.SKU, item.MinimumQuantity,
             itemType, checkedOut, lost, item.IsLowStock,
             item.ScanWarning, item.CreatedAt, item.UpdatedAt,
-            item.CategoryId, item.Category?.Name, item.ExpiryDate
+            item.CategoryId, item.Category?.Name, item.ExpiryDate,
+            item.IsPublic, item.Category?.Color
         );
     }
 

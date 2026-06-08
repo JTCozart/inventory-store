@@ -8,6 +8,7 @@ public interface IInventoryRepository
     Task<InventoryItem?> GetByIdAsync(int id);
     Task<IEnumerable<InventoryItem>> SearchAsync(string query);
     Task<IEnumerable<InventoryItem>> GetLowStockAsync();
+    Task<IEnumerable<InventoryItem>> GetPublicAsync();
     Task<InventoryItem> CreateAsync(InventoryItem item);
     Task UpdateAsync(InventoryItem item);
     Task DeleteAsync(int id);

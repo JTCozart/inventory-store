@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace InventoryTracker.App.Pages.Inventory;
 
-[Authorize]
+[Authorize(Roles = "Admin,Manager")]
 public class CreateModel : PageModel
 {
     private readonly IInventoryService _inventoryService;
