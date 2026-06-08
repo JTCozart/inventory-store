@@ -859,7 +859,7 @@
     <div class="card" style="max-width: 520px;">
         <div class="card-header fw-semibold">Application Info</div>
         <div class="card-body">
-            <dl class="row mb-0">
+            <dl class="row mb-3">
                 <dt class="col-5">Version</dt>
                 <dd class="col-7">
                     v@(UpdateInfo.CurrentVersion)
@@ -884,9 +884,16 @@
                         http://@Model.LocalIpAddress:5050
                     </a>
                 </dd>
-                <dt class="col-5">Database</dt>
-                <dd class="col-7 text-break small">@System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "InventoryTracker", "inventory.db")</dd>
+                @if (User.IsInRole("Admin"))
+                {
+                    <dt class="col-5">Database</dt>
+                    <dd class="col-7 text-break small">@System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "InventoryTracker", "inventory.db")</dd>
+                }
             </dl>
+            <button id="btn-check-updates" class="btn btn-sm btn-outline-secondary" onclick="checkForUpdates()">
+                <i class="bi bi-arrow-repeat me-1"></i> Check for Updates
+            </button>
+            <span id="update-check-result" class="ms-2 small"></span>
         </div>
     </div>
 }
@@ -1166,5 +1173,35 @@ function copyEmbedCode(btn) {
         });
     });
 })();
+</script>
+
+<script>
+function checkForUpdates() {
+    var btn    = document.getElementById('btn-check-updates');
+    var result = document.getElementById('update-check-result');
+    if (!btn) return;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Checking…';
+    result.textContent = '';
+    result.className = 'ms-2 small';
+    fetch('/api/updates/check', { method: 'POST', credentials: 'include' })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i> Check for Updates';
+            if (d.hasUpdate) {
+                result.innerHTML = '<a href="' + d.releaseUrl + '" target="_blank" class="badge bg-info text-decoration-none">v' + d.latestVersion + ' available</a>';
+            } else {
+                result.textContent = 'v' + d.currentVersion + ' is up to date.';
+                result.className = 'ms-2 small text-muted';
+            }
+        })
+        .catch(function () {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i> Check for Updates';
+            result.textContent = 'Check failed — ensure internet access is available.';
+            result.className = 'ms-2 small text-danger';
+        });
+}
 </script>
 }

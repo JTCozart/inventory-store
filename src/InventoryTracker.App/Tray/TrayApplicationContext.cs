@@ -137,9 +137,9 @@ public class TrayApplicationContext : ApplicationContext
         {
             using var scope = _services.CreateScope();
             var authService = scope.ServiceProvider.GetRequiredService<IUserAuthService>();
-            authService.ResetAdminPasswordAsync(form.NewPassword).GetAwaiter().GetResult();
+            var username = authService.ResetAdminPasswordAsync(form.NewPassword).GetAwaiter().GetResult();
 
-            MessageBox.Show("Admin password has been reset successfully.",
+            MessageBox.Show($"Password for '{username}' has been reset successfully.",
                 "Password Reset", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
         catch (Exception ex)

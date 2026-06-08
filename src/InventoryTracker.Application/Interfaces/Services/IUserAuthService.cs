@@ -9,7 +9,7 @@ public interface IUserAuthService
     Task<User> SetupAdminAsync(string username, string? email, string password,
         string? firstName = null, string? lastName = null);
     Task<User?> ValidateCredentialsAsync(string username, string password);
-    Task ResetAdminPasswordAsync(string newPassword);
+    Task<string> ResetAdminPasswordAsync(string newPassword);
     Task<UserDto?> GetUserAsync(int id);
     Task<IEnumerable<UserDto>> GetAllUsersAsync();
     Task<UserDto> CreateUserAsync(CreateUserDto dto);

@@ -157,7 +157,9 @@ public class TrayApplicationContext : ApplicationContext
 
             if (resp.IsSuccessStatusCode)
             {
-                MessageBox.Show("Admin password reset successfully.",
+                var body     = await resp.Content.ReadFromJsonAsync<JsonElement>();
+                var username = body.TryGetProperty("username", out var u) ? u.GetString() : "admin";
+                MessageBox.Show($"Password for '{username}' has been reset successfully.",
                     "Inventory Tracker", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             else

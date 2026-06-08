@@ -57,6 +57,8 @@ public class UpdateCheckService : BackgroundService
         }
     }
 
+    public Task CheckNowAsync() => CheckAsync(CancellationToken.None);
+
     private async Task CheckAsync(CancellationToken ct)
     {
         var repo = _config["GitHub:Repository"];

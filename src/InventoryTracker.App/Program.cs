@@ -83,7 +83,8 @@ internal class Program
 
         services.AddSingleton<TunnelService>();
         services.AddSingleton<UpdateInfo>();
-        services.AddHostedService<UpdateCheckService>();
+        services.AddSingleton<UpdateCheckService>();
+        services.AddHostedService(sp => sp.GetRequiredService<UpdateCheckService>());
 
         services.AddAntiforgery(options =>
         {
@@ -158,8 +159,21 @@ internal class Program
                     return Results.BadRequest("newPassword is required.");
                 if (body.NewPassword.Length < 8)
                     return Results.BadRequest("Password must be at least 8 characters.");
-                await auth.ResetAdminPasswordAsync(body.NewPassword);
-                return Results.Ok();
+                var username = await auth.ResetAdminPasswordAsync(body.NewPassword);
+                return Results.Ok(new { username });
+            });
+
+            // ── Update check API ─────────────────────────────────────────
+            endpoints.MapPost("/api/updates/check", [Authorize] async (UpdateCheckService svc, UpdateInfo info) =>
+            {
+                await svc.CheckNowAsync();
+                return Results.Ok(new
+                {
+                    hasUpdate     = info.HasUpdate,
+                    latestVersion = info.LatestVersion,
+                    releaseUrl    = info.ReleaseUrl,
+                    currentVersion= info.CurrentVersion,
+                });
             });
 
             // ── Tunnel API ───────────────────────────────────────────────

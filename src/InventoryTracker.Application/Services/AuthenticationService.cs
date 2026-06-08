@@ -72,7 +72,7 @@ public class AuthenticationService : IUserAuthService
         return user;
     }
 
-    public async Task ResetAdminPasswordAsync(string newPassword)
+    public async Task<string> ResetAdminPasswordAsync(string newPassword)
     {
         var admin = await _userRepository.GetAdminAsync()
             ?? throw new InvalidOperationException("No admin account found.");
@@ -87,6 +87,8 @@ public class AuthenticationService : IUserAuthService
             Action = "PasswordReset",
             Details = "Admin password reset via system tray"
         });
+
+        return admin.Username;
     }
 
     public async Task<UserDto?> GetUserAsync(int id)
