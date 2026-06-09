@@ -1,4 +1,9 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://jtcozart.github.io/inventory-tracker/sitemap.xml
+# Block crawlers from build artifacts and raw assets that add no search value
+Disallow: /*.svg$
+Disallow: /_config.yml
+
+# Sitemap
+Sitemap: https://inventorystore.app/sitemap.xml
