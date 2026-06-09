@@ -1,26 +1,26 @@
-# Inventory Tracker
+# Inventory Store
 
 A self-hosted inventory management system for small teams. Runs as a Windows service with a web UI accessible from any device on your network.
 
-[![Release](https://img.shields.io/github/v/release/JTCozart/inventory-tracker?label=latest)](https://github.com/JTCozart/inventory-tracker/releases/latest)
+[![Release](https://img.shields.io/github/v/release/JTCozart/inventory-store?label=latest)](https://github.com/JTCozart/inventory-store/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 ---
 
 ## Features
 
-- **Reusable items** — check out and check in equipment with person tracking
-- **Consumable items** — track stock levels, consume and restock
-- **Categories** — organize items into color-coded groups with filtering
-- **Expiry dates** — track expiry on any item; Expired and Expiring Soon badges; dedicated expiry report
-- **Barcode scanning** — camera-based scanner or manual SKU entry; print barcode sheets
-- **CSV import / export** — bulk-load your inventory from a spreadsheet or export for backup
-- **Low stock alerts** — configurable minimum quantity thresholds
-- **Reports** — stock levels, active checkouts, lost items, expiry, take-inventory sheet, barcode sheet, activity log
-- **Remote access** — built-in Cloudflare Quick Tunnel or Serveo (free persistent subdomain)
-- **Multi-user** — Admin, Manager, and Viewer roles
-- **Auto-update notifications** — checks GitHub releases and shows a notice in the sidebar
-- **Windows service** — runs in the background, starts at boot
+- **Reusable items** - check out and check in equipment with person tracking
+- **Consumable items** - track stock levels, consume and restock
+- **Categories** - organize items into color-coded groups with filtering
+- **Expiry dates** - track expiry on any item; Expired and Expiring Soon badges; dedicated expiry report
+- **Barcode scanning** - camera-based scanner or manual SKU entry; print barcode sheets
+- **CSV import / export** - bulk-load your inventory from a spreadsheet or export for backup
+- **Low stock alerts** - configurable minimum quantity thresholds
+- **Reports** - stock levels, active checkouts, lost items, expiry, take-inventory sheet, barcode sheet, activity log
+- **Remote access** - built-in Cloudflare Quick Tunnel or Serveo (free persistent subdomain)
+- **Multi-user** - Admin, Manager, and Viewer roles
+- **Auto-update notifications** - checks GitHub releases and shows a notice in the sidebar
+- **Windows service** - runs in the background, starts at boot
 
 ---
 
@@ -28,7 +28,7 @@ A self-hosted inventory management system for small teams. Runs as a Windows ser
 
 ### Using the installer (recommended)
 
-1. Download `InventoryTracker-Setup-<version>.exe` from the [latest release](https://github.com/JTCozart/inventory-tracker/releases/latest)
+1. Download `InventoryStore-Setup-<version>.exe` from the [latest release](https://github.com/JTCozart/inventory-store/releases/latest)
 2. Run the installer as Administrator
 3. The installer:
    - Stops any running instance before copying files
@@ -41,8 +41,8 @@ A self-hosted inventory management system for small teams. Runs as a Windows ser
 ### System requirements
 
 - Windows 10 version 1803 or later (x64)
-- OpenSSH Client (built-in on Windows 10 1809+) — required only for Serveo remote access
-- No other software required — the installer is self-contained
+- OpenSSH Client (built-in on Windows 10 1809+) - required only for Serveo remote access
+- No other software required - the installer is self-contained
 
 ---
 
@@ -50,21 +50,21 @@ A self-hosted inventory management system for small teams. Runs as a Windows ser
 
 See [QUICKSTART.md](QUICKSTART.md) for step-by-step instructions on the most common tasks.
 
-See the **[User Guide](https://jtcozart.github.io/inventory-tracker/user-guide.html)** for full documentation.
+See the **[User Guide](https://inventorystore.app/user-guide.html)** for full documentation.
 
 ---
 
 ## Remote access
 
-Inventory Tracker can expose the web UI over the internet so staff can access it from outside the office without VPN or port forwarding.
+Inventory Store can expose the web UI over the internet so staff can access it from outside the office without VPN or port forwarding.
 
 Go to **Settings → Remote Access** and choose:
 
 | Option | Description |
 |---|---|
-| Quick Tunnel | Zero-config Cloudflare tunnel — URL changes each session |
-| Serveo | Free persistent subdomain (`yourname.serveousercontent.com`) — requires a free Serveo account |
-| localtunnel | Free subdomain via loca.lt — shows an interstitial page to visitors |
+| Quick Tunnel | Zero-config Cloudflare tunnel - URL changes each session |
+| Serveo | Free persistent subdomain (`yourname.serveousercontent.com`) - requires a free Serveo account |
+| localtunnel | Free subdomain via loca.lt - shows an interstitial page to visitors |
 
 **Serveo setup** (one-time):
 1. Settings → Remote Access → Serveo → **Generate SSH Key**
@@ -123,19 +123,19 @@ GitHub Actions will build the installer and create a release automatically.
 ## Architecture
 
 ```
-InventoryTracker.Domain          — Entities, repository interfaces
-InventoryTracker.Application     — Services, DTOs, service interfaces
-InventoryTracker.Infrastructure  — EF Core (SQLite), repository implementations
-InventoryTracker.App             — ASP.NET Core web server + Windows service host
-InventoryTracker.Tray            — Lightweight tray companion (manages the service)
+InventoryTracker.Domain          - Entities, repository interfaces
+InventoryTracker.Application     - Services, DTOs, service interfaces
+InventoryTracker.Infrastructure  - EF Core (SQLite), repository implementations
+InventoryTracker.App             - ASP.NET Core web server + Windows service host
+InventoryTracker.Tray            - Lightweight tray companion (manages the service)
 ```
 
-Data is stored in `%APPDATA%\InventoryTracker\inventory.db` (SQLite). The schema is automatically migrated on startup — no manual migration steps required.
+Data is stored in `%APPDATA%\InventoryTracker\inventory.db` (SQLite). The schema is automatically migrated on startup - no manual migration steps required.
 
 ---
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT - see [LICENSE](LICENSE).
 
 Third-party software notices: see [NOTICES.md](NOTICES.md).

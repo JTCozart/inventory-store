@@ -1,6 +1,6 @@
 # Third-Party Software Notices
 
-Inventory Tracker incorporates the following open-source components.
+Inventory Store incorporates the following open-source components.
 
 ---
 

@@ -7,6 +7,7 @@
     <UseWindowsForms>true</UseWindowsForms>
     <OutputType>WinExe</OutputType>
     <RootNamespace>InventoryTracker.App</RootNamespace>
+    <AssemblyName>InventoryStore.App</AssemblyName>
     <ApplicationIcon Condition="Exists('..\..\assets\icon.ico')">..\..\assets\icon.ico</ApplicationIcon>
   </PropertyGroup>
 

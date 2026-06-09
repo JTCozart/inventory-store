@@ -36,7 +36,7 @@ jobs:
         shell: pwsh
         run: pwsh tools/New-Icon.ps1
 
-      - name: Publish service (InventoryTracker.App)
+      - name: Publish service (InventoryStore.App)
         shell: pwsh
         run: |
           dotnet publish src/InventoryTracker.App/InventoryTracker.App.csproj `
@@ -48,7 +48,7 @@ jobs:
             -p:InformationalVersion="${{ steps.ver.outputs.VERSION }}" `
             -o publish/app
 
-      - name: Publish tray companion (InventoryTracker.Tray)
+      - name: Publish tray companion (InventoryStore.Tray)
         shell: pwsh
         run: |
           dotnet publish src/InventoryTracker.Tray/InventoryTracker.Tray.csproj `
@@ -74,15 +74,15 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          name: "Inventory Tracker ${{ steps.ver.outputs.VERSION }}"
+          name: "Inventory Store ${{ steps.ver.outputs.VERSION }}"
           body: |
-            ## Inventory Tracker ${{ steps.ver.outputs.VERSION }}
+            ## Inventory Store ${{ steps.ver.outputs.VERSION }}
 
             ### Installation
-            1. Download and run `InventoryTracker-Setup-${{ steps.ver.outputs.VERSION }}.exe`
+            1. Download and run `InventoryStore-Setup-${{ steps.ver.outputs.VERSION }}.exe`
             2. The installer registers the Windows service and starts it automatically
-            3. A tray icon appears at login — double-click to open the web UI
+            3. A tray icon appears at login - double-click to open the web UI
 
             The web interface is available at **http://localhost:5050** after installation.
-          files: installer/Output/InventoryTracker-Setup-*.exe
+          files: installer/Output/InventoryStore-Setup-*.exe
           generate_release_notes: false
