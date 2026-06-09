@@ -1,0 +1,650 @@
+:root {
+    --topnav-bg:        #1e2530;
+    --topnav-text:      #adb5bd;
+    --topnav-active-bg: rgba(13,110,253,0.85);
+    --topnav-hover-bg:  rgba(255,255,255,0.08);
+    --topnav-height:    52px;
+}
+
+html, body {
+    height: 100%;
+    margin: 0;
+    font-size: 14px;
+}
+
+@media (min-width: 768px) {
+    html { font-size: 15px; }
+}
+
+/* ── App shell ───────────────────────────────── */
+
+#app-wrapper {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* ── Top navigation bar ──────────────────────── */
+
+#topnav {
+    background: var(--topnav-bg);
+    color: var(--topnav-text);
+    height: var(--topnav-height);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    padding: 0 1rem;
+    gap: 0.15rem;
+    z-index: 100;
+}
+
+.topnav-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    color: #fff;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.95rem;
+    white-space: nowrap;
+    margin-right: 0.75rem;
+    flex-shrink: 0;
+}
+.topnav-brand i { font-size: 1.1rem; }
+.topnav-brand:hover { color: #fff; text-decoration: none; }
+
+#topnav-links {
+    display: flex;
+    align-items: center;
+    gap: 0.1rem;
+    flex-shrink: 0;
+}
+
+.topnav-link {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.65rem;
+    border-radius: 6px;
+    color: var(--topnav-text);
+    text-decoration: none;
+    font-size: 0.875rem;
+    white-space: nowrap;
+    transition: background 0.15s, color 0.15s;
+}
+.topnav-link:hover  { background: var(--topnav-hover-bg); color: #fff; text-decoration: none; }
+.topnav-link.active { background: var(--topnav-active-bg); color: #fff; }
+
+.topnav-sep { flex-grow: 1; }
+
+.topnav-divider {
+    width: 1px;
+    height: 20px;
+    background: rgba(255,255,255,0.18);
+    margin: 0 0.25rem;
+    flex-shrink: 0;
+}
+
+.topnav-btn {
+    background: none;
+    border: none;
+    color: var(--topnav-text);
+    padding: 0.35rem 0.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+    transition: color 0.15s, background 0.15s;
+    flex-shrink: 0;
+}
+.topnav-btn:hover { color: #fff; background: var(--topnav-hover-bg); }
+
+.topnav-username {
+    font-size: 0.8rem;
+    color: var(--topnav-text);
+    padding: 0 0.25rem;
+    white-space: nowrap;
+}
+
+.topnav-logout {
+    background: none;
+    border: none;
+    color: var(--topnav-text);
+    font-size: 0.8rem;
+    padding: 0.3rem 0.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color 0.15s, background 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    flex-shrink: 0;
+}
+.topnav-logout:hover { color: #fff; background: var(--topnav-hover-bg); }
+
+#topnav-toggle {
+    display: none;
+    background: none;
+    border: none;
+    color: var(--topnav-text);
+    font-size: 1.35rem;
+    padding: 0.3rem 0.5rem;
+    cursor: pointer;
+    border-radius: 6px;
+    line-height: 1;
+}
+#topnav-toggle:hover { color: #fff; }
+
+@media (max-width: 767px) {
+    #topnav-links    { display: none !important; }
+    .topnav-username { display: none; }
+    #topnav-toggle   { display: block; }
+}
+
+/* ── Mobile nav panel ────────────────────────── */
+
+#mobile-nav {
+    background: var(--topnav-bg);
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    padding: 0.5rem 1rem 0.75rem;
+    flex-shrink: 0;
+    display: none;
+}
+#mobile-nav.open { display: block; }
+#mobile-nav a {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    color: var(--topnav-text);
+    text-decoration: none;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    margin-bottom: 2px;
+}
+#mobile-nav a:hover  { color: #fff; background: var(--topnav-hover-bg); text-decoration: none; }
+#mobile-nav a.active { color: #fff; background: var(--topnav-active-bg); }
+
+/* ── Content wrapper ─────────────────────────── */
+
+#content-wrapper {
+    flex-grow: 1;
+    overflow-y: auto;
+    background: #f4f6f9;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ── Page sidenav (Settings, Reports) ───────── */
+
+.page-layout {
+    display: flex;
+    gap: 1.5rem;
+    align-items: flex-start;
+}
+
+.page-sidenav {
+    width: 175px;
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+}
+
+.page-sidenav .nav-link {
+    color: var(--bs-body-color);
+    border-radius: 6px;
+    padding: 0.42rem 0.7rem;
+    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-bottom: 1px;
+    transition: background 0.12s, color 0.12s;
+}
+.page-sidenav .nav-link:hover  { background: var(--bs-secondary-bg); text-decoration: none; color: var(--bs-body-color); }
+.page-sidenav .nav-link.active { background: rgba(13,110,253,0.12); color: #0d6efd; font-weight: 500; }
+[data-bs-theme="dark"] .page-sidenav .nav-link.active { background: rgba(13,110,253,0.22); }
+
+.page-sidenav-section {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--bs-secondary-color);
+    padding: 0.6rem 0.7rem 0.2rem;
+    margin-top: 0.25rem;
+}
+
+.page-content { flex-grow: 1; min-width: 0; }
+
+@media (max-width: 767px) {
+    .page-layout { flex-direction: column; gap: 0; }
+    .page-sidenav {
+        width: 100%;
+        position: static;
+        display: none;
+    }
+    .page-sidenav-select {
+        display: block;
+        width: 100%;
+        margin-bottom: 1rem;
+    }
+}
+
+@media (min-width: 768px) {
+    .page-sidenav-select { display: none; }
+}
+
+/* ── Barcode scanner (@zxing/library) ───────────────────────────────────────
+   We own the <video> element — ZXing reads the raw MediaStream for detection.
+   CSS rotation corrects the portrait camera stream to appear landscape.
+   JS sets:  video.width = DISPLAY_H,  video.height = containerWidth
+             video.top   = (DISPLAY_H - containerWidth) / 2
+             video.left  = (containerWidth - DISPLAY_H) / 2
+   Then transform: rotate(-90deg) visually makes it landscape W × DISPLAY_H. ── */
+
+.scanner-viewport {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+    background: #000;
+    border-radius: 6px;
+    /* height set by JS to DISPLAY_H */
+}
+
+.scanner-viewport video {
+    position: absolute;
+    /* top:50% + left:50% + translate(-50%,-50%) centres the element,
+       then rotate(-90deg) corrects portrait→landscape orientation.
+       JS only sets width and height. */
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-90deg);
+    transform-origin: center center;
+    object-fit: cover;
+}
+
+/* Red aiming line overlay */
+.scanner-aim {
+    position: absolute;
+    top: 50%;
+    left: 8%;
+    right: 8%;
+    height: 2px;
+    background: rgba(220, 38, 38, 0.9);
+    transform: translateY(-50%);
+    box-shadow: 0 0 8px rgba(220, 38, 38, 0.6);
+    pointer-events: none;
+    border-radius: 1px;
+}
+
+.scanner-aim::before,
+.scanner-aim::after {
+    content: '';
+    position: absolute;
+    width: 2px;
+    height: 20px;
+    background: rgba(220, 38, 38, 0.9);
+    top: -9px;
+}
+.scanner-aim::before { left: 0; }
+.scanner-aim::after  { right: 0; }
+
+/* ── Stat cards ──────────────────────────────── */
+
+.stat-card {
+    background: #fff;
+    border-radius: 8px;
+    padding: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,.06);
+}
+
+/* Let the text column shrink when the card is narrow */
+.stat-card > div:last-child {
+    min-width: 0;
+    overflow: hidden;
+}
+
+.stat-icon { font-size: 2rem; line-height: 1; }
+.stat-value { font-size: 1.75rem; font-weight: 700; line-height: 1; }
+.stat-label {
+    font-size: 0.78rem;
+    color: #6c757d;
+    margin-top: 2px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Modal item-detail stat cells — keep all labels on one line */
+#modal-content .row.g-2 .text-muted.small {
+    font-size: .7rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ── Cards ───────────────────────────────────── */
+
+.card {
+    box-shadow: 0 1px 3px rgba(0,0,0,.06);
+    border: 1px solid rgba(0,0,0,.08);
+}
+
+.activity-item:last-child { border-bottom: none !important; }
+.min-vh-100 { min-height: 100vh; }
+
+/* ── Reports / Print ────────────────────────���────────────────────────────── */
+
+.print-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem; display: none; }
+
+/* Take inventory fill-in boxes */
+.print-input-box {
+    border-bottom: 1px solid #888;
+    min-height: 20px;
+    width: 80px;
+}
+.print-input-box.wide { width: 100%; }
+
+/* Barcode grid */
+.barcode-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+
+@media (max-width: 768px) {
+    .barcode-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+.barcode-card {
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    padding: 10px;
+    text-align: center;
+    background: #fff;
+}
+
+.barcode-name     { font-weight: 700; font-size: 0.85rem; margin-bottom: 2px; }
+.barcode-location { font-size: 0.75rem; color: #6c757d; margin-bottom: 4px; }
+.barcode-svg      { max-width: 100%; height: auto; display: block; margin: 4px auto; }
+.barcode-sku      { font-size: 0.75rem; color: #6c757d; font-family: monospace; margin-top: 2px; }
+
+@media print {
+    .no-print           { display: none !important; }
+    .print-title        { display: block !important; }
+    #sidebar            { display: none !important; }
+    #topbar             { display: none !important; }
+    #content-wrapper    { margin-left: 0 !important; width: 100% !important; }
+    #app-wrapper        { display: block !important; }
+    .card               { border: 1px solid #dee2e6 !important; box-shadow: none !important; }
+    .barcode-grid       { grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    .barcode-card       { break-inside: avoid; }
+    .take-inventory-table td, .take-inventory-table th { font-size: 0.8rem; padding: 4px 6px; }
+}
+
+/* ── Scanner modal: full-screen on small screens ─ */
+
+@media (max-width: 576px) {
+    #scannerModal .modal-dialog {
+        margin: 0;
+        max-width: 100vw;
+        min-height: 100dvh;
+    }
+    #scannerModal .modal-content {
+        min-height: 100dvh;
+        border-radius: 0;
+    }
+}
+
+/* ── Inventory row interaction ───────────────── */
+
+.inventory-row {
+    transition: background-color 0.1s;
+}
+
+.inventory-row:hover td {
+    background-color: rgba(13, 110, 253, 0.06) !important;
+}
+
+[data-bs-theme="dark"] .inventory-row:hover td {
+    background-color: rgba(255, 255, 255, 0.07) !important;
+}
+
+/* ── Dark mode overrides ─────────────────────── */
+
+[data-bs-theme="dark"] #content-wrapper {
+    background: #151b23;
+}
+
+[data-bs-theme="dark"] .stat-card {
+    background: var(--bs-card-bg);
+    border-color: var(--bs-card-border-color);
+    box-shadow: 0 1px 3px rgba(0,0,0,.25);
+}
+
+[data-bs-theme="dark"] .barcode-card {
+    background: var(--bs-card-bg);
+    border-color: var(--bs-card-border-color);
+}
+
+[data-bs-theme="dark"] footer {
+    color: var(--bs-secondary-color);
+    border-color: var(--bs-border-color) !important;
+}
+
+[data-bs-theme="dark"] .card {
+    border-color: var(--bs-card-border-color);
+}
+
+[data-bs-theme="dark"] .table-light {
+    --bs-table-color:        var(--bs-body-color);
+    --bs-table-bg:           var(--bs-tertiary-bg);
+    --bs-table-border-color: var(--bs-border-color);
+    --bs-table-striped-bg:   var(--bs-tertiary-bg);
+    --bs-table-hover-bg:     var(--bs-secondary-bg);
+}
+
+/* ── Sortable table headers ──────────────────── */
+
+th.sortable { cursor: pointer; user-select: none; white-space: nowrap; }
+th.sortable::after { content: ' ↕'; color: #adb5bd; font-size: .75em; }
+th.sort-asc::after  { content: ' ↑'; color: #0d6efd; }
+th.sort-desc::after { content: ' ↓'; color: #0d6efd; }
+
+/* ── Barcode scanner ─────────────────────────── */
+
+#scanner-video {
+    width: 100%;
+    max-height: 240px;
+    object-fit: cover;
+    border-radius: 6px;
+    background: #000;
+}
+
+#scanner-overlay {
+    position: relative;
+}
+
+#scanner-overlay::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 10%;
+    right: 10%;
+    height: 2px;
+    background: rgba(13,110,253,0.7);
+    box-shadow: 0 0 8px rgba(13,110,253,0.6);
+    transform: translateY(-50%);
+    pointer-events: none;
+}
+
+#barcode-result {
+    font-family: monospace;
+    font-size: 1.1rem;
+    letter-spacing: 0.05em;
+}
+
+/* ── Client list avatar pill ─────────────────── */
+
+.client-list-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+    letter-spacing: 0.02em;
+}
+
+/* Contact card view modal */
+
+.contact-card-hero {
+    background: linear-gradient(135deg, var(--cc-accent, #0d6efd) 0%, color-mix(in srgb, var(--cc-accent, #0d6efd) 70%, #000) 100%);
+    padding: 2rem 1.5rem 1.5rem;
+    text-align: center;
+    position: relative;
+    border-radius: var(--bs-modal-inner-border-radius, .5rem) var(--bs-modal-inner-border-radius, .5rem) 0 0;
+    color: #fff;
+}
+
+.contact-card-hero .btn-close {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    filter: invert(1);
+    opacity: 0.85;
+}
+
+.contact-card-hero-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.22);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    font-weight: 700;
+    color: #fff;
+    margin: 0 auto 0.75rem;
+    letter-spacing: 0.02em;
+    border: 3px solid rgba(255,255,255,0.35);
+}
+
+.contact-card-hero-name {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 0;
+    line-height: 1.2;
+}
+
+.contact-card-fields {
+    padding: 0.5rem 0;
+}
+
+.contact-field {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.875rem;
+    padding: 0.7rem 1.25rem;
+    border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+.contact-field:last-child {
+    border-bottom: none;
+}
+
+.contact-field-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: var(--bs-tertiary-bg, #f8f9fa);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 0.95rem;
+    color: var(--bs-primary, #0d6efd);
+    margin-top: 1px;
+}
+
+.contact-field-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--bs-secondary-color, #6c757d);
+    line-height: 1.1;
+    margin-bottom: 0.1rem;
+}
+
+.contact-field-value {
+    font-size: 0.9rem;
+    color: var(--bs-body-color);
+    line-height: 1.4;
+    word-break: break-word;
+}
+
+.contact-field-value a {
+    color: var(--bs-primary);
+    text-decoration: none;
+}
+
+.contact-field-value a:hover {
+    text-decoration: underline;
+}
+
+[data-bs-theme="dark"] .contact-card-hero {
+    background: linear-gradient(135deg, color-mix(in srgb, var(--cc-accent, #0d6efd) 80%, #000) 0%, color-mix(in srgb, var(--cc-accent, #0d6efd) 50%, #000) 100%);
+}
+
+[data-bs-theme="dark"] .contact-field-icon {
+    background: var(--bs-secondary-bg);
+}
+
+/* ── Skeleton loader ─────────────────────────── */
+
+@keyframes skeleton-shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+.skeleton-block {
+    background: linear-gradient(90deg,
+        var(--bs-secondary-bg, #e9ecef) 25%,
+        var(--bs-tertiary-bg,  #f8f9fa) 50%,
+        var(--bs-secondary-bg, #e9ecef) 75%);
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.4s ease-in-out infinite;
+    border-radius: 4px;
+}
+
+/* ── Name truncation in tables ───────────────── */
+
+.cell-truncate {
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ── Dark mode table-warning (bump opacity) ──── */
+
+[data-bs-theme="dark"] .table-warning {
+    --bs-table-color:        #fff;
+    --bs-table-bg:           rgba(255, 193, 7, 0.28);
+    --bs-table-border-color: rgba(255, 193, 7, 0.38);
+}

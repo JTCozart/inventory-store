@@ -1,0 +1,363 @@
+@page
+@model InventoryStore.App.Pages.Clients.IndexModel
+@{
+    ViewData["Title"] = "Clients";
+    ViewData["ActivePage"] = "Clients";
+
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <h1 class="h3 mb-0">Clients</h1>
+    @if (Model.CanManage)
+    {
+        <button class="btn btn-primary btn-sm" onclick="openClientEdit(null)">
+            <i class="bi bi-person-plus me-1"></i> Add Client
+        </button>
+    }
+</div>
+
+<div class="card mb-3">
+    <div class="card-body py-2">
+        <form method="get" class="d-flex gap-2">
+            <input type="search" name="q" value="@Model.Query" class="form-control" style="max-width:300px" placeholder="Search by name or phone…" />
+            <button type="submit" class="btn btn-outline-secondary"><i class="bi bi-search"></i></button>
+            @if (!string.IsNullOrEmpty(Model.Query))
+            {
+                <a href="/Clients" class="btn btn-outline-secondary"><i class="bi bi-x"></i></a>
+            }
+        </form>
+    </div>
+</div>
+
+@if (!Model.Clients.Any())
+{
+    <div class="text-center py-5 text-muted">
+        <i class="bi bi-people display-4"></i>
+        <p class="mt-2">No clients found.</p>
+    </div>
+}
+else
+{
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Name</th>
+                        <th class="d-none d-md-table-cell">Phone</th>
+                        <th class="d-none d-lg-table-cell">Date of Birth</th>
+                        <th class="d-none d-lg-table-cell">Address</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var c in Model.Clients)
+                    {
+                        <tr style="cursor:pointer" onclick="openClientView(@c.Id)">
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="client-list-avatar" data-name="@c.DisplayName"></div>
+                                    <span class="fw-semibold">@c.DisplayName</span>
+                                </div>
+                            </td>
+                            <td class="text-muted small d-none d-md-table-cell align-middle">@(c.Phone ?? "—")</td>
+                            <td class="text-muted small d-none d-lg-table-cell align-middle">@(c.DateOfBirth?.ToString("MMM d, yyyy") ?? "—")</td>
+                            <td class="text-muted small d-none d-lg-table-cell align-middle">@(c.Address ?? "—")</td>
+                            <td class="text-end align-middle" onclick="event.stopPropagation()">
+                                @if (Model.CanManage)
+                                {
+                                    <button class="btn btn-sm btn-outline-danger" onclick="confirmDeleteClient(@c.Id, '@Html.Raw(c.DisplayName.Replace("'","\\\'"))')" title="Delete"><i class="bi bi-trash"></i></button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="text-muted small mt-2">@Model.Clients.Count() client@(Model.Clients.Count() == 1 ? "" : "s")</div>
+}
+
+<!-- View Modal (contact card style) -->
+<div class="modal fade" id="clientViewModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-scrollable" style="max-width:400px">
+        <div class="modal-content overflow-hidden">
+            <div class="modal-body p-0" id="view-modal-body">
+                <div>
+                    <div class="d-flex justify-content-end p-2"><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+                    <div class="text-center pb-5"><span class="spinner-border spinner-border-sm text-muted"></span></div>
+                </div>
+            </div>
+            <div class="modal-footer py-2">
+                @if (Model.CanManage)
+                {
+                    <button class="btn btn-sm btn-outline-primary" id="view-edit-btn">
+                        <i class="bi bi-pencil me-1"></i>Edit
+                    </button>
+                }
+                <button class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal fade" id="clientEditModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h5 class="modal-title fs-6" id="edit-modal-title">Client</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="edit-alert" class="d-none alert py-2 px-3 mb-3" role="alert"></div>
+                <div class="row g-2">
+                    <div class="col-6">
+                        <label class="form-label small mb-1">First Name <span class="text-danger">*</span></label>
+                        <input id="edit-firstname" type="text" class="form-control form-control-sm" />
+                        <div id="edit-firstname-err" class="text-danger small d-none mt-1">Required.</div>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small mb-1">Last Name</label>
+                        <input id="edit-lastname" type="text" class="form-control form-control-sm" />
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small mb-1">Phone</label>
+                        <input id="edit-phone" type="tel" class="form-control form-control-sm" />
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small mb-1">Email</label>
+                        <input id="edit-email" type="email" class="form-control form-control-sm" />
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small mb-1">Date of Birth</label>
+                        <input id="edit-dob" type="date" class="form-control form-control-sm" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label small mb-1">Address</label>
+                        <input id="edit-address" type="text" class="form-control form-control-sm" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label small mb-1">Notes</label>
+                        <textarea id="edit-notes" class="form-control form-control-sm" rows="3"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer py-2">
+                <button class="btn btn-sm btn-primary" id="btn-save-client" onclick="saveClient()">
+                    <i class="bi bi-floppy me-1"></i>Save
+                </button>
+                <button class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete confirmation -->
+<div class="modal fade" id="clientDeleteModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h5 class="modal-title fs-6">Delete Client</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body small">
+                Delete <strong id="delete-client-name"></strong>? This cannot be undone.
+            </div>
+            <div class="modal-footer py-2">
+                <button class="btn btn-sm btn-danger" onclick="deleteClient()">Delete</button>
+                <button class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+var _editClientId = null;
+var _deleteClientId = null;
+var _clientViewModal = null;
+var _clientEditModal = null;
+var _clientDeleteModal = null;
+
+var _avatarPalette = ['#0d6efd','#6610f2','#6f42c1','#d63384','#dc3545','#fd7e14','#198754','#0dcaf0','#20c997'];
+
+function avatarColor(name) {
+    var h = 0;
+    for (var i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+    return _avatarPalette[h % _avatarPalette.length];
+}
+
+function mkInitials(name) {
+    var parts = (name || '').trim().split(/\s+/).filter(Boolean);
+    if (!parts.length) return '?';
+    if (parts.length === 1) return parts[0][0].toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+document.querySelectorAll('.client-list-avatar').forEach(function(el) {
+    var name = el.dataset.name || '';
+    el.style.background = avatarColor(name);
+    el.textContent = mkInitials(name);
+});
+
+function getViewModal()   { return _clientViewModal   || (_clientViewModal   = new bootstrap.Modal(document.getElementById('clientViewModal'))); }
+function getEditModal()   { return _clientEditModal   || (_clientEditModal   = new bootstrap.Modal(document.getElementById('clientEditModal'))); }
+function getDeleteModal() { return _clientDeleteModal || (_clientDeleteModal = new bootstrap.Modal(document.getElementById('clientDeleteModal'))); }
+
+function contactField(icon, label, value, isHtml) {
+    if (!value) return '';
+    return '<div class="contact-field">' +
+        '<div class="contact-field-icon"><i class="bi bi-' + icon + '"></i></div>' +
+        '<div><div class="contact-field-label">' + label + '</div>' +
+        '<div class="contact-field-value">' + (isHtml ? value : escHtml(value)) + '</div></div>' +
+        '</div>';
+}
+
+var _closeRow = '<div class="d-flex justify-content-end p-2"><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>';
+
+window.openClientView = function(id) {
+    document.getElementById('view-modal-body').innerHTML =
+        _closeRow + '<div class="text-center pb-5"><span class="spinner-border spinner-border-sm text-muted"></span></div>';
+    var editBtn = document.getElementById('view-edit-btn');
+    if (editBtn) editBtn.onclick = function() { getViewModal().hide(); openClientEdit(id); };
+    getViewModal().show();
+
+    Promise.all([
+        fetch('/api/clients/' + id, { credentials: 'include' }).then(r => r.json()),
+        fetch('/api/clients/' + id + '/history', { credentials: 'include' }).then(r => r.json()).catch(() => [])
+    ]).then(function(results) {
+            var c       = results[0];
+            var history = results[1] || [];
+            var name  = c.displayName || (c.firstName + (c.lastName ? ' ' + c.lastName : ''));
+            var ini   = mkInitials(name);
+            var color = avatarColor(name);
+            var dob   = c.dateOfBirth
+                ? new Date(c.dateOfBirth + 'T00:00:00').toLocaleDateString('en-US', {year:'numeric',month:'long',day:'numeric'})
+                : null;
+            var emailHtml = c.email
+                ? '<a href="mailto:' + escHtml(c.email) + '">' + escHtml(c.email) + '</a>'
+                : null;
+            var mapsHtml = c.address
+                ? '<a href="https://maps.google.com/?q=' + encodeURIComponent(c.address) + '" target="_blank" rel="noopener">' + escHtml(c.address) + '</a>'
+                : null;
+
+            var historyHtml = '';
+            if (history.length) {
+                var rows = history.map(function(r) {
+                    var date   = new Date(r.checkedOutAt).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'});
+                    var status = r.isLost
+                        ? '<span class="badge bg-danger">Lost</span>'
+                        : r.checkedInAt
+                            ? '<span class="badge bg-secondary">Returned</span>'
+                            : '<span class="badge bg-success">Active</span>';
+                    return '<tr><td class="small fw-semibold">' + escHtml(r.itemName) + '</td>' +
+                           '<td class="small text-muted">' + date + '</td>' +
+                           '<td>' + status + '</td></tr>';
+                }).join('');
+                historyHtml =
+                    '<div class="border-top px-3 pt-3 pb-2">' +
+                    '<div class="small fw-semibold text-muted text-uppercase mb-2" style="letter-spacing:.05em">Checkout History</div>' +
+                    '<table class="table table-sm mb-0"><thead><tr>' +
+                    '<th class="small">Item</th><th class="small">Date</th><th class="small">Status</th>' +
+                    '</tr></thead><tbody>' + rows + '</tbody></table></div>';
+            }
+
+            document.getElementById('view-modal-body').innerHTML =
+                '<div class="contact-card-hero" style="--cc-accent:' + color + '">' +
+                    '<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>' +
+                    '<div class="contact-card-hero-avatar">' + escHtml(ini) + '</div>' +
+                    '<div class="contact-card-hero-name">' + escHtml(name) + '</div>' +
+                '</div>' +
+                '<div class="contact-card-fields">' +
+                    contactField('telephone', 'Phone', c.phone, false) +
+                    contactField('envelope', 'Email', emailHtml, true) +
+                    contactField('geo-alt', 'Address', mapsHtml, true) +
+                    contactField('cake', 'Date of Birth', dob, false) +
+                    contactField('journal-text', 'Notes', c.notes, false) +
+                '</div>' +
+                historyHtml;
+        })
+        .catch(function() {
+            document.getElementById('view-modal-body').innerHTML =
+                _closeRow + '<p class="text-danger small p-3">Failed to load client.</p>';
+        });
+};
+
+window.openClientEdit = function(id) {
+    _editClientId = id;
+    document.getElementById('edit-modal-title').textContent = id ? 'Edit Client' : 'Add Client';
+    document.getElementById('edit-alert').classList.add('d-none');
+    document.getElementById('edit-firstname-err').classList.add('d-none');
+    ['edit-firstname','edit-lastname','edit-phone','edit-email','edit-dob','edit-address','edit-notes'].forEach(function(x) {
+        var el = document.getElementById(x);
+        if (el) el.value = '';
+    });
+    if (id) {
+        fetch('/api/clients/' + id, { credentials: 'include' })
+            .then(r => r.json())
+            .then(function(c) {
+                document.getElementById('edit-firstname').value = c.firstName || '';
+                document.getElementById('edit-lastname').value  = c.lastName  || '';
+                document.getElementById('edit-phone').value     = c.phone     || '';
+                document.getElementById('edit-email').value     = c.email     || '';
+                document.getElementById('edit-dob').value       = c.dateOfBirth ? c.dateOfBirth.substring(0,10) : '';
+                document.getElementById('edit-address').value   = c.address   || '';
+                document.getElementById('edit-notes').value     = c.notes     || '';
+            })
+            .catch(function() {});
+    }
+    getEditModal().show();
+};
+
+window.saveClient = function() {
+    var firstName = document.getElementById('edit-firstname').value.trim();
+    var err = document.getElementById('edit-firstname-err');
+    if (!firstName) { err.classList.remove('d-none'); document.getElementById('edit-firstname').focus(); return; }
+    err.classList.add('d-none');
+    var body = {
+        firstName:   firstName,
+        lastName:    document.getElementById('edit-lastname').value.trim() || null,
+        phone:       document.getElementById('edit-phone').value.trim()    || null,
+        email:       document.getElementById('edit-email').value.trim()    || null,
+        dateOfBirth: document.getElementById('edit-dob').value             || null,
+        address:     document.getElementById('edit-address').value.trim()  || null,
+        notes:       document.getElementById('edit-notes').value.trim()    || null
+    };
+    var btn = document.getElementById('btn-save-client');
+    btn.disabled = true;
+    var url    = _editClientId ? '/api/clients/' + _editClientId : '/api/clients';
+    var method = _editClientId ? 'PUT' : 'POST';
+    fetch(url, { method: method, headers: {'Content-Type':'application/json', 'X-Requested-With':'XMLHttpRequest'}, credentials:'include', body: JSON.stringify(body) })
+        .then(function(r) {
+            if (r.status === 403) throw 'You do not have permission to perform this action.';
+            if (r.status === 404) throw 'Client not found.';
+            if (!r.ok) return r.json()
+                .then(function(j) { throw j.error || j.title || ('Server error ' + r.status); })
+                .catch(function(e) { if (typeof e === 'string') throw e; throw 'Server error ' + r.status; });
+            return r;
+        })
+        .then(function() { getEditModal().hide(); showFlashToast(_editClientId ? 'Client saved.' : 'Client added.'); location.reload(); })
+        .catch(function(msg) {
+            var al = document.getElementById('edit-alert');
+            al.className = 'alert alert-danger py-2 px-3 mb-3';
+            al.textContent = (typeof msg === 'string' ? msg : (msg && msg.message) || 'Failed to save.');
+            al.classList.remove('d-none');
+        })
+        .finally(function() { btn.disabled = false; });
+};
+
+window.confirmDeleteClient = function(id, name) {
+    _deleteClientId = id;
+    document.getElementById('delete-client-name').textContent = name;
+    getDeleteModal().show();
+};
+
+window.deleteClient = function() {
+    if (!_deleteClientId) return;
+    fetch('/api/clients/' + _deleteClientId, { method: 'DELETE', credentials: 'include' })
+        .then(function() { getDeleteModal().hide(); showFlashToast('Client deleted.', 'secondary'); location.reload(); })
+        .catch(function() {});
+};
+</script>
+}

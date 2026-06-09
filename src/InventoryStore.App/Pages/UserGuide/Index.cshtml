@@ -1,0 +1,30 @@
+@page
+@{
+    ViewData["Title"] = "User Guide";
+    ViewData["ActivePage"] = "UserGuide";
+}
+
+<style>
+    /* Remove main padding so the iframe fills edge to edge */
+    #content-wrapper > main {
+        padding: 0 !important;
+        overflow: hidden;
+    }
+    .user-guide-frame {
+        display: block;
+        width: 100%;
+        height: 100%;
+        border: none;
+    }
+    /* content-wrapper needs to stretch to fill remaining space */
+    #content-wrapper {
+        flex: 1;
+        min-height: 0;
+    }
+</style>
+
+<iframe class="user-guide-frame"
+        src="https://inventorystore.app/user-guide.html"
+        title="User Guide"
+        loading="lazy">
+</iframe>
