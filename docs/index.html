@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <!-- Primary meta -->
-  <title>Inventory Tracker | Self-Hosted Inventory Management for Small Teams</title>
-  <meta name="description" content="Track equipment checkouts, consumable stock, and team activity with Inventory Tracker. Free, open-source, self-hosted Windows app. No cloud required." />
+  <title>Inventory Store | Self-Hosted Inventory Management for Small Teams</title>
+  <meta name="description" content="Track equipment checkouts, consumable stock, and team activity with Inventory Store. Free, open-source, self-hosted Windows app. No cloud required." />
   <meta name="keywords" content="inventory management, equipment checkout, asset tracking, self-hosted, windows service, barcode scanner, open source" />
   <meta name="author" content="Jake Cozart" />
   <meta name="robots" content="index, follow" />
@@ -16,13 +16,13 @@
   <!-- Open Graph -->
   <meta property="og:type"        content="website" />
   <meta property="og:url"         content="https://jtcozart.github.io/inventory-tracker/" />
-  <meta property="og:title"       content="Inventory Tracker | Self-Hosted Inventory Management" />
+  <meta property="og:title"       content="Inventory Store | Self-Hosted Inventory Management" />
   <meta property="og:description" content="Track equipment checkouts, consumable stock, and team activity. Free, open-source Windows service. No cloud subscription required." />
-  <meta property="og:site_name"   content="Inventory Tracker" />
+  <meta property="og:site_name"   content="Inventory Store" />
 
   <!-- Twitter Card -->
   <meta name="twitter:card"        content="summary" />
-  <meta name="twitter:title"       content="Inventory Tracker | Self-Hosted Inventory Management" />
+  <meta name="twitter:title"       content="Inventory Store | Self-Hosted Inventory Management" />
   <meta name="twitter:description" content="Track equipment checkouts, consumable stock, and team activity. Free, open-source Windows service. No cloud subscription required." />
 
   <!-- JSON-LD structured data -->
@@ -30,7 +30,7 @@
   {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
-    "name": "Inventory Tracker",
+    "name": "Inventory Store",
     "applicationCategory": "BusinessApplication",
     "applicationSubCategory": "Inventory Management",
     "operatingSystem": "Windows 10, Windows 11",
@@ -64,12 +64,15 @@
       "Windows service installer",
       "Public view with iframe embed for external websites",
       "Dark mode with per-browser preference",
-      "Database backup and restore with one-click download"
+      "Database backup and restore with one-click download",
+      "Client checkout history - full borrowing history per client",
+      "Push notifications via ntfy for checkout, return, lost item, low stock, and login events"
     ]
   }
   </script>
 
   <!-- Preconnect -->
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="preconnect" href="https://cdnjs.cloudflare.com" />
@@ -289,8 +292,8 @@
 
 <nav>
   <a class="nav-brand" href="#">
-    <div class="it-badge">IT</div>
-    Inventory Tracker
+    <div class="it-badge">IS</div>
+    Inventory Store
   </a>
   <div class="nav-links">
     <a href="#features">Features</a>
@@ -337,8 +340,8 @@
     <div class="ui-mock">
       <div class="ui-topnav">
         <div class="ui-topnav-brand">
-          <div class="it-badge" style="width:22px;height:22px;font-size:.6rem;border-radius:4px">IT</div>
-          Inventory
+          <div class="it-badge" style="width:22px;height:22px;font-size:.6rem;border-radius:4px">IS</div>
+          Inventory Store
         </div>
         <div class="ui-topnav-link active"><i class="fa-solid fa-gauge"></i> Dashboard</div>
         <div class="ui-topnav-link"><i class="fa-solid fa-boxes-stacked"></i> Inventory</div>
@@ -405,7 +408,7 @@
       <div class="feature-card">
         <div class="feature-icon"><i class="fa-solid fa-people-group"></i></div>
         <h3>Client management</h3>
-        <p>Keep a searchable list of the people who borrow items. Store names, phone numbers, email addresses, dates of birth, and notes. Checkouts are linked to clients so you always know exactly who has what.</p>
+        <p>Keep a searchable list of the people who borrow items. Store names, phone numbers, email addresses, dates of birth, and notes. Checkouts are linked to clients so you always know exactly who has what - and a full borrowing history is one click away on every client record.</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon"><i class="fa-solid fa-box"></i></div>
@@ -473,6 +476,11 @@
         <p>Full dark theme built in. Toggle with the sidebar button - preference is saved per browser and persists across sessions.</p>
       </div>
       <div class="feature-card">
+        <div class="feature-icon"><i class="fa-solid fa-bell"></i></div>
+        <h3>Push notifications</h3>
+        <p>Get instant alerts on your phone via <a href="https://ntfy.sh" target="_blank" rel="noopener">ntfy</a>. Choose exactly which events trigger a notification: item checked out, item returned, item lost, low stock reached, or user login. Each event is optional and can be turned on or off independently.</p>
+      </div>
+      <div class="feature-card">
         <div class="feature-icon"><i class="fa-solid fa-database"></i></div>
         <h3>Database backup &amp; restore</h3>
         <p>Download a consistent point-in-time backup of your entire database with one click. Restore from any previous backup - the current database is saved automatically before overwriting.</p>
@@ -517,15 +525,15 @@
   <h2>Get up and running today</h2>
   <p>Free, open source, and completely self-hosted. Download the installer and be running in under five minutes.</p>
   <a href="https://github.com/JTCozart/inventory-tracker/releases/latest" class="btn-primary" style="display:inline-flex" target="_blank" rel="noopener noreferrer">
-    <i class="fa-solid fa-download"></i> Download Inventory Tracker
+    <i class="fa-solid fa-download"></i> Download Inventory Store
   </a>
 </section>
 
 <footer>
   <div>
     <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.25rem">
-      <div class="it-badge" style="width:24px;height:24px;font-size:.65rem;border-radius:5px">IT</div>
-      <strong style="color:#0f172a">Inventory Tracker</strong>
+      <div class="it-badge" style="width:24px;height:24px;font-size:.65rem;border-radius:5px">IS</div>
+      <strong style="color:#0f172a">Inventory Store</strong>
     </div>
     <span>MIT License &middot; &copy; 2026 Jake Cozart</span>
   </div>

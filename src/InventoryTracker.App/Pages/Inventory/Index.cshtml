@@ -14,9 +14,9 @@
             <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#importModal">
                 <i class="bi bi-upload me-1"></i> Import
             </button>
-            <a href="/Inventory/Create" class="btn btn-primary">
+            <button type="button" class="btn btn-primary" onclick="openAddItemModal()">
                 <i class="bi bi-plus-lg me-1"></i> Add Item
-            </a>
+            </button>
         </div>
     }
 </div>
@@ -35,8 +35,9 @@
 <div class="card mb-3">
     <div class="card-body py-2">
         <form method="get" class="d-flex gap-2 flex-wrap">
-            <input type="search" name="q" value="@Model.Query" class="form-control"
-                   style="max-width: 300px" placeholder="Search by name, SKU, location, category..." />
+            <input type="search" id="inv-q" name="q" value="@Model.Query" class="form-control"
+                   style="max-width: 300px" placeholder="Search by name, SKU, location, category..."
+                   oninput="filterInventoryRows(this.value)" />
             @if (Model.Categories.Any())
             {
                 <select name="category" class="form-select" style="max-width: 180px"
@@ -63,7 +64,7 @@
 {
     <div class="text-center py-5 text-muted">
         <i class="bi bi-inbox display-4"></i>
-        <p class="mt-2">No items found. <a href="/Inventory/Create">Add your first item.</a></p>
+        <p class="mt-2">No items found. <a href="#" onclick="openAddItemModal();return false;">Add your first item.</a></p>
     </div>
 }
 else
@@ -89,8 +90,9 @@ else
                 <tbody>
                     @foreach (var item in Model.Items)
                     {
-                        <tr class="inventory-row" data-item-id="@item.Id" style="cursor:pointer">
-                            <td class="fw-semibold">@item.Name</td>
+                        <tr class="inventory-row" data-item-id="@item.Id" style="cursor:pointer"
+                            data-search="@item.Name @(item.SKU ?? "") @(item.Location ?? "") @(item.CategoryName ?? "")">
+                            <td class="fw-semibold"><div class="cell-truncate" title="@item.Name">@item.Name</div></td>
                             <td class="d-none d-md-table-cell">
                                 @if (item.ItemType == InventoryTracker.Domain.Enums.ItemType.Reusable)
                                 {
@@ -221,6 +223,110 @@ else
     </div>
 </div>
 
+<!-- Add Item modal -->
+<div class="modal fade" id="addItemModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-plus-lg me-2"></i>Add Inventory Item</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="add-alert" class="alert d-none mb-3" role="alert"></div>
+                <div id="add-loading" class="text-center py-4 d-none">
+                    <div class="spinner-border text-primary" role="status"></div>
+                </div>
+                <div id="add-form">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label">Name <span class="text-danger">*</span></label>
+                            <input type="text" id="add-name" class="form-control" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Item Type <span class="text-danger">*</span></label>
+                            <div class="d-flex gap-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="add-item-type" id="add-type-consumable" value="Consumable" checked />
+                                    <label class="form-check-label" for="add-type-consumable">
+                                        <i class="bi bi-box me-1"></i>Consumable
+                                        <div class="text-muted small">Stock is depleted when used</div>
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="add-item-type" id="add-type-reusable" value="Reusable" />
+                                    <label class="form-check-label" for="add-type-reusable">
+                                        <i class="bi bi-arrow-repeat me-1"></i>Reusable
+                                        <div class="text-muted small">Checked out and returned</div>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Quantity <span class="text-danger">*</span></label>
+                            <input type="number" id="add-quantity" class="form-control" value="0" min="0" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Minimum Quantity <span class="text-muted small">(alert threshold)</span></label>
+                            <input type="number" id="add-min-quantity" class="form-control" value="0" min="0" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">SKU / Barcode</label>
+                            <input type="text" id="add-sku" class="form-control" placeholder="Scan or type" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Location</label>
+                            <input type="text" id="add-location" class="form-control" placeholder="e.g. Shelf A3, Bin 12"
+                                   list="add-location-list" autocomplete="off" />
+                            <datalist id="add-location-list"></datalist>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Category</label>
+                            <div class="d-flex gap-2">
+                                <select id="add-category" class="form-select"></select>
+                                <button type="button" class="btn btn-outline-secondary" id="add-new-cat-btn" title="Create new category">
+                                    <i class="bi bi-plus-lg"></i>
+                                </button>
+                            </div>
+                            <div id="add-new-cat-form" class="mt-2 border rounded p-2 d-none">
+                                <div class="mb-2">
+                                    <label class="form-label small mb-1">Name <span class="text-danger">*</span></label>
+                                    <input type="text" id="add-new-cat-name" class="form-control form-control-sm" placeholder="Category name" />
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label small mb-1">Color <span class="text-muted small">(optional)</span></label>
+                                    <input type="hidden" id="add-new-cat-color" value="" />
+                                    <div class="d-flex flex-wrap gap-1" id="add-new-cat-swatches"></div>
+                                </div>
+                                <div class="d-flex gap-2">
+                                    <button type="button" class="btn btn-sm btn-primary" id="add-new-cat-save">Create</button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" id="add-new-cat-cancel">Cancel</button>
+                                </div>
+                                <div id="add-new-cat-error" class="text-danger small mt-1 d-none"></div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Expiry Date <span class="text-muted small">(optional)</span></label>
+                            <input type="date" id="add-expiry" class="form-control" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Scan Warning <span class="text-muted small">(shown when this item is scanned)</span></label>
+                            <input type="text" id="add-scan-warning" class="form-control" placeholder="e.g. Requires PPE, Handle with care" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Description</label>
+                            <textarea id="add-description" class="form-control" rows="3"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="add-save-btn" onclick="saveAddItem()">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Delete confirmation modal -->
 <div class="modal fade" id="deleteModal" tabindex="-1">
     <div class="modal-dialog modal-sm">
@@ -282,5 +388,183 @@ function confirmDelete(btn) {
 {
     <text>document.addEventListener('DOMContentLoaded', () => openItemModal(@Model.Open.Value));</text>
 }
+</script>
+<script>
+// ── Add Item Modal ────────────────────────────────────────────────────────────
+var _addItemModal = null;
+
+async function openAddItemModal() {
+    if (!_addItemModal) _addItemModal = new bootstrap.Modal(document.getElementById('addItemModal'));
+    // Reset form
+    document.getElementById('add-name').value = '';
+    document.getElementById('add-quantity').value = '0';
+    document.getElementById('add-min-quantity').value = '0';
+    document.getElementById('add-sku').value = '';
+    document.getElementById('add-location').value = '';
+    document.getElementById('add-expiry').value = '';
+    document.getElementById('add-scan-warning').value = '';
+    document.getElementById('add-description').value = '';
+    document.getElementById('add-type-consumable').checked = true;
+    document.getElementById('add-alert').classList.add('d-none');
+
+    // Load categories and locations
+    try {
+        const res = await fetch('/Inventory?handler=AddItemData');
+        if (res.ok) {
+            const data = await res.json();
+            const sel = document.getElementById('add-category');
+            sel.innerHTML = '<option value="">— None —</option>' +
+                (data.categories || []).map(c => `<option value="${c.id}">${escHtml(c.name)}</option>`).join('');
+            const dl = document.getElementById('add-location-list');
+            dl.innerHTML = (data.locations || []).map(l => `<option value="${escHtml(l)}"></option>`).join('');
+            initAddCatSwatches(data.categories || []);
+        } else {
+            const alertEl = document.getElementById('add-alert');
+            alertEl.className = 'alert alert-warning mb-3';
+            alertEl.textContent = 'Could not load categories. You can still save the item.';
+            alertEl.classList.remove('d-none');
+        }
+    } catch {
+        const alertEl = document.getElementById('add-alert');
+        alertEl.className = 'alert alert-warning mb-3';
+        alertEl.textContent = 'Could not load categories. You can still save the item.';
+        alertEl.classList.remove('d-none');
+    }
+
+    _addItemModal.show();
+    setTimeout(() => document.getElementById('add-name').focus(), 300);
+}
+
+function initAddCatSwatches() {
+    const colors = ['','#0d6efd','#198754','#dc3545','#ffc107','#fd7e14','#6f42c1','#d63384','#0dcaf0','#20c997','#6c757d','#212529'];
+    const container = document.getElementById('add-new-cat-swatches');
+    container.innerHTML = colors.map(c => {
+        const bg = c || '#f8f9fa';
+        const border = c ? 'transparent' : '#dee2e6';
+        return `<button type="button" class="swatch-btn" data-color="${c}"
+            style="width:28px;height:28px;border-radius:4px;background:${bg};border:2px solid ${border};"
+            onclick="selectAddSwatch(this)"></button>`;
+    }).join('');
+}
+
+function selectAddSwatch(btn) {
+    const color = btn.dataset.color || '';
+    document.getElementById('add-new-cat-color').value = color;
+    document.querySelectorAll('#add-new-cat-swatches .swatch-btn').forEach(b => {
+        const match = (b.dataset.color || '') === color;
+        b.style.border = match ? '2px solid #000' : (b.dataset.color === '' ? '2px solid #dee2e6' : '2px solid transparent');
+    });
+}
+
+(function() {
+    document.getElementById('add-new-cat-btn').addEventListener('click', function() {
+        var f = document.getElementById('add-new-cat-form');
+        f.classList.toggle('d-none');
+        if (!f.classList.contains('d-none')) document.getElementById('add-new-cat-name').focus();
+    });
+    document.getElementById('add-new-cat-cancel').addEventListener('click', function() {
+        document.getElementById('add-new-cat-form').classList.add('d-none');
+        document.getElementById('add-new-cat-name').value = '';
+        document.getElementById('add-new-cat-color').value = '';
+        document.getElementById('add-new-cat-error').classList.add('d-none');
+    });
+    document.getElementById('add-new-cat-name').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') { e.preventDefault(); document.getElementById('add-new-cat-save').click(); }
+    });
+    document.getElementById('add-new-cat-save').addEventListener('click', async function() {
+        var name = document.getElementById('add-new-cat-name').value.trim();
+        var color = document.getElementById('add-new-cat-color').value;
+        var errEl = document.getElementById('add-new-cat-error');
+        if (!name) { errEl.textContent = 'Name is required.'; errEl.classList.remove('d-none'); return; }
+        this.disabled = true;
+        errEl.classList.add('d-none');
+        try {
+            var token = document.getElementById('af-token').value;
+            var res = await fetch('/Inventory?handler=CreateCategory', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ name, color, __RequestVerificationToken: token }).toString()
+            });
+            if (res.ok) {
+                var cat = await res.json();
+                var sel = document.getElementById('add-category');
+                sel.appendChild(new Option(cat.name, cat.id, true, true));
+                sel.value = cat.id;
+                document.getElementById('add-new-cat-form').classList.add('d-none');
+                document.getElementById('add-new-cat-name').value = '';
+                document.getElementById('add-new-cat-color').value = '';
+            } else {
+                errEl.textContent = await res.text() || 'Failed to create category.';
+                errEl.classList.remove('d-none');
+            }
+        } catch { errEl.textContent = 'Network error.'; errEl.classList.remove('d-none'); }
+        finally { this.disabled = false; }
+    });
+}());
+
+async function saveAddItem() {
+    const name = document.getElementById('add-name').value.trim();
+    const alertEl = document.getElementById('add-alert');
+    if (!name) {
+        alertEl.className = 'alert alert-warning mb-3';
+        alertEl.textContent = 'Name is required.';
+        alertEl.classList.remove('d-none');
+        document.getElementById('add-name').focus();
+        return;
+    }
+    const btn = document.getElementById('add-save-btn');
+    btn.disabled = true;
+    alertEl.classList.add('d-none');
+    try {
+        var token = document.getElementById('af-token').value;
+        var params = {
+            name,
+            quantity: document.getElementById('add-quantity').value,
+            minimumQuantity: document.getElementById('add-min-quantity').value,
+            itemType: document.querySelector('input[name="add-item-type"]:checked').value,
+            sku: document.getElementById('add-sku').value.trim(),
+            location: document.getElementById('add-location').value.trim(),
+            categoryId: document.getElementById('add-category').value || '',
+            expiryDate: document.getElementById('add-expiry').value,
+            scanWarning: document.getElementById('add-scan-warning').value.trim(),
+            description: document.getElementById('add-description').value.trim(),
+            __RequestVerificationToken: token
+        };
+        const res = await fetch('/Inventory?handler=CreateItem', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams(params).toString()
+        });
+        const data = await res.json();
+        if (data.success) {
+            _addItemModal.hide();
+            showFlashToast('Item added.');
+            location.reload();
+        } else {
+            alertEl.className = 'alert alert-danger mb-3';
+            alertEl.textContent = data.error || 'Failed to save item.';
+            alertEl.classList.remove('d-none');
+        }
+    } catch {
+        alertEl.className = 'alert alert-danger mb-3';
+        alertEl.textContent = 'Network error. Please try again.';
+        alertEl.classList.remove('d-none');
+    } finally { btn.disabled = false; }
+}
+
+// ── Live row filtering ───────────────────────────────────────────────────────
+(function() {
+    var _filterTimer;
+    window.filterInventoryRows = function(val) {
+        clearTimeout(_filterTimer);
+        _filterTimer = setTimeout(function() {
+            var q = (val || '').toLowerCase().trim();
+            document.querySelectorAll('.inventory-row').forEach(function(row) {
+                var search = (row.dataset.search || row.textContent).toLowerCase();
+                row.style.display = (!q || search.includes(q)) ? '' : 'none';
+            });
+        }, 120);
+    };
+}());
 </script>
 }

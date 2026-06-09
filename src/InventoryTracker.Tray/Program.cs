@@ -13,8 +13,8 @@ internal static class Program
         if (!isNew)
         {
             MessageBox.Show(
-                "Inventory Tracker tray is already running.",
-                "Inventory Tracker", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                "Inventory Store tray is already running.",
+                "Inventory Store", MessageBoxButtons.OK, MessageBoxIcon.Information);
             return;
         }
 

@@ -34,16 +34,20 @@
         </div>
     </div>
     <div class="col-6 col-md-3 col-xl-2">
-        <div class="stat-card border-start border-warning border-4">
+        <a href="/Reports?tab=stock" class="text-decoration-none">
+        <div class="stat-card border-start border-warning border-4" style="cursor:pointer" title="View low stock report">
             <div class="stat-icon text-warning"><i class="bi bi-exclamation-triangle"></i></div>
             <div><div class="stat-value">@Model.Summary.LowStockCount</div><div class="stat-label">Low Stock</div></div>
         </div>
+        </a>
     </div>
     <div class="col-6 col-md-3 col-xl-2">
-        <div class="stat-card border-start border-info border-4">
+        <a href="/Reports?tab=checkout" class="text-decoration-none">
+        <div class="stat-card border-start border-info border-4" style="cursor:pointer" title="View checked out report">
             <div class="stat-icon text-info"><i class="bi bi-box-arrow-up-right"></i></div>
             <div><div class="stat-value">@Model.Summary.CheckedOutCount</div><div class="stat-label">Checked Out</div></div>
         </div>
+        </a>
     </div>
 </div>
 
@@ -154,19 +158,21 @@
                 else
                 {
                     <table class="table table-sm mb-0">
-                        <thead class="table-light"><tr><th>Item</th><th>With</th><th class="text-end">Qty</th><th class="text-end">Days <span class="text-muted fw-normal" title="Rows highlighted yellow are overdue (>7 days)" style="font-size:.75rem">ⓘ</span></th></tr></thead>
+                        <thead class="table-light"><tr><th>Item</th><th>With</th><th class="d-none d-md-table-cell">Client</th><th class="text-end">Qty</th><th class="text-end">Days <span class="text-muted fw-normal" title="Rows highlighted yellow are overdue (>7 days)" style="font-size:.75rem">ⓘ</span></th></tr></thead>
                         <tbody>
                             @foreach (var row in Model.Summary.CheckedOutItems)
                             {
-                                <tr class="@(row.DaysOut > 7 ? "table-warning" : string.Empty)">
+                                <tr class="@(row.DaysOut > 7 ? "table-warning" : string.Empty)"
+                                    style="cursor:pointer" onclick="openItemModal(@row.InventoryItemId)">
                                     <td>
-                                        <button type="button" onclick="openItemModal(@row.InventoryItemId)" class="btn btn-link p-0 fw-semibold text-start text-decoration-none">@row.ItemName</button>
+                                        <div class="fw-semibold">@row.ItemName</div>
                                         @if (!string.IsNullOrEmpty(row.ItemLocation))
                                         {
                                             <div class="text-muted" style="font-size:0.75rem">@row.ItemLocation</div>
                                         }
                                     </td>
                                     <td class="small">@row.CheckedOutBy</td>
+                                    <td class="small text-muted d-none d-md-table-cell">@(row.ClientName ?? "—")</td>
                                     <td class="text-end">@row.Quantity</td>
                                     <td class="text-end @(row.DaysOut > 7 ? "text-warning fw-bold" : "text-muted")">@row.DaysOut</td>
                                 </tr>

@@ -26,7 +26,7 @@ public class TrayApplicationContext : ApplicationContext
     {
         _http = new HttpClient { Timeout = TimeSpan.FromSeconds(4) };
 
-        _openItem    = new ToolStripMenuItem("Open Inventory Tracker",    null, (_, _) => OpenBrowser());
+        _openItem    = new ToolStripMenuItem("Open Inventory Store",    null, (_, _) => OpenBrowser());
         _networkItem = new ToolStripMenuItem($"Local: {BaseUrl}")         { Enabled = false };
         _tunnelItem  = new ToolStripMenuItem("Tunnel: checking…")         { Enabled = false };
         _resetItem   = new ToolStripMenuItem("Reset Admin Password",      null, (_, _) => ResetAdminPassword());
@@ -44,7 +44,7 @@ public class TrayApplicationContext : ApplicationContext
         _tray = new NotifyIcon
         {
             Icon             = BuildIcon(running: false),
-            Text             = "Inventory Tracker — connecting…",
+            Text             = "Inventory Store - connecting…",
             Visible          = true,
             ContextMenuStrip = menu,
         };
@@ -92,7 +92,7 @@ public class TrayApplicationContext : ApplicationContext
             _tunnelItem.Enabled = true;
             _tunnelItem.Click  -= CopyTunnelUrl;
             _tunnelItem.Click  += CopyTunnelUrl;
-            _tray.Text = "Inventory Tracker — tunnel active";
+            _tray.Text = "Inventory Store - tunnel active";
         }
         else
         {
@@ -106,7 +106,7 @@ public class TrayApplicationContext : ApplicationContext
             };
             _tunnelItem.Enabled = false;
             _tunnelItem.Click  -= CopyTunnelUrl;
-            _tray.Text = "Inventory Tracker — running";
+            _tray.Text = "Inventory Store - running";
         }
 
         _resetItem.Enabled = true;
@@ -117,7 +117,7 @@ public class TrayApplicationContext : ApplicationContext
     {
         _serviceUp = false;
         _tray.Icon          = BuildIcon(running: false);
-        _tray.Text          = "Inventory Tracker — service not running";
+        _tray.Text          = "Inventory Store - service not running";
         _networkItem.Text   = "Service not running";
         _tunnelItem.Text    = "Tunnel: unavailable";
         _tunnelItem.Enabled = false;
@@ -140,7 +140,7 @@ public class TrayApplicationContext : ApplicationContext
         catch (Exception ex)
         {
             MessageBox.Show($"Could not open browser:\n{ex.Message}",
-                "Inventory Tracker", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                "Inventory Store", MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
     }
 
@@ -160,19 +160,19 @@ public class TrayApplicationContext : ApplicationContext
                 var body     = await resp.Content.ReadFromJsonAsync<JsonElement>();
                 var username = body.TryGetProperty("username", out var u) ? u.GetString() : "admin";
                 MessageBox.Show($"Password for '{username}' has been reset successfully.",
-                    "Inventory Tracker", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    "Inventory Store", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             else
             {
                 var body = await resp.Content.ReadAsStringAsync();
                 MessageBox.Show($"Reset failed: {body}",
-                    "Inventory Tracker", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    "Inventory Store", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
         catch (Exception ex)
         {
             MessageBox.Show($"Could not reach service:\n{ex.Message}",
-                "Inventory Tracker", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                "Inventory Store", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 
@@ -195,7 +195,7 @@ public class TrayApplicationContext : ApplicationContext
         base.Dispose(disposing);
     }
 
-    // Draws the "IT" icon at runtime — works without an embedded .ico file.
+    // Draws the "IS" icon at runtime - works without an embedded .ico file.
     // In release builds the .ico is also embedded as the exe icon (for Explorer/taskbar).
     private static Icon BuildIcon(bool running)
     {
@@ -220,10 +220,10 @@ public class TrayApplicationContext : ApplicationContext
         using var brush = new SolidBrush(bg);
         g.FillPath(brush, path);
 
-        // "IT" text
+        // "IS" text
         using var font = new Font("Segoe UI", 13f, FontStyle.Bold, GraphicsUnit.Pixel);
         var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
-        g.DrawString("IT", font, Brushes.White, new RectangleF(0, 0, S, S), sf);
+        g.DrawString("IS", font, Brushes.White, new RectangleF(0, 0, S, S), sf);
 
         return Icon.FromHandle(bmp.GetHicon());
     }

@@ -15,6 +15,7 @@
     var currentScannedSku = null;
     var pendingAddQuery   = '';
     var DISPLAY_H         = window.innerWidth <= 576 ? Math.round(window.innerHeight * 0.42) : 220;
+    var _scannerDidAction = false;
 
     // Show manage-only elements if the user has write access
     if (window.canManage) {
@@ -30,6 +31,7 @@
 
     window.openScannerModal = function (sku) {
         resetScanner();
+        _scannerDidAction = false;
         bsModal = bsModal || new bootstrap.Modal(document.getElementById('scannerModal'));
         bsModal.show();
         if (sku) {
@@ -43,6 +45,11 @@
 
     document.getElementById('scannerModal').addEventListener('hidden.bs.modal', function () {
         stopLive(true);
+        if (_scannerDidAction) {
+            _scannerDidAction = false;
+            showFlashToast('Action completed.');
+            location.reload();
+        }
     });
 
     scanBtn.addEventListener('click', function () {
@@ -360,6 +367,7 @@
             .then(function (status) {
                 loadItemStatus(status);
                 showActionAlert('Item added successfully.', 'success');
+                _scannerDidAction = true;
                 if (typeof loadAvailableItems === 'function') loadAvailableItems();
             })
             .catch(function (msg) { showActionAlert(msg || 'Failed to add item.'); })
@@ -418,6 +426,8 @@
                 document.getElementById('checkout-client-id').value = '';
                 document.getElementById('checkout-client-dd').classList.add('d-none');
                 showActionAlert('Checked out successfully.', 'success');
+                _scannerDidAction = true;
+                if (typeof loadAvailableItems === 'function') loadAvailableItems();
                 refreshCurrentItem();
             })
             .catch(function (msg) { showActionAlert(msg || 'Check out failed.'); })
@@ -427,7 +437,12 @@
     window.doCheckin = function (recordId) {
         document.querySelectorAll('#checkout-list button').forEach(function (b) { b.disabled = true; });
         apiPost('/api/inventory/checkin', { recordId: recordId, notes: null })
-            .then(function () { showActionAlert('Checked in successfully.', 'success'); refreshCurrentItem(); })
+            .then(function () {
+                showActionAlert('Checked in successfully.', 'success');
+                _scannerDidAction = true;
+                if (typeof loadAvailableItems === 'function') loadAvailableItems();
+                refreshCurrentItem();
+            })
             .catch(function (msg) {
                 showActionAlert(msg || 'Check in failed.');
                 document.querySelectorAll('#checkout-list button').forEach(function (b) { b.disabled = false; });
@@ -438,7 +453,12 @@
         if (!confirm('Mark this item as lost?')) return;
         document.querySelectorAll('#checkout-list button').forEach(function (b) { b.disabled = true; });
         apiPost('/api/inventory/lost', { recordId: recordId, notes: null })
-            .then(function () { showActionAlert('Item marked as lost.', 'success'); refreshCurrentItem(); })
+            .then(function () {
+                showActionAlert('Item marked as lost.', 'success');
+                _scannerDidAction = true;
+                if (typeof loadAvailableItems === 'function') loadAvailableItems();
+                refreshCurrentItem();
+            })
             .catch(function (msg) {
                 showActionAlert(msg || 'Action failed.');
                 document.querySelectorAll('#checkout-list button').forEach(function (b) { b.disabled = false; });
@@ -451,7 +471,12 @@
         var notes = document.getElementById('consume-notes').value.trim() || null;
         setBtn('btn-consume', true);
         apiPost('/api/inventory/consume', { itemId: currentItem.id, quantity: qty, notes: notes })
-            .then(function () { showActionAlert('Consumed ' + qty + ' unit(s).', 'success'); refreshCurrentItem(); })
+            .then(function () {
+                showActionAlert('Consumed ' + qty + ' unit(s).', 'success');
+                _scannerDidAction = true;
+                if (typeof loadAvailableItems === 'function') loadAvailableItems();
+                refreshCurrentItem();
+            })
             .catch(function (msg) { showActionAlert(msg || 'Consume failed.'); })
             .finally(function () { setBtn('btn-consume', false); });
     };
@@ -462,7 +487,12 @@
         var notes = document.getElementById('restock-notes').value.trim() || null;
         setBtn('btn-restock', true);
         apiPost('/api/inventory/restock', { itemId: currentItem.id, quantity: qty, notes: notes })
-            .then(function () { showActionAlert('Restocked ' + qty + ' unit(s).', 'success'); refreshCurrentItem(); })
+            .then(function () {
+                showActionAlert('Restocked ' + qty + ' unit(s).', 'success');
+                _scannerDidAction = true;
+                if (typeof loadAvailableItems === 'function') loadAvailableItems();
+                refreshCurrentItem();
+            })
             .catch(function (msg) { showActionAlert(msg || 'Restock failed.'); })
             .finally(function () { setBtn('btn-restock', false); });
     };

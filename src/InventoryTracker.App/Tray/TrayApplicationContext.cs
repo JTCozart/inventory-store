@@ -36,7 +36,7 @@ public class TrayApplicationContext : ApplicationContext
         var icon = new NotifyIcon
         {
             Icon = SystemIcons.Application,
-            Text = $"Inventory Tracker — {localIp}:{Port}",
+            Text = $"Inventory Store - {localIp}:{Port}",
             Visible = true,
             ContextMenuStrip = CreateContextMenu(localIp)
         };
@@ -49,7 +49,7 @@ public class TrayApplicationContext : ApplicationContext
     {
         var menu = new ContextMenuStrip();
 
-        menu.Items.Add("Open Inventory Tracker", null, (_, _) => OpenBrowser());
+        menu.Items.Add("Open Inventory Store", null, (_, _) => OpenBrowser());
         menu.Items.Add(new ToolStripSeparator());
 
         var networkItem = new ToolStripMenuItem($"Network: http://{localIp}:{Port}") { Enabled = false };
@@ -77,14 +77,14 @@ public class TrayApplicationContext : ApplicationContext
                     _tunnelUrlItem.Enabled = true;
                     _tunnelUrlItem.Click  -= CopyTunnelUrl;
                     _tunnelUrlItem.Click  += CopyTunnelUrl;
-                    _notifyIcon.Text = $"Inventory Tracker — Tunnel active";
+                    _notifyIcon.Text = $"Inventory Store - Tunnel active";
                     _notifyIcon.ShowBalloonTip(4000, "Tunnel Active",
                         $"Remote access: {_tunnel.PublicUrl}", ToolTipIcon.Info);
                     break;
                 case TunnelService.TunnelState.Stopped:
                     _tunnelUrlItem.Text    = "Tunnel: not running";
                     _tunnelUrlItem.Enabled = false;
-                    _notifyIcon.Text = $"Inventory Tracker — {NetworkUtility.GetLocalIpAddress()}:{Port}";
+                    _notifyIcon.Text = $"Inventory Store - {NetworkUtility.GetLocalIpAddress()}:{Port}";
                     break;
                 case TunnelService.TunnelState.Downloading:
                     _tunnelUrlItem.Text    = "Tunnel: downloading cloudflared…";
@@ -124,7 +124,7 @@ public class TrayApplicationContext : ApplicationContext
         {
             MessageBox.Show(
                 $"Could not open browser.\r\nLocal: http://localhost:{Port}\r\nNetwork: http://{NetworkUtility.GetLocalIpAddress()}:{Port}",
-                "Inventory Tracker", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                "Inventory Store", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
     }
 

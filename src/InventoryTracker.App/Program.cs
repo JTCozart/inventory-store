@@ -82,6 +82,9 @@ internal class Program
         services.AddInfrastructure($"Data Source={dbPath}");
         services.AddRazorPages();
         services.AddHttpContextAccessor();
+        services.AddHttpClient("ntfy");
+        services.AddScoped<InventoryTracker.Application.Interfaces.Services.INtfyService,
+                           InventoryTracker.App.Services.NtfyService>();
 
         services.AddSingleton<TunnelService>();
         services.AddSingleton<UpdateInfo>();
@@ -370,6 +373,18 @@ internal class Program
                     return Results.BadRequest(new { error = "Name is required." });
                 var client = await svc.QuickCreateAsync(body.Name);
                 return Results.Ok(client);
+            });
+
+            endpoints.MapGet("/api/clients/{id:int}/history", [Authorize] async (int id, ICheckoutService svc) =>
+            {
+                var history = await svc.GetClientHistoryAsync(id);
+                return Results.Ok(history);
+            });
+
+            endpoints.MapPost("/api/ntfy/test", [Authorize(Roles = "Admin")] async (INtfyService ntfy) =>
+            {
+                var (ok, code) = await ntfy.SendTestAsync();
+                return Results.Ok(new { ok, code });
             });
         });
 

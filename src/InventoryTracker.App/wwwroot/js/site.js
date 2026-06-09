@@ -1,3 +1,27 @@
+// ── Shared utilities ─────────────────────────────────────────────────────────
+
+window.escHtml = function(s) {
+    return s == null ? '' : String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+};
+
+window.showToast = function(msg, type) {
+    var container = document.getElementById('toast-container');
+    if (!container) return;
+    var el = document.createElement('div');
+    el.className = 'toast align-items-center text-bg-' + (type || 'success') + ' border-0';
+    el.setAttribute('role', 'alert');
+    el.innerHTML = '<div class="d-flex"><div class="toast-body">' + escHtml(msg) + '</div>' +
+        '<button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button></div>';
+    container.appendChild(el);
+    var bsToast = new bootstrap.Toast(el, { delay: 3500 });
+    bsToast.show();
+    el.addEventListener('hidden.bs.toast', function() { el.remove(); });
+};
+
+window.showFlashToast = function(msg, type) {
+    try { sessionStorage.setItem('_flash', JSON.stringify({ msg: msg, type: type || 'success' })); } catch {}
+};
+
 // ── Dark mode ────────────────────────────────────────────────────────────────
 
 window.quickScan = function () {
@@ -22,13 +46,22 @@ window.toggleTheme = function () {
 };
 
 function applyThemeButton(theme) {
+    var cls = theme === 'dark' ? 'bi bi-sun' : 'bi bi-moon';
     var icon = document.getElementById('theme-icon');
-    if (icon) icon.className = theme === 'dark' ? 'bi bi-sun' : 'bi bi-moon';
+    if (icon) icon.className = cls;
+    var mobileIcon = document.getElementById('mobile-theme-icon');
+    if (mobileIcon) mobileIcon.className = cls;
 }
 
 // ── Bootstrap DOMContentLoaded ────────────────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', function () {
+    // Show any queued flash toast from a previous page action
+    try {
+        var flash = sessionStorage.getItem('_flash');
+        if (flash) { sessionStorage.removeItem('_flash'); var f = JSON.parse(flash); showToast(f.msg, f.type); }
+    } catch {}
+
     // Sync toggle button with current theme
     applyThemeButton(document.documentElement.getAttribute('data-bs-theme') || 'light');
 

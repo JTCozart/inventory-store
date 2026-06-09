@@ -14,4 +14,5 @@ public interface ICheckoutService
     Task RestockAsync(RestockItemDto dto, int userId, string username);
     Task<IEnumerable<CheckoutRecordDto>> GetAllActiveCheckoutsAsync();
     Task<IEnumerable<CheckoutRecordDto>> GetCheckoutHistoryAsync(int inventoryItemId);
+    Task<IEnumerable<CheckoutRecordDto>> GetClientHistoryAsync(int clientId);
 }

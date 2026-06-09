@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 using InventoryTracker.Application.Interfaces.Services;
 using Microsoft.AspNetCore.Authentication;
+
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -11,15 +12,17 @@ namespace InventoryTracker.App.Pages.Auth;
 public class LoginModel : PageModel
 {
     private readonly IUserAuthService _authService;
+    private readonly INtfyService _ntfy;
 
     [BindProperty]
     public LoginInputModel Input { get; set; } = new();
 
     public string? ErrorMessage { get; set; }
 
-    public LoginModel(IUserAuthService authService)
+    public LoginModel(IUserAuthService authService, INtfyService ntfy)
     {
         _authService = authService;
+        _ntfy        = ntfy;
     }
 
     public IActionResult OnGet()
@@ -50,6 +53,7 @@ public class LoginModel : PageModel
         var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
         await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity));
 
+        _ = _ntfy.NotifyLoginAsync(user.DisplayName);
         return new OkResult();
     }
 

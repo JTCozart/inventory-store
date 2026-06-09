@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
         _detailModal = new bootstrap.Modal(el);
         _canWrite = el.dataset.canWrite === '1';
         el.addEventListener('hidden.bs.modal', () => {
-            if (_needsReload) location.reload();
+            if (_needsReload) { showFlashToast('Changes saved.'); location.reload(); }
         });
     }
 });
@@ -276,13 +276,13 @@ async function handleConsume() {
     }
 }
 
-async function handleRestock() {
-    const qty   = parseInt(document.getElementById('consume-qty').value) || 1;
-    const notes = document.getElementById('consume-notes').value.trim();
+async function handleRestock(suffix) {
+    const qty   = parseInt(document.getElementById(`restock-qty-${suffix}`).value) || 1;
+    const notes = document.getElementById(`restock-notes-${suffix}`).value.trim();
     const res = await apiPost('RestockItem', { itemId: _currentItemId, quantity: qty, notes });
     if (res.success) {
-        document.getElementById('consume-notes').value = '';
-        document.getElementById('consume-qty').value = '1';
+        document.getElementById(`restock-notes-${suffix}`).value = '';
+        document.getElementById(`restock-qty-${suffix}`).value = '1';
         showAlert('modal-alert', `Restocked ${qty}.`, 'success');
         _needsReload = true;
         await refreshModal();

@@ -12,4 +12,5 @@ public interface ICheckoutRepository
     Task<IEnumerable<CheckoutRecord>> GetAllByItemAsync(int inventoryItemId);
     Task<IEnumerable<CheckoutRecord>> GetAllActiveAsync();
     Task<IEnumerable<CheckoutRecord>> GetAllLostAsync();
+    Task<IEnumerable<CheckoutRecord>> GetByClientIdAsync(int clientId);
 }

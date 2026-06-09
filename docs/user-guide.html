@@ -3,10 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>User Guide | Inventory Tracker</title>
-  <meta name="description" content="Complete user guide for Inventory Tracker - item management, checkout tracking, categories, expiry dates, CSV import/export, remote access, public view, dark mode, database backup/restore, and more." />
+  <title>User Guide | Inventory Store</title>
+  <meta name="description" content="Complete user guide for Inventory Store - item management, checkout tracking, client history, push notifications via ntfy, categories, expiry dates, CSV import/export, remote access, public view, dark mode, database backup/restore, and more." />
   <meta name="robots" content="index, follow" />
   <link rel="canonical" href="https://jtcozart.github.io/inventory-tracker/user-guide.html" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="preconnect" href="https://cdnjs.cloudflare.com" />
@@ -183,8 +184,8 @@
 
 <nav>
   <a class="nav-brand" href="index.html">
-    <div class="it-badge">IT</div>
-    Inventory Tracker
+    <div class="it-badge">IS</div>
+    Inventory Store
   </a>
   <div class="nav-links">
     <a href="index.html#features">Features</a>
@@ -242,6 +243,7 @@
       <li><a href="#manage-locations">Managing Locations</a></li>
       <li><a href="#remote-access">Remote Access</a></li>
       <li><a href="#public-view">Public View</a></li>
+      <li><a href="#notifications">Push Notifications</a></li>
       <li><a href="#dark-mode">Dark Mode</a></li>
       <li><a href="#database">Database Backup</a></li>
       <li><a href="#updates">Updates</a></li>
@@ -258,13 +260,13 @@
 
     <div class="content-hero">
       <h1>User Guide</h1>
-      <p>Everything you need to know about using Inventory Tracker day to day.</p>
+      <p>Everything you need to know about using Inventory Store day to day.</p>
     </div>
 
     <section id="installation">
       <h2><i class="fa-solid fa-download"></i> Installation</h2>
       <ol>
-        <li>Download <code>InventoryTracker-Setup-&lt;version&gt;.exe</code> from the <a href="https://github.com/JTCozart/inventory-tracker/releases/latest" target="_blank">latest release</a>.</li>
+        <li>Download <code>InventoryStore-Setup-&lt;version&gt;.exe</code> from the <a href="https://github.com/JTCozart/inventory-tracker/releases/latest" target="_blank">latest release</a>.</li>
         <li>Run the installer as <strong>Administrator</strong>.</li>
         <li>The installer will set everything up automatically and launch the app.</li>
       </ol>
@@ -297,6 +299,7 @@
         <tr><td><strong>Low Stock</strong></td><td>Number of items at or below their minimum quantity threshold</td></tr>
         <tr><td><strong>Checked Out</strong></td><td>Total units of reusable items currently checked out</td></tr>
       </table>
+      <p>The <strong>Low Stock</strong> and <strong>Checked Out</strong> cards are clickable - click either one to jump straight to the matching report.</p>
 
       <h3>Available to Checkout panel</h3>
       <p>At the top of the dashboard, above the other panels, is the <strong>Available to Checkout</strong> panel. It lists all reusable items that currently have units available. Use the filter box to search by name, category, or location. Use the page size dropdown and arrows at the bottom right to page through the list. Click <strong>Checkout</strong> on any row to open the scan dialog pre-loaded with that item so you can check it out right away.</p>
@@ -310,7 +313,7 @@
         <tr><td><strong>Lost Items</strong></td><td>Items that have been marked lost, with the last person who had them and the date.</td></tr>
         <tr><td><strong>Recent Activity</strong></td><td>The 10 most recent actions taken by any user: checkouts, check-ins, edits, imports, and more.</td></tr>
       </table>
-      <p>Click any item name in the panels to open its detail panel directly.</p>
+      <p>Click any row in the Checked Out panel to open that item's detail screen directly, where you can check it back in right away.</p>
 
       <h3>Quick scan</h3>
       <p>At the top right of the Dashboard there is a SKU field and a <strong>Scan</strong> button. Type a SKU or item name and press Enter, or click <strong>Scan</strong> to open the camera. Once an item is found you can check it out, check it in, consume, or restock it without leaving the Dashboard.</p>
@@ -324,11 +327,11 @@
       <p>Use the search box to find items by name, SKU, location, or category. Select a category from the dropdown next to the search box to narrow the list to a single category. Both filters can be active at the same time. When any filter is active, a clear button (X) appears to reset in one click.</p>
 
       <h3>The item table</h3>
-      <p>Each row shows the item's name, type, category, SKU, location, total quantity, available quantity, minimum quantity, expiry date, and status badge. On smaller screens some columns are hidden to fit the layout.</p>
-      <p>Click any row to open the <strong>item detail panel</strong>, a slide-in panel that shows full details and lets you perform actions (check out, check in, consume, restock) without navigating away.</p>
+      <p>Each row shows the item's name, type, category, SKU, location, total quantity, available quantity, minimum quantity, expiry date, and status badge. On smaller screens some columns are hidden to fit the layout. Start typing in the search box and the list filters instantly - no need to press Enter or click a button.</p>
+      <p>Click any row to open the <strong>item detail screen</strong>, which shows full details and lets you check out, check in, consume, or restock the item without navigating away from the list.</p>
 
       <h3>Adding and importing items</h3>
-      <p>Admin and Manager users see an <strong>Add Item</strong> button and an <strong>Import</strong> button at the top right. Add Item opens the create form. Import opens the CSV import dialog.</p>
+      <p>Admin and Manager users see an <strong>Add Item</strong> button and an <strong>Import</strong> button at the top right. Add Item opens a form to fill in. Import opens the CSV import screen.</p>
 
       <h3>Deleting items</h3>
       <p>Each row has a trash icon at the right. Click it and confirm to permanently delete the item. Requires Admin or Manager role.</p>
@@ -359,7 +362,7 @@
       <h3>Assigning a category</h3>
       <p>Select a category from the <strong>Category</strong> dropdown when creating or editing an item. Choose <em>None</em> to leave an item uncategorized.</p>
       <h3>Creating a category while adding an item</h3>
-      <p>On the <strong>Add Item</strong> form, click the <strong>+</strong> button next to the Category dropdown. An inline form appears where you can enter a name and pick a color. Click <strong>Create</strong> - the new category is added to the dropdown and selected automatically. No need to leave the page.</p>
+      <p>On the <strong>Add Item</strong> form, click the <strong>+</strong> button next to the Category dropdown. A small form appears right there where you can enter a name and pick a color. Click <strong>Create</strong> - the new category is added to the dropdown and selected automatically. No need to leave the page.</p>
       <h3>Filtering by category</h3>
       <p>On the Inventory page, use the <strong>All Categories</strong> dropdown in the search bar to filter the list to a single category. When a filter is active the item count below the table changes to <em>Showing X of Y items</em> with a <strong>Clear filters</strong> link to reset in one click.</p>
       <div class="callout">
@@ -396,8 +399,8 @@
 
     <section id="editing-items">
       <h2><i class="fa-solid fa-pencil"></i> Editing Items</h2>
-      <p>Click an item row in the inventory list to open the <strong>detail panel</strong>, then click the <strong>Edit</strong> button (pencil icon). An edit form slides in over the current page - you never leave the inventory list. All fields except Item Type can be changed. Requires Admin or Manager role.</p>
-      <p>The edit form includes Name, Quantity, Minimum Quantity, SKU, Location, Category, Expiry Date, Scan Warning, and Description. After saving, the detail panel refreshes automatically to show the updated information.</p>
+      <p>Click any item row to open its detail screen, then click the <strong>Edit</strong> button (pencil icon). An edit form opens over the current page - you never leave the inventory list. All fields except Item Type can be changed. Requires Admin or Manager role.</p>
+      <p>The edit form includes Name, Quantity, Minimum Quantity, SKU, Location, Category, Expiry Date, Scan Warning, and Description. After saving, the detail screen refreshes automatically to show the updated information.</p>
       <h3>Deleting items</h3>
       <p>Click the trash icon on the item row and confirm. Deletion is permanent. Requires Admin or Manager role.</p>
     </section>
@@ -427,6 +430,15 @@
       <h3>Viewing clients</h3>
       <p>Click <strong>Clients</strong> in the top navigation bar. The list shows each client's name, phone number, and date of birth. Use the search box to find someone by name or phone. Click any row to see their full details.</p>
 
+      <h3>Viewing a client's checkout history</h3>
+      <p>Click any client row to open their contact card. Below the contact details (phone, email, address, etc.) you will see a <strong>Checkout History</strong> section listing every item that client has ever borrowed. Each row shows the item name, the date it was checked out, and its current status:</p>
+      <ul>
+        <li><span class="badge-demo badge-green">Active</span> - still checked out</li>
+        <li><span class="badge-demo badge-gray">Returned</span> - checked back in</li>
+        <li><span class="badge-demo badge-red">Lost</span> - marked as lost</li>
+      </ul>
+      <p>If a client has never borrowed anything, the history section is not shown.</p>
+
       <h3>Adding a client</h3>
       <p>Click <strong>Add Client</strong> (Admin or Manager only). Fill in at least the first name, then optionally add a last name, phone, date of birth, address, and notes. Click <strong>Save</strong>.</p>
 
@@ -442,43 +454,47 @@
 
     <section id="checkout">
       <h2><i class="fa-solid fa-box-arrow-up"></i> Check Out &amp; Check In</h2>
-      <p>Reusable items support check-out and check-in workflows. Requires Admin or Manager role. Viewers can open the item detail panel and see the Active Checkouts list (who has what, for how long) but cannot check out, check in, or mark items lost.</p>
+      <p>Reusable items support check-out and check-in workflows. Requires Admin or Manager role. Viewers can open an item's detail screen and see the Active Checkouts list (who has what, for how long) but cannot check out, check in, or mark items lost.</p>
       <h3>Checking out</h3>
       <ol>
-        <li>Click an item row to open the detail panel</li>
-        <li>In the <strong>Check Out</strong> section, type a name in the <strong>Client</strong> field. Matching clients from your client list appear as you type. Select one, or select <strong>Create "[name]"</strong> to add a new client on the spot.</li>
+        <li>Click any item row to open its detail screen</li>
+        <li>In the <strong>Check Out</strong> section, type a name in the <strong>Client</strong> field. Matching clients from your list appear as you type - select one, or pick <strong>Create "[name]"</strong> to add a new client on the spot</li>
         <li>Set the quantity (default 1) and optional notes</li>
         <li>Click <strong>Check Out</strong></li>
       </ol>
       <div class="callout">
         <i class="fa-solid fa-circle-info"></i>
-        A client name is required to check out an item. If the person is not in your client list yet, just type their name and choose <strong>Create "[name]"</strong> from the dropdown.
+        A client name is required to check out an item. If the person is not in your client list yet, just type their name and choose <strong>Create "[name]"</strong> from the suggestions.
       </div>
-      <p>The item's Available Quantity decreases immediately. The checkout record appears in <strong>Active Checkouts</strong> within the detail panel, showing the person's name and how many days the item has been out.</p>
+      <p>The item's Available Quantity decreases immediately. The checkout appears under <strong>Active Checkouts</strong> in the detail screen, showing the person's name and how many days the item has been out.</p>
       <h3>Checking in</h3>
       <ol>
-        <li>Open the item detail panel</li>
+        <li>Click the item row to open its detail screen</li>
         <li>Under <strong>Active Checkouts</strong>, find the record</li>
         <li>Click <strong>Check In</strong></li>
       </ol>
+      <div class="callout">
+        <i class="fa-solid fa-circle-info"></i>
+        You can also check items in directly from the <strong>Checked Out</strong> panel on the Dashboard - click any row there to go straight to that item's detail screen.
+      </div>
       <h3>Marking as lost</h3>
       <p>If an item is not returned, click <strong>Mark Lost</strong> on the checkout record. The quantity is removed from the available count and appears in the Lost Items report.</p>
       <h3>Marking a lost item as found</h3>
-      <p>If a previously lost item turns up, open the item's detail panel. A <strong>Lost Items</strong> section appears below Active Checkouts, showing each lost record. Click <strong>Mark Found</strong> on the record - the quantity is restored to available stock and the record is removed from the Lost Items report.</p>
+      <p>If a previously lost item turns up, open the item's detail screen. A <strong>Lost Items</strong> section appears below Active Checkouts, showing each lost record. Click <strong>Mark Found</strong> - the quantity is restored to available stock and the record is removed from the Lost Items report.</p>
     </section>
 
     <section id="consumables">
       <h2><i class="fa-solid fa-box"></i> Consumables</h2>
-      <p>Consumable items track stock levels using Consume and Restock operations. Requires Admin or Manager role - Viewers can see quantities but the Consume and Restock controls are not shown to them.</p>
+      <p>Consumable items track stock levels using Consume and Restock operations. Requires Admin or Manager role - Viewers can see quantities but the Consume and Restock buttons are not shown to them.</p>
       <h3>Consuming stock</h3>
       <ol>
-        <li>Click the item row to open the detail panel</li>
+        <li>Click the item row to open its detail screen</li>
         <li>Under <strong>Consume</strong>, enter the quantity used and optional notes</li>
         <li>Click <strong>Consume</strong></li>
       </ol>
       <h3>Restocking</h3>
       <ol>
-        <li>Click the item row to open the detail panel</li>
+        <li>Click the item row to open its detail screen</li>
         <li>Under <strong>Restock</strong>, enter the quantity added and optional notes</li>
         <li>Click <strong>Restock</strong></li>
       </ol>
@@ -489,7 +505,7 @@
       <h2><i class="fa-solid fa-camera"></i> Barcode Scanning</h2>
       <p>Any device with a camera can scan barcodes to quickly look up and action items - no app install required. Access the web UI from any device on the same network (or via a tunnel for remote access).</p>
       <h3>Quick scan from anywhere</h3>
-      <p>Click the <strong>barcode icon</strong> in the top navigation bar to open the scanner from any page. At the top of the dialog there are two search modes:</p>
+      <p>Click the <strong>barcode icon</strong> in the top navigation bar to open the scanner from any page. At the top of the scanner screen there are two search modes:</p>
       <ul>
         <li><strong>SKU / Barcode</strong> - type or scan a barcode. If no exact match is found the app automatically searches by name and shows the closest results.</li>
         <li><strong>Name</strong> - type part of an item name. All matching items are shown so you can pick the right one.</li>
@@ -497,7 +513,7 @@
       <p>If multiple items match, a list appears. Click any result to load that item. Once an item is loaded you can check it out, check it in, consume, or restock it without navigating away.</p>
 
       <h3>Adding an item from the scanner</h3>
-      <p>If no item is found, an <strong>Add Item</strong> button appears (Admin and Manager only). Click it to fill in a quick form right inside the dialog: name, type (Reusable or Consumable), quantity, and optional location. Click <strong>Add &amp; Continue</strong> to create the item and load it immediately. If you scanned a barcode, the SKU is attached to the new item automatically.</p>
+      <p>If no item is found, an <strong>Add Item</strong> button appears (Admin and Manager only). Click it to fill in a quick form right inside the scanner: name, type (Reusable or Consumable), quantity, and optional location. Click <strong>Add &amp; Continue</strong> to create the item and load it immediately. If you scanned a barcode, the SKU is attached to the new item automatically.</p>
       <p>If you searched by name and got multiple results, an <strong>Add New Item Instead</strong> button appears at the bottom of the results list if you want to create a brand new item rather than picking an existing one.</p>
 
       <h3>Scanning in the inventory list</h3>
@@ -678,9 +694,52 @@
       </table>
     </section>
 
+    <section id="notifications">
+      <h2><i class="fa-solid fa-bell"></i> Push Notifications</h2>
+      <p>Inventory Store can send instant push notifications to your phone whenever something important happens - an item is checked out, stock runs low, or someone logs in. Notifications are sent through <a href="https://ntfy.sh" target="_blank" rel="noopener">ntfy</a>, a free and open-source service.</p>
+      <p>Go to <strong>Settings → Notifications</strong> (Admin only) to configure this feature.</p>
+
+      <h3>How ntfy works</h3>
+      <p>ntfy is a simple push notification service. You create a private "topic" (think of it like a private channel name), and anyone subscribed to that topic receives the messages sent to it. The free tier at <a href="https://ntfy.sh" target="_blank" rel="noopener">ntfy.sh</a> works for most teams, or you can run your own ntfy server if you prefer to keep everything self-hosted.</p>
+      <ol>
+        <li>Install the <strong>ntfy app</strong> on your phone (available for iOS and Android - search "ntfy" in your app store)</li>
+        <li>In the app, subscribe to a topic of your choosing (e.g. <code>my-inventory-alerts</code>). Use a name that others are unlikely to guess to keep your alerts private</li>
+        <li>In Inventory Store, go to <strong>Settings → Notifications</strong> and enter the same topic name</li>
+      </ol>
+      <div class="callout">
+        <i class="fa-solid fa-circle-info"></i>
+        If you want your notifications to be private, use a long or hard-to-guess topic name - anyone who knows your topic name can read your notifications on the public ntfy.sh service. Alternatively, set up a free <a href="https://ntfy.sh/app" target="_blank" rel="noopener">ntfy account</a> and use an auth token to lock it down.
+      </div>
+
+      <h3>Setting up notifications</h3>
+      <table>
+        <tr><th>Field</th><th>Notes</th></tr>
+        <tr><td><strong>Server URL</strong></td><td>Leave as <code>https://ntfy.sh</code> unless you run your own ntfy server</td></tr>
+        <tr><td><strong>Topic</strong></td><td>Your private channel name - must match what you subscribed to in the ntfy app. Leave blank to disable all notifications.</td></tr>
+        <tr><td><strong>Auth Token</strong></td><td>Optional. If you have a paid ntfy account or a self-hosted server with access control, paste your token here to authenticate. Leave blank for the free public service.</td></tr>
+      </table>
+
+      <h3>Choosing which events send a notification</h3>
+      <p>Each event has its own on/off switch. Turn on only the ones that matter to you:</p>
+      <table>
+        <tr><th>Event</th><th>When it fires</th></tr>
+        <tr><td><strong>Item checked out</strong></td><td>Any time a reusable item is checked out to someone</td></tr>
+        <tr><td><strong>Item returned</strong></td><td>Any time a checked-out item is returned</td></tr>
+        <tr><td><strong>Item marked lost</strong></td><td>Any time a checkout record is marked as lost</td></tr>
+        <tr><td><strong>Low stock alert</strong></td><td>After a consumable item is used and the quantity falls to or below the minimum level</td></tr>
+        <tr><td><strong>User login</strong></td><td>Any time any user logs into the app</td></tr>
+      </table>
+
+      <h3>Testing your setup</h3>
+      <p>After filling in the Server URL and Topic, click <strong>Save</strong>, then click <strong>Send Test</strong>. A test notification is sent immediately. If you see it on your phone, everything is working. The result (HTTP status) is shown next to the button so you can diagnose any issues.</p>
+
+      <h3>Clearing your token</h3>
+      <p>If you need to remove a saved auth token, click <strong>Clear token</strong> next to the token field. The token is deleted and future notifications are sent without authentication.</p>
+    </section>
+
     <section id="dark-mode">
       <h2><i class="fa-solid fa-moon"></i> Dark Mode</h2>
-      <p>Inventory Tracker includes a built-in dark theme. Click the <strong>moon icon</strong> in the top navigation bar (to the left of your username) to switch to dark mode. Click the <strong>sun icon</strong> to return to light mode.</p>
+      <p>Inventory Store includes a built-in dark theme. Click the <strong>moon icon</strong> in the top navigation bar (to the left of your username) to switch to dark mode. Click the <strong>sun icon</strong> to return to light mode.</p>
       <p>If your operating system is set to dark mode and you have not chosen a preference in the app, the app (including the login page) will automatically follow your system setting.</p>
       <p>Your preference is remembered per device and persists across sessions. Changing the theme on one device does not affect other devices or other users.</p>
       <div class="callout">
@@ -715,7 +774,7 @@
 
     <section id="updates">
       <h2><i class="fa-solid fa-arrow-up-circle"></i> Updates</h2>
-      <p>Inventory Tracker checks for new releases on GitHub automatically in the background. When an update is available you will see a notice without needing to do anything.</p>
+      <p>Inventory Store checks for new releases on GitHub automatically in the background. When an update is available you will see a notice without needing to do anything.</p>
       <p>When a newer version is available, a small notice appears <strong>above the logout button</strong> in the sidebar with the new version number and a link to the GitHub release. The notice persists until the app is updated - it does not need to be dismissed.</p>
       <p>To trigger an immediate check, go to <strong>Settings → App Info</strong> and click <strong>Check for Updates</strong>. The result appears inline - either a version badge linking to the release page or a confirmation that the current version is up to date.</p>
       <p>To update, download and run the new installer. It upgrades and restarts automatically, typically in under 30 seconds.</p>
@@ -727,12 +786,12 @@
       <p>The tray icon sits in the Windows system tray and provides quick access to common actions.</p>
       <table>
         <tr><th>Action</th><th>What it does</th></tr>
-        <tr><td>Double-click icon</td><td>Open Inventory Tracker in your default browser</td></tr>
-        <tr><td>Open Inventory Tracker</td><td>Open Inventory Tracker in your browser</td></tr>
+        <tr><td>Double-click icon</td><td>Open Inventory Store in your default browser</td></tr>
+        <tr><td>Open Inventory Store</td><td>Open Inventory Store in your browser</td></tr>
         <tr><td>Local: http://...</td><td>Shows your local network address. Click to copy.</td></tr>
         <tr><td>Tunnel: ...</td><td>Shows the active tunnel URL. Click to copy.</td></tr>
         <tr><td>Reset Admin Password</td><td>Reset the admin password without logging in. Useful if you are locked out.</td></tr>
-        <tr><td>Exit</td><td>Close the tray icon. Inventory Tracker keeps running and stays accessible.</td></tr>
+        <tr><td>Exit</td><td>Close the tray icon. Inventory Store keeps running and stays accessible.</td></tr>
       </table>
     </section>
 
@@ -749,6 +808,7 @@
         <tr><td>Manage categories &amp; locations</td><td>✓</td><td>✓</td><td></td></tr>
         <tr><td>Manage users</td><td>✓</td><td></td><td></td></tr>
         <tr><td>Configure remote access</td><td>✓</td><td></td><td></td></tr>
+        <tr><td>Configure push notifications</td><td>✓</td><td></td><td></td></tr>
         <tr><td>Enable / disable public view</td><td>✓</td><td></td><td></td></tr>
         <tr><td>Toggle item visibility in public view</td><td>✓</td><td>✓</td><td></td></tr>
         <tr><td>Database backup &amp; restore</td><td>✓</td><td></td><td></td></tr>
@@ -778,8 +838,8 @@
 <footer>
   <div>
     <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.25rem">
-      <div class="it-badge" style="width:24px;height:24px;font-size:.65rem;border-radius:5px">IT</div>
-      <strong style="color:#0f172a">Inventory Tracker</strong>
+      <div class="it-badge" style="width:24px;height:24px;font-size:.65rem;border-radius:5px">IS</div>
+      <strong style="color:#0f172a">Inventory Store</strong>
     </div>
     <span>MIT License &middot; &copy; 2026 Jake Cozart</span>
   </div>

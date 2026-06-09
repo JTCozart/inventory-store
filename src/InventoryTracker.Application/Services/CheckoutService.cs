@@ -12,6 +12,7 @@ public class CheckoutService : ICheckoutService
     private readonly IInventoryRepository _inventoryRepo;
     private readonly ICheckoutRepository _checkoutRepo;
     private readonly IActivityLogRepository _activityRepo;
+    private readonly INtfyService _ntfy;
 
     private static readonly ConcurrentDictionary<int, SemaphoreSlim> _itemLocks = new();
 
@@ -21,11 +22,13 @@ public class CheckoutService : ICheckoutService
     public CheckoutService(
         IInventoryRepository inventoryRepo,
         ICheckoutRepository checkoutRepo,
-        IActivityLogRepository activityRepo)
+        IActivityLogRepository activityRepo,
+        INtfyService ntfy)
     {
         _inventoryRepo = inventoryRepo;
         _checkoutRepo  = checkoutRepo;
         _activityRepo  = activityRepo;
+        _ntfy          = ntfy;
     }
 
     public async Task<ItemStatusDto> GetItemStatusAsync(int inventoryItemId)
@@ -81,6 +84,7 @@ public class CheckoutService : ICheckoutService
                 Details = $"'{dto.CheckedOutBy}' checked out {dto.Quantity}x '{item.Name}'"
             });
 
+            _ = _ntfy.NotifyCheckoutAsync(item.Name, dto.CheckedOutBy, null);
             return MapRecord(created, item.Name);
         }
         finally
@@ -121,6 +125,7 @@ public class CheckoutService : ICheckoutService
             Details = $"'{record.CheckedOutBy}' checked in {record.Quantity}x '{item.Name}'"
         });
 
+        _ = _ntfy.NotifyCheckinAsync(item.Name, record.CheckedOutBy);
         return MapRecord(record, item.Name);
     }
 
@@ -155,6 +160,7 @@ public class CheckoutService : ICheckoutService
             Details = $"{record.Quantity}x '{item.Name}' marked as lost (checked out by '{record.CheckedOutBy}')"
         });
 
+        _ = _ntfy.NotifyLostAsync(item.Name, record.CheckedOutBy);
         return MapRecord(record, item.Name);
     }
 
@@ -219,6 +225,9 @@ public class CheckoutService : ICheckoutService
                 Details = $"Consumed {dto.Quantity}x '{item.Name}'"
                           + (dto.Notes is not null ? $": {dto.Notes}" : "")
             });
+
+            if (consumable.IsLowStock)
+                _ = _ntfy.NotifyLowStockAsync(item.Name, consumable.Quantity, consumable.MinimumQuantity);
         }
         finally
         {
@@ -267,11 +276,33 @@ public class CheckoutService : ICheckoutService
         return records.Select(r => MapRecord(r, item.Name));
     }
 
+    public async Task<IEnumerable<CheckoutRecordDto>> GetClientHistoryAsync(int clientId)
+    {
+        var records = (await _checkoutRepo.GetByClientIdAsync(clientId)).ToList();
+        var itemCache = new Dictionary<int, string>();
+        var result = new List<CheckoutRecordDto>(records.Count);
+        foreach (var r in records)
+        {
+            if (!itemCache.TryGetValue(r.InventoryItemId, out var name))
+            {
+                var item = await _inventoryRepo.GetByIdAsync(r.InventoryItemId);
+                name = item?.Name ?? "Unknown";
+                itemCache[r.InventoryItemId] = name;
+            }
+            result.Add(MapRecord(r, name));
+        }
+        return result;
+    }
+
     private async Task<ItemStatusDto> BuildStatusDtoAsync(InventoryItem item)
     {
-        IEnumerable<CheckoutRecord> active = item is ReusableItem
-            ? await _checkoutRepo.GetActiveByItemAsync(item.Id)
-            : [];
+        IEnumerable<CheckoutRecord> active = [];
+        IEnumerable<CheckoutRecord> lostRecords = [];
+        if (item is ReusableItem)
+        {
+            active      = await _checkoutRepo.GetActiveByItemAsync(item.Id);
+            lostRecords = await _checkoutRepo.GetLostByItemAsync(item.Id);
+        }
 
         var (itemType, checkedOut, lost) = item switch
         {
@@ -285,7 +316,8 @@ public class CheckoutService : ICheckoutService
             itemType, item.Quantity, item.AvailableQuantity,
             checkedOut, lost, item.IsLowStock,
             item.MinimumQuantity, item.ScanWarning,
-            active.Select(r => MapRecord(r, item.Name))
+            active.Select(r => MapRecord(r, item.Name)),
+            lostRecords.Select(r => MapRecord(r, item.Name))
         );
     }
 

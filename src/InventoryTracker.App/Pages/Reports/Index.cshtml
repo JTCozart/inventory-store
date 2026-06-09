@@ -173,6 +173,7 @@
                             <th class="d-none d-md-table-cell">Location</th>
                             <th class="d-none d-lg-table-cell">SKU</th>
                             <th>Checked Out By</th>
+                            <th class="d-none d-md-table-cell">Client</th>
                             <th class="text-end d-none d-sm-table-cell">Qty</th>
                             <th class="d-none d-md-table-cell">Date Out</th>
                             <th class="text-end">Days Out</th>
@@ -183,11 +184,12 @@
                         {
                             <tr class="@(row.DaysOut > 7 ? "table-warning" : string.Empty)"
                                 data-overdue="@((row.DaysOut > 7).ToString().ToLower())"
-                                data-search="@row.ItemName @row.CheckedOutBy @(row.ItemLocation ?? "") @(row.SKU ?? "")">
+                                data-search="@row.ItemName @row.CheckedOutBy @(row.ClientName ?? "") @(row.ItemLocation ?? "") @(row.SKU ?? "")">
                                 <td class="fw-semibold">@row.ItemName</td>
                                 <td class="text-muted small d-none d-md-table-cell">@(row.ItemLocation ?? "-")</td>
                                 <td class="text-muted small d-none d-lg-table-cell">@(row.SKU ?? "-")</td>
                                 <td>@row.CheckedOutBy</td>
+                                <td class="text-muted small d-none d-md-table-cell">@(row.ClientName ?? "—")</td>
                                 <td class="text-end d-none d-sm-table-cell">@row.Quantity</td>
                                 <td class="small d-none d-md-table-cell">@row.CheckedOutAt.ToLocalTime().ToString("MMM d, yyyy")</td>
                                 <td class="@(row.DaysOut > 7 ? "text-end text-warning fw-bold" : "text-end")">@row.DaysOut</td>
@@ -228,15 +230,16 @@
             <div class="table-responsive">
                 <table class="table table-sm mb-0" id="lost-table">
                     <thead class="table-light">
-                        <tr><th>Item</th><th>Location</th><th>Last With</th><th class="text-end">Qty</th><th>Date Lost</th></tr>
+                        <tr><th>Item</th><th>Location</th><th>Last With</th><th class="d-none d-md-table-cell">Client</th><th class="text-end">Qty</th><th>Date Lost</th></tr>
                     </thead>
                     <tbody>
                         @foreach (var row in Model.LostItems.Items)
                         {
-                            <tr data-search="@row.ItemName @row.LastCheckedOutBy @(row.ItemLocation ?? "")">
+                            <tr data-search="@row.ItemName @row.LastCheckedOutBy @(row.ClientName ?? "") @(row.ItemLocation ?? "")">
                                 <td class="fw-semibold">@row.ItemName</td>
                                 <td class="text-muted small">@(row.ItemLocation ?? "-")</td>
                                 <td>@row.LastCheckedOutBy</td>
+                                <td class="text-muted small d-none d-md-table-cell">@(row.ClientName ?? "—")</td>
                                 <td class="text-end text-danger fw-bold">@row.Quantity</td>
                                 <td class="small">@row.LostAt.ToLocalTime().ToString("MMM d, yyyy")</td>
                             </tr>
@@ -532,6 +535,41 @@
         return function () { clearTimeout(t); t = setTimeout(fn, ms); };
     }
 
+    var _tab = (new URLSearchParams(window.location.search).get('tab') || 'stock');
+    var _storeKey = 'report-filters-' + _tab;
+
+    function saveFilters() {
+        try {
+            var s = {};
+            ['f-stock-q','f-co-q','f-lost-q','f-inv-q','f-bc-q','f-act-q'].forEach(function(id) {
+                var el = document.getElementById(id); if (el) s[id] = el.value;
+            });
+            ['f-stock-type','f-inv-type','f-inv-location','f-bc-location','f-act-action'].forEach(function(id) {
+                var el = document.getElementById(id); if (el) s[id] = el.value;
+            });
+            ['f-stock-low','f-co-overdue'].forEach(function(id) {
+                var el = document.getElementById(id); if (el) s[id] = el.checked;
+            });
+            sessionStorage.setItem(_storeKey, JSON.stringify(s));
+        } catch {}
+    }
+
+    function restoreFilters() {
+        try {
+            var saved = sessionStorage.getItem(_storeKey);
+            if (!saved) return;
+            var s = JSON.parse(saved);
+            Object.keys(s).forEach(function(id) {
+                var el = document.getElementById(id);
+                if (!el) return;
+                if (typeof s[id] === 'boolean') el.checked = s[id];
+                else el.value = s[id];
+            });
+        } catch {}
+    }
+
+    restoreFilters();
+
     function filterTable(tableId, countId, getFilters) {
         var rows = document.querySelectorAll('#' + tableId + ' tbody tr');
         var visible = 0;
@@ -568,9 +606,10 @@
                     && (!low || row.dataset.low === 'true');
             });
         }
-        stockQ?.addEventListener('input', debounce(applyStock, 150));
-        stockType?.addEventListener('change', applyStock);
-        stockLow?.addEventListener('change', applyStock);
+        function applyStockAndSave() { applyStock(); saveFilters(); }
+        stockQ?.addEventListener('input', debounce(applyStockAndSave, 150));
+        stockType?.addEventListener('change', applyStockAndSave);
+        stockLow?.addEventListener('change', applyStockAndSave);
         applyStock();
     }
 
@@ -586,8 +625,9 @@
                     && (!ov || row.dataset.overdue === 'true');
             });
         }
-        coQ?.addEventListener('input', debounce(applyCheckout, 150));
-        coOverdue?.addEventListener('change', applyCheckout);
+        function applyCheckoutAndSave() { applyCheckout(); saveFilters(); }
+        coQ?.addEventListener('input', debounce(applyCheckoutAndSave, 150));
+        coOverdue?.addEventListener('change', applyCheckoutAndSave);
         applyCheckout();
     }
 
@@ -598,7 +638,7 @@
             var q = lostQ.value.toLowerCase().trim();
             filterTable('lost-table', 'f-lost-count', function (row) { return matches(row, q); });
         }
-        lostQ.addEventListener('input', debounce(applyLost, 150));
+        lostQ.addEventListener('input', debounce(function() { applyLost(); saveFilters(); }, 150));
         applyLost();
     }
 
@@ -617,9 +657,10 @@
                     && (!loc || row.dataset.location === loc);
             });
         }
-        invQ?.addEventListener('input', debounce(applyInventory, 150));
-        invType?.addEventListener('change', applyInventory);
-        invLoc?.addEventListener('change', applyInventory);
+        function applyInventoryAndSave() { applyInventory(); saveFilters(); }
+        invQ?.addEventListener('input', debounce(applyInventoryAndSave, 150));
+        invType?.addEventListener('change', applyInventoryAndSave);
+        invLoc?.addEventListener('change', applyInventoryAndSave);
         applyInventory();
     }
 
@@ -643,8 +684,8 @@
             var countEl = document.getElementById('f-bc-count');
             if (countEl) countEl.textContent = visible + ' of ' + cards.length + ' items';
         }
-        bcQ?.addEventListener('input', debounce(applyBarcodes, 150));
-        bcLoc?.addEventListener('change', applyBarcodes);
+        bcQ?.addEventListener('input', debounce(function() { applyBarcodes(); saveFilters(); }, 150));
+        bcLoc?.addEventListener('change', function() { applyBarcodes(); saveFilters(); });
         applyBarcodes();
     }
 
@@ -660,8 +701,9 @@
                     && (!act || row.dataset.action === act);
             });
         }
-        actQ?.addEventListener('input', debounce(applyActivity, 150));
-        actAction?.addEventListener('change', applyActivity);
+        function applyActivityAndSave() { applyActivity(); saveFilters(); }
+        actQ?.addEventListener('input', debounce(applyActivityAndSave, 150));
+        actAction?.addEventListener('change', applyActivityAndSave);
         applyActivity();
     }
 })();

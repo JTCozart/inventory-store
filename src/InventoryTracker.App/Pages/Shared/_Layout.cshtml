@@ -5,8 +5,10 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - Inventory Tracker</title>
+    <title>@ViewData["Title"] - Inventory Store</title>
     <script>(function(){var t=localStorage.getItem('it-theme');if(t)document.documentElement.setAttribute('data-bs-theme',t);}())</script>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="alternate icon" href="/favicon.ico">
     <link rel="stylesheet" href="~/lib/bootstrap/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/lib/bootstrap-icons/font/bootstrap-icons.min.css" />
     <link rel="stylesheet" href="~/css/site.css" />
@@ -18,7 +20,7 @@
         <header id="topnav">
             <a href="/" class="topnav-brand">
                 <i class="bi bi-box-seam"></i>
-                <span>Inventory</span>
+                <span>Inventory Store</span>
             </a>
             <div id="topnav-links">
                 <a href="/" class="topnav-link @(ViewData["ActivePage"]?.ToString() == "Dashboard" ? "active" : "")">
@@ -91,6 +93,9 @@
             <a href="#" onclick="toggleMobileNav(); quickScan(); return false;">
                 <i class="bi bi-upc-scan"></i> Quick Scan
             </a>
+            <a href="#" onclick="toggleTheme(); return false;">
+                <i id="mobile-theme-icon" class="bi bi-moon"></i> Toggle Theme
+            </a>
         </div>
 
         <div id="content-wrapper">
@@ -98,7 +103,7 @@
                 @RenderBody()
             </main>
             <footer class="py-2 px-4 text-muted small border-top">
-                Inventory Tracker &copy; @DateTime.Now.Year
+                Inventory Store &copy; @DateTime.Now.Year
             </footer>
         </div>
     </div>
@@ -110,6 +115,7 @@ else
     </main>
 }
 
+<div id="toast-container" class="position-fixed bottom-0 end-0 p-3" style="z-index:1200"></div>
 <script src="~/lib/bootstrap/js/bootstrap.bundle.min.js"></script>
 <script src="~/js/site.js"></script>
 @if (User.Identity?.IsAuthenticated == true)
@@ -137,8 +143,19 @@ else
           </div>
           <div id="modal-view-body" class="modal-body">
             <div id="modal-alert" class="alert d-none mb-3" role="alert"></div>
-            <div id="modal-loading" class="text-center py-4">
-              <div class="spinner-border text-primary" role="status"></div>
+            <div id="modal-loading">
+              <div class="row g-2 mb-4">
+                <div class="col"><div class="skeleton-block" style="height:62px"></div></div>
+                <div class="col"><div class="skeleton-block" style="height:62px"></div></div>
+                <div class="col"><div class="skeleton-block" style="height:62px"></div></div>
+                <div class="col"><div class="skeleton-block" style="height:62px"></div></div>
+                <div class="col"><div class="skeleton-block" style="height:62px"></div></div>
+              </div>
+              <div class="skeleton-block mb-2" style="height:14px;width:55%"></div>
+              <div class="skeleton-block mb-4" style="height:14px;width:38%"></div>
+              <div class="skeleton-block mb-3" style="height:1px"></div>
+              <div class="skeleton-block mb-2" style="height:14px;width:25%"></div>
+              <div class="skeleton-block" style="height:56px"></div>
             </div>
             <div id="modal-content" class="d-none">
               <div class="row g-2 mb-4 text-center">
@@ -159,6 +176,10 @@ else
               <div id="actions-reusable" class="d-none">
                 <h6 class="fw-semibold mb-2">Active Checkouts</h6>
                 <div id="active-checkouts-list" class="mb-3"></div>
+                <div id="lost-checkouts-section" class="d-none mb-3">
+                  <h6 class="fw-semibold mb-2 text-danger"><i class="bi bi-x-circle me-1"></i>Lost Items</h6>
+                  <div id="lost-checkouts-list"></div>
+                </div>
                 @if (_canWrite)
                 {
                   <h6 class="fw-semibold mb-2">Check Out</h6>
@@ -291,7 +312,7 @@ else
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-            <button type="button" class="btn btn-primary" id="edit-save-btn" onclick="saveEditItem()">Save Changes</button>
+            <button type="button" class="btn btn-primary" id="edit-save-btn" onclick="saveEditItem()">Save</button>
           </div>
         </div>
       </div>

@@ -51,6 +51,16 @@ public class IndexModel : PageModel
     // Current user id — used to prevent self-modification in user management
     public int CurrentUserId               { get; private set; }
 
+    // Notifications tab
+    public string? NtfyServer      { get; private set; }
+    public string? NtfyTopic       { get; private set; }
+    public bool    NtfyTokenSet    { get; private set; }
+    public bool    NtfyOnCheckout  { get; private set; }
+    public bool    NtfyOnCheckin   { get; private set; }
+    public bool    NtfyOnLost      { get; private set; }
+    public bool    NtfyOnLowStock  { get; private set; }
+    public bool    NtfyOnLogin     { get; private set; }
+
     public IndexModel(IUserAuthService authService, ISettingsService settingsService, TunnelService tunnel,
         ICategoryService categoryService, IInventoryService inventoryService,
         IHttpContextAccessor httpContextAccessor, ILogger<IndexModel> logger)
@@ -91,6 +101,18 @@ public class IndexModel : PageModel
             ServeoPublicKey      = await _tunnel.GetServeoPublicKeyAsync();
         }
 
+        if (tab == "notifications")
+        {
+            NtfyServer     = await _settingsService.GetAsync("ntfy.server") ?? "https://ntfy.sh";
+            NtfyTopic      = await _settingsService.GetAsync("ntfy.topic");
+            NtfyTokenSet   = !string.IsNullOrWhiteSpace(await _settingsService.GetAsync("ntfy.token"));
+            NtfyOnCheckout = await _settingsService.GetAsync("ntfy.notify.checkout") == "true";
+            NtfyOnCheckin  = await _settingsService.GetAsync("ntfy.notify.checkin")  == "true";
+            NtfyOnLost     = await _settingsService.GetAsync("ntfy.notify.lost")     == "true";
+            NtfyOnLowStock = await _settingsService.GetAsync("ntfy.notify.lowstock") == "true";
+            NtfyOnLogin    = await _settingsService.GetAsync("ntfy.notify.login")    == "true";
+        }
+
         if (tab == "publicview")
         {
             PublicViewEnabled = await _settingsService.GetAsync("public.view.enabled") == "true";
@@ -100,6 +122,32 @@ public class IndexModel : PageModel
                 ? $"{req.Scheme}://{req.Host}/public"
                 : "/public";
         }
+    }
+
+    public async Task<IActionResult> OnPostSaveNotificationsAsync(
+        string? ntfyServer, string? ntfyTopic, string? ntfyToken,
+        bool ntfyOnCheckout, bool ntfyOnCheckin, bool ntfyOnLost, bool ntfyOnLowStock, bool ntfyOnLogin)
+    {
+        if (!User.IsInRole("Admin")) return Forbid();
+
+        await _settingsService.SetAsync("ntfy.server",          string.IsNullOrWhiteSpace(ntfyServer) ? "https://ntfy.sh" : ntfyServer.Trim());
+        await _settingsService.SetAsync("ntfy.topic",           ntfyTopic?.Trim());
+        if (!string.IsNullOrWhiteSpace(ntfyToken))
+            await _settingsService.SetAsync("ntfy.token",       ntfyToken.Trim());
+        await _settingsService.SetAsync("ntfy.notify.checkout", ntfyOnCheckout ? "true" : "false");
+        await _settingsService.SetAsync("ntfy.notify.checkin",  ntfyOnCheckin  ? "true" : "false");
+        await _settingsService.SetAsync("ntfy.notify.lost",     ntfyOnLost     ? "true" : "false");
+        await _settingsService.SetAsync("ntfy.notify.lowstock", ntfyOnLowStock ? "true" : "false");
+        await _settingsService.SetAsync("ntfy.notify.login",    ntfyOnLogin    ? "true" : "false");
+
+        return RedirectWithMessage("notifications", success: "Notification settings saved.");
+    }
+
+    public async Task<IActionResult> OnPostClearNtfyTokenAsync()
+    {
+        if (!User.IsInRole("Admin")) return Forbid();
+        await _settingsService.SetAsync("ntfy.token", null);
+        return RedirectWithMessage("notifications", success: "Token cleared.");
     }
 
     public async Task<IActionResult> OnPostSaveTunnelConfigAsync(

@@ -11,15 +11,18 @@ public class ReportService : IReportService
     private readonly IInventoryRepository  _inventoryRepo;
     private readonly IActivityLogRepository _activityRepo;
     private readonly ICheckoutRepository   _checkoutRepo;
+    private readonly IClientRepository     _clientRepo;
 
     public ReportService(
         IInventoryRepository inventoryRepo,
         IActivityLogRepository activityRepo,
-        ICheckoutRepository checkoutRepo)
+        ICheckoutRepository checkoutRepo,
+        IClientRepository clientRepo)
     {
         _inventoryRepo = inventoryRepo;
         _activityRepo  = activityRepo;
         _checkoutRepo  = checkoutRepo;
+        _clientRepo    = clientRepo;
     }
 
     public async Task<DashboardSummaryDto> GetDashboardSummaryAsync()
@@ -30,19 +33,22 @@ public class ReportService : IReportService
         var activeRecords   = (await _checkoutRepo.GetAllActiveAsync()).ToList();
         var lostRecords     = (await _checkoutRepo.GetAllLostAsync()).ToList();
 
-        var itemLookup = allItems.ToDictionary(i => i.Id);
+        var itemLookup   = allItems.ToDictionary(i => i.Id);
+        var clientLookup = (await _clientRepo.GetAllAsync()).ToDictionary(c => c.Id, c => c.DisplayName);
 
         var checkedOutItems = activeRecords
             .OrderByDescending(r => (DateTime.UtcNow - r.CheckedOutAt).TotalDays)
             .Select(r =>
             {
                 itemLookup.TryGetValue(r.InventoryItemId, out var item);
+                var clientName = r.ClientId.HasValue ? clientLookup.GetValueOrDefault(r.ClientId.Value) : null;
                 return new CheckedOutItemRow(
                     r.InventoryItemId,
                     item?.Name ?? "Unknown",
                     item?.Location,
                     item?.SKU,
                     r.CheckedOutBy,
+                    clientName,
                     r.Quantity,
                     r.CheckedOutAt,
                     (int)(DateTime.UtcNow - r.CheckedOutAt).TotalDays);
@@ -54,12 +60,14 @@ public class ReportService : IReportService
             .Select(r =>
             {
                 itemLookup.TryGetValue(r.InventoryItemId, out var item);
+                var clientName = r.ClientId.HasValue ? clientLookup.GetValueOrDefault(r.ClientId.Value) : null;
                 return new LostItemRow(
                     r.InventoryItemId,
                     item?.Name ?? "Unknown",
                     item?.Location,
                     item?.SKU,
                     r.CheckedOutBy,
+                    clientName,
                     r.Quantity,
                     r.CheckedInAt ?? r.CheckedOutAt);
             })
@@ -90,48 +98,54 @@ public class ReportService : IReportService
 
     public async Task<CheckedOutReportDto> GetCheckedOutReportAsync()
     {
-        var records = await _checkoutRepo.GetAllActiveAsync();
-        var rows    = new List<CheckedOutItemRow>();
+        var records      = (await _checkoutRepo.GetAllActiveAsync()).ToList();
+        var itemLookup   = (await _inventoryRepo.GetAllAsync()).ToDictionary(i => i.Id);
+        var clientLookup = (await _clientRepo.GetAllAsync()).ToDictionary(c => c.Id, c => c.DisplayName);
 
-        foreach (var r in records)
+        var rows = records.Select(r =>
         {
-            var item = await _inventoryRepo.GetByIdAsync(r.InventoryItemId);
-            rows.Add(new CheckedOutItemRow(
+            itemLookup.TryGetValue(r.InventoryItemId, out var item);
+            var clientName = r.ClientId.HasValue ? clientLookup.GetValueOrDefault(r.ClientId.Value) : null;
+            return new CheckedOutItemRow(
                 r.InventoryItemId,
                 item?.Name ?? "Unknown",
                 item?.Location,
                 item?.SKU,
                 r.CheckedOutBy,
+                clientName,
                 r.Quantity,
                 r.CheckedOutAt,
-                (int)(DateTime.UtcNow - r.CheckedOutAt).TotalDays
-            ));
-        }
+                (int)(DateTime.UtcNow - r.CheckedOutAt).TotalDays);
+        })
+        .OrderByDescending(r => r.DaysOut)
+        .ToList();
 
-        rows = rows.OrderByDescending(r => r.DaysOut).ToList();
         return new CheckedOutReportDto(rows, rows.Sum(r => r.Quantity), DateTime.UtcNow);
     }
 
     public async Task<LostItemsReportDto> GetLostItemsReportAsync()
     {
-        var records = await _checkoutRepo.GetAllLostAsync();
-        var rows    = new List<LostItemRow>();
+        var records      = (await _checkoutRepo.GetAllLostAsync()).ToList();
+        var itemLookup   = (await _inventoryRepo.GetAllAsync()).ToDictionary(i => i.Id);
+        var clientLookup = (await _clientRepo.GetAllAsync()).ToDictionary(c => c.Id, c => c.DisplayName);
 
-        foreach (var r in records)
+        var rows = records.Select(r =>
         {
-            var item = await _inventoryRepo.GetByIdAsync(r.InventoryItemId);
-            rows.Add(new LostItemRow(
+            itemLookup.TryGetValue(r.InventoryItemId, out var item);
+            var clientName = r.ClientId.HasValue ? clientLookup.GetValueOrDefault(r.ClientId.Value) : null;
+            return new LostItemRow(
                 r.InventoryItemId,
                 item?.Name ?? "Unknown",
                 item?.Location,
                 item?.SKU,
                 r.CheckedOutBy,
+                clientName,
                 r.Quantity,
-                r.CheckedInAt ?? r.CheckedOutAt
-            ));
-        }
+                r.CheckedInAt ?? r.CheckedOutAt);
+        })
+        .OrderByDescending(r => r.LostAt)
+        .ToList();
 
-        rows = rows.OrderByDescending(r => r.LostAt).ToList();
         return new LostItemsReportDto(rows, rows.Sum(r => r.Quantity), DateTime.UtcNow);
     }
 

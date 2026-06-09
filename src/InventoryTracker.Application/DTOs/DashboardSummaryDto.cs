@@ -43,6 +43,7 @@ public record CheckedOutItemRow(
     string? ItemLocation,
     string? SKU,
     string CheckedOutBy,
+    string? ClientName,
     int Quantity,
     DateTime CheckedOutAt,
     int DaysOut
@@ -60,6 +61,7 @@ public record LostItemRow(
     string? ItemLocation,
     string? SKU,
     string LastCheckedOutBy,
+    string? ClientName,
     int Quantity,
     DateTime LostAt
 );

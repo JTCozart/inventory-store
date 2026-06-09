@@ -59,4 +59,10 @@ public class CheckoutRepository : ICheckoutRepository
             .Where(r => r.IsLost)
             .OrderByDescending(r => r.CheckedInAt)
             .ToListAsync();
+
+    public async Task<IEnumerable<CheckoutRecord>> GetByClientIdAsync(int clientId) =>
+        await _context.CheckoutRecords
+            .Where(r => r.ClientId == clientId)
+            .OrderByDescending(r => r.CheckedOutAt)
+            .ToListAsync();
 }

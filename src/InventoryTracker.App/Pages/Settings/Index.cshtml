@@ -34,7 +34,8 @@
         <option value="/Settings?tab=users"      selected="@(Model.Tab=="users")">Users</option>
         <option value="/Settings?tab=tunnel"     selected="@(Model.Tab=="tunnel")">Remote Access</option>
         <option value="/Settings?tab=publicview" selected="@(Model.Tab=="publicview")">Public View</option>
-        <option value="/Settings?tab=database"   selected="@(Model.Tab=="database")">Database</option>
+        <option value="/Settings?tab=database"       selected="@(Model.Tab=="database")">Database</option>
+        <option value="/Settings?tab=notifications"  selected="@(Model.Tab=="notifications")">Notifications</option>
     }
     @if (User.IsInRole("Admin") || User.IsInRole("Manager"))
     {
@@ -63,6 +64,9 @@
         </a>
         <a href="/Settings?tab=database" class="nav-link @(Model.Tab == "database" ? "active" : "")">
             <i class="bi bi-database"></i> Database
+        </a>
+        <a href="/Settings?tab=notifications" class="nav-link @(Model.Tab == "notifications" ? "active" : "")">
+            <i class="bi bi-bell"></i> Notifications
         </a>
     }
     @if (User.IsInRole("Admin") || User.IsInRole("Manager"))
@@ -1141,6 +1145,97 @@
     </div>
 }
 
+@if (Model.Tab == "notifications" && User.IsInRole("Admin"))
+{
+    <form method="post" asp-page-handler="SaveNotifications">
+        @Html.AntiForgeryToken()
+        <div class="card mb-3" style="max-width:560px">
+            <div class="card-header fw-semibold"><i class="bi bi-bell me-2"></i>ntfy Push Notifications</div>
+            <div class="card-body">
+                <p class="text-muted small mb-3">
+                    Send push notifications via <a href="https://ntfy.sh" target="_blank" rel="noopener">ntfy.sh</a>
+                    or a self-hosted ntfy server. Leave Topic blank to disable all notifications.
+                </p>
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label">Server URL</label>
+                        <input type="url" name="ntfyServer" class="form-control" value="@Model.NtfyServer" placeholder="https://ntfy.sh" />
+                        <div class="form-text">Use https://ntfy.sh or your own server URL.</div>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Topic <span class="text-muted small">(required to enable notifications)</span></label>
+                        <input type="text" name="ntfyTopic" class="form-control" value="@Model.NtfyTopic" placeholder="my-inventory-alerts" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Auth Token <span class="text-muted small">(optional)</span></label>
+                        <input type="password" name="ntfyToken" class="form-control" placeholder="Leave blank to keep current token" autocomplete="new-password" />
+                        @if (Model.NtfyTokenSet)
+                        {
+                            <div class="form-text d-flex align-items-center gap-2">
+                                <span class="text-success"><i class="bi bi-check-circle me-1"></i>Token is set.</span>
+                                <button type="button" class="btn btn-link btn-sm p-0 text-danger"
+                                        onclick="clearToken()">Clear token</button>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-3" style="max-width:560px">
+            <div class="card-header fw-semibold">Events</div>
+            <div class="card-body">
+                <p class="text-muted small mb-3">Choose which events send a notification.</p>
+                <div class="d-flex flex-column gap-2">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="ntfy-checkout" name="ntfyOnCheckout" value="true" @(Model.NtfyOnCheckout ? "checked" : "") />
+                        <label class="form-check-label" for="ntfy-checkout">
+                            <i class="bi bi-box-arrow-up-right text-success me-1"></i>
+                            Item checked out
+                        </label>
+                    </div>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="ntfy-checkin" name="ntfyOnCheckin" value="true" @(Model.NtfyOnCheckin ? "checked" : "") />
+                        <label class="form-check-label" for="ntfy-checkin">
+                            <i class="bi bi-box-arrow-in-left text-info me-1"></i>
+                            Item returned (checked in)
+                        </label>
+                    </div>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="ntfy-lost" name="ntfyOnLost" value="true" @(Model.NtfyOnLost ? "checked" : "") />
+                        <label class="form-check-label" for="ntfy-lost">
+                            <i class="bi bi-x-circle text-danger me-1"></i>
+                            Item marked lost
+                        </label>
+                    </div>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="ntfy-lowstock" name="ntfyOnLowStock" value="true" @(Model.NtfyOnLowStock ? "checked" : "") />
+                        <label class="form-check-label" for="ntfy-lowstock">
+                            <i class="bi bi-exclamation-triangle text-warning me-1"></i>
+                            Low stock alert (after consume)
+                        </label>
+                    </div>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="ntfy-login" name="ntfyOnLogin" value="true" @(Model.NtfyOnLogin ? "checked" : "") />
+                        <label class="form-check-label" for="ntfy-login">
+                            <i class="bi bi-key text-muted me-1"></i>
+                            User login
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary"><i class="bi bi-floppy me-1"></i>Save</button>
+            <button type="button" class="btn btn-outline-secondary" id="btn-test-ntfy" onclick="testNtfy()">
+                <i class="bi bi-send me-1"></i>Send Test
+            </button>
+            <span id="ntfy-test-result" class="ms-1 small align-self-center"></span>
+        </div>
+    </form>
+}
+
 @if (Model.Tab == "info")
 {
     <div class="card" style="max-width: 520px;">
@@ -1186,6 +1281,37 @@
 }
 
 @section Scripts {
+@if (Model.Tab == "notifications")
+{
+<script>
+function testNtfy() {
+    var btn = document.getElementById('btn-test-ntfy');
+    var res = document.getElementById('ntfy-test-result');
+    btn.disabled = true;
+    res.textContent = 'Sending…';
+    fetch('/api/ntfy/test', { method: 'POST', headers: { 'RequestVerificationToken': document.getElementById('af-token').value } })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            res.textContent  = d.ok ? '✓ Sent (HTTP ' + d.code + ')' : '✗ Failed (HTTP ' + d.code + ')';
+            res.className    = 'ms-1 small ' + (d.ok ? 'text-success' : 'text-danger');
+        })
+        .catch(function() { res.textContent = '✗ Network error'; res.className = 'ms-1 small text-danger'; })
+        .finally(function() { btn.disabled = false; });
+}
+function clearToken() {
+    if (!confirm('Clear the stored ntfy auth token?')) return;
+    var form = document.createElement('form');
+    form.method = 'post';
+    form.action = '/Settings?handler=ClearNtfyToken';
+    var tok = document.createElement('input');
+    tok.type = 'hidden'; tok.name = '__RequestVerificationToken';
+    tok.value = document.getElementById('af-token').value;
+    form.appendChild(tok);
+    document.body.appendChild(form);
+    form.submit();
+}
+</script>
+}
 @if (Model.Tab == "tunnel")
 {
 <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>

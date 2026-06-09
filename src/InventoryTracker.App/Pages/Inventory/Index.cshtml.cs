@@ -2,6 +2,7 @@ using InventoryTracker.App.Extensions;
 using InventoryTracker.App.Infrastructure;
 using InventoryTracker.Application.DTOs;
 using InventoryTracker.Application.Interfaces.Services;
+using InventoryTracker.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -56,6 +57,41 @@ public class IndexModel : PageModel
         return new JsonResult(status, AppJsonOptions.Web);
     }
 
+    public async Task<IActionResult> OnGetAddItemDataAsync()
+    {
+        var categories = (await _categoryService.GetAllAsync()).Select(c => new { c.Id, c.Name, c.Color });
+        var locations  = (await _inventoryService.GetAllLocationsAsync()).Select(l => l.Name);
+        return new JsonResult(new { categories, locations }, AppJsonOptions.Web);
+    }
+
+    public async Task<IActionResult> OnPostCreateItemAsync(
+        string name, int quantity, int minimumQuantity, string itemType,
+        string? sku, string? location, int? categoryId, string? expiryDate,
+        string? scanWarning, string? description)
+    {
+        if (!CanWrite()) return new JsonResult(new { success = false, error = "Insufficient permissions." }) { StatusCode = 403 };
+        if (string.IsNullOrWhiteSpace(name))
+            return new JsonResult(new { success = false, error = "Name is required." });
+
+        var (uid, uname) = GetUser();
+        DateOnly? expiry = null;
+        if (!string.IsNullOrWhiteSpace(expiryDate) && DateOnly.TryParse(expiryDate, out var parsed))
+            expiry = parsed;
+
+        var type = Enum.TryParse<ItemType>(itemType, out var t) ? t : ItemType.Consumable;
+        try
+        {
+            await _inventoryService.CreateItemAsync(new CreateInventoryItemDto(
+                name, quantity, description, location, sku, minimumQuantity, type, scanWarning, categoryId, expiry
+            ), uid, uname);
+            return new JsonResult(new { success = true });
+        }
+        catch (Exception)
+        {
+            return new JsonResult(new { success = false, error = "Failed to save item." });
+        }
+    }
+
     public async Task<IActionResult> OnPostDeleteAsync(int id)
     {
         if (!CanWrite()) return Forbid();
@@ -92,9 +128,9 @@ public class IndexModel : PageModel
             ), uid, uname);
             return new JsonResult(new { success = true });
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            return new JsonResult(new { success = false, error = ex.Message });
+            return new JsonResult(new { success = false, error = "Failed to save item." });
         }
     }
 
@@ -106,7 +142,7 @@ public class IndexModel : PageModel
             var cat = await _categoryService.CreateAsync(new CreateCategoryDto(name, color));
             return new JsonResult(new { id = cat.Id, name = cat.Name, color = cat.Color });
         }
-        catch (Exception ex) { return BadRequest(ex.Message); }
+        catch (Exception) { return BadRequest("Failed to create category."); }
     }
 
     public async Task<IActionResult> OnPostUpdateItemAsync(
@@ -150,9 +186,9 @@ public class IndexModel : PageModel
                 new CheckOutItemDto(itemId, checkedOutBy, quantity, notes, clientId), uid, uname);
             return new JsonResult(new { success = true, record }, AppJsonOptions.Web);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            return new JsonResult(new { success = false, error = ex.Message });
+            return new JsonResult(new { success = false, error = "Check out failed." });
         }
     }
 
@@ -189,9 +225,9 @@ public class IndexModel : PageModel
             await _checkoutService.ConsumeAsync(new ConsumeItemDto(itemId, quantity, notes), uid, uname);
             return new JsonResult(new { success = true });
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            return new JsonResult(new { success = false, error = ex.Message });
+            return new JsonResult(new { success = false, error = "Consume failed." });
         }
     }
 

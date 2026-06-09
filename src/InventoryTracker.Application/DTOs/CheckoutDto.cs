@@ -28,7 +28,8 @@ public record ItemStatusDto(
     bool IsLowStock,
     int MinimumQuantity,
     string? ScanWarning,
-    IEnumerable<CheckoutRecordDto> ActiveCheckouts
+    IEnumerable<CheckoutRecordDto> ActiveCheckouts,
+    IEnumerable<CheckoutRecordDto> LostCheckouts
 );
 
 public record CheckOutItemDto(
