@@ -241,7 +241,8 @@
       <li><a href="#users">User Management</a></li>
       <li><a href="#manage-categories">Managing Categories</a></li>
       <li><a href="#manage-locations">Managing Locations</a></li>
-      <li><a href="#remote-access">Remote Access</a></li>
+      <li><a href="#remote-access">Network &amp; Remote Access</a></li>
+      <li><a href="#custom-https">Custom HTTPS</a></li>
       <li><a href="#public-view">Public View</a></li>
       <li><a href="#notifications">Push Notifications</a></li>
       <li><a href="#dark-mode">Dark Mode</a></li>
@@ -624,8 +625,8 @@
     </section>
 
     <section id="remote-access">
-      <h2><i class="fa-solid fa-globe"></i> Remote Access</h2>
-      <p>Go to <strong>Settings → Remote Access</strong> (Admin only) to configure tunnels. Once active, the public URL is shown in the tray icon menu and in the settings panel.</p>
+      <h2><i class="fa-solid fa-globe"></i> Network &amp; Remote Access</h2>
+      <p>Go to <strong>Settings → Network</strong> (Admin only) to configure tunnels and HTTPS. Once a tunnel is active, the public URL is shown in the tray icon menu and in the settings panel.</p>
 
       <h3>Serveo (recommended)</h3>
       <p>Serveo gives you a <strong>free persistent subdomain</strong> - the same URL every time you start the tunnel. Requires a free Serveo account.</p>
@@ -651,6 +652,46 @@
 
       <h3>Stopping a tunnel</h3>
       <p>Click <strong>Stop Tunnel</strong> in the status card.</p>
+    </section>
+
+    <section id="custom-https">
+      <h2><i class="fa-solid fa-lock"></i> Custom HTTPS</h2>
+      <p>If you own a domain and have an SSL certificate, you can run Inventory Store directly over HTTPS on port 443 without any tunnel. This is the right choice when the server is accessible from the internet on a fixed IP or hostname.</p>
+
+      <h3>What you need</h3>
+      <ul>
+        <li>A domain name pointing to your server's IP address (via your DNS provider)</li>
+        <li>An SSL certificate in <strong>.pfx format</strong> (certificate + private key bundled together)</li>
+        <li>Port 443 open on your firewall/router forwarding to the server</li>
+      </ul>
+
+      <h3>Creating a .pfx file</h3>
+      <p>If you have a certificate from Let's Encrypt or another provider in PEM format (two separate files - a certificate and a private key), combine them into a single .pfx with:</p>
+      <pre><code>openssl pkcs12 -export -out https.pfx -inkey privkey.pem -in fullchain.pem</code></pre>
+      <p>You will be asked to set a password for the .pfx - keep this, you will need it in the next step.</p>
+
+      <h3>Setting up HTTPS</h3>
+      <ol>
+        <li>Go to <strong>Settings → Network</strong> (Admin only)</li>
+        <li>Open the <strong>Custom HTTPS / Port 443</strong> section</li>
+        <li>Enter your domain name and port (default 443)</li>
+        <li>Upload your <strong>.pfx</strong> file and enter its password</li>
+        <li>Check <strong>Enable HTTPS</strong></li>
+        <li>Click <strong>Save</strong></li>
+        <li>Click <strong>Restart Service</strong> - the app will stop and the Windows service manager will restart it automatically</li>
+      </ol>
+      <p>After restart, Inventory Store will be available at both <code>http://localhost:5050</code> (local HTTP) and <code>https://yourdomain.com</code> (HTTPS on your chosen port).</p>
+
+      <div class="callout">
+        <i class="fa-solid fa-circle-info"></i>
+        The certificate password is stored in the app database. The .pfx file is stored in <code>%AppData%\InventoryStore\https.pfx</code> on the server. Back up your certificate separately.
+      </div>
+
+      <h3>Removing HTTPS</h3>
+      <p>Click <strong>Remove Certificate</strong> in the Custom HTTPS section, then click <strong>Restart Service</strong>. The app will revert to HTTP only.</p>
+
+      <h3>Changing the certificate</h3>
+      <p>Upload a new .pfx file and click <strong>Save</strong>, then <strong>Restart Service</strong>. The old certificate is replaced immediately.</p>
     </section>
 
     <section id="public-view">
@@ -807,7 +848,8 @@
         <tr><td>Import CSV</td><td>✓</td><td>✓</td><td></td></tr>
         <tr><td>Manage categories &amp; locations</td><td>✓</td><td>✓</td><td></td></tr>
         <tr><td>Manage users</td><td>✓</td><td></td><td></td></tr>
-        <tr><td>Configure remote access</td><td>✓</td><td></td><td></td></tr>
+        <tr><td>Configure remote access &amp; tunnels</td><td>✓</td><td></td><td></td></tr>
+        <tr><td>Configure custom HTTPS certificate</td><td>✓</td><td></td><td></td></tr>
         <tr><td>Configure push notifications</td><td>✓</td><td></td><td></td></tr>
         <tr><td>Enable / disable public view</td><td>✓</td><td></td><td></td></tr>
         <tr><td>Toggle item visibility in public view</td><td>✓</td><td>✓</td><td></td></tr>

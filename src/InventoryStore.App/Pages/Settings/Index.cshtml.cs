@@ -51,6 +51,12 @@ public class IndexModel : PageModel
     // Current user id — used to prevent self-modification in user management
     public int CurrentUserId               { get; private set; }
 
+    // HTTPS tab
+    public bool    HttpsEnabled       { get; private set; }
+    public int     HttpsPort          { get; private set; } = 443;
+    public string? HttpsDomain        { get; private set; }
+    public bool    HttpsCertUploaded  { get; private set; }
+
     // Notifications tab
     public string? NtfyServer      { get; private set; }
     public string? NtfyTopic       { get; private set; }
@@ -91,7 +97,7 @@ public class IndexModel : PageModel
         if (tab == "locations")
             Locations = await _inventoryService.GetAllLocationsAsync();
 
-        if (tab == "tunnel")
+        if (tab == "network")
         {
             SavedTunnelToken     = await _settingsService.GetAsync("tunnel.token");
             SavedTunnelUrl       = await _settingsService.GetAsync("tunnel.url");
@@ -99,6 +105,12 @@ public class IndexModel : PageModel
             SavedAutostart       = await _settingsService.GetAsync("tunnel.autostart");
             SavedServeoSubdomain = await _settingsService.GetAsync("tunnel.serveo.subdomain");
             ServeoPublicKey      = await _tunnel.GetServeoPublicKeyAsync();
+
+            HttpsEnabled  = await _settingsService.GetAsync("https.enabled") == "true";
+            HttpsDomain   = await _settingsService.GetAsync("https.domain");
+            var portStr   = await _settingsService.GetAsync("https.port");
+            HttpsPort     = int.TryParse(portStr, out var p) ? p : 443;
+            HttpsCertUploaded = System.IO.File.Exists(HttpsCertPath());
         }
 
         if (tab == "notifications")
@@ -150,6 +162,40 @@ public class IndexModel : PageModel
         return RedirectWithMessage("notifications", success: "Token cleared.");
     }
 
+    public async Task<IActionResult> OnPostSaveHttpsAsync(
+        bool httpsEnabled, int httpsPort, string? httpsDomain, string? httpsCertPassword, IFormFile? certFile)
+    {
+        if (!User.IsInRole("Admin")) return Forbid();
+
+        if (certFile is { Length: > 0 })
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(HttpsCertPath())!);
+            await using var stream = System.IO.File.Create(HttpsCertPath());
+            await certFile.CopyToAsync(stream);
+        }
+
+        await _settingsService.SetAsync("https.enabled", httpsEnabled ? "true" : "false");
+        await _settingsService.SetAsync("https.port",    httpsPort > 0 ? httpsPort.ToString() : "443");
+        await _settingsService.SetAsync("https.domain",  httpsDomain?.Trim());
+        if (!string.IsNullOrWhiteSpace(httpsCertPassword))
+            await _settingsService.SetAsync("https.cert.password", httpsCertPassword);
+
+        return RedirectWithMessage("network", success: "HTTPS settings saved. Restart the service for changes to take effect.");
+    }
+
+    public async Task<IActionResult> OnPostClearHttpsCertAsync()
+    {
+        if (!User.IsInRole("Admin")) return Forbid();
+        if (System.IO.File.Exists(HttpsCertPath())) System.IO.File.Delete(HttpsCertPath());
+        await _settingsService.SetAsync("https.enabled",       "false");
+        await _settingsService.SetAsync("https.cert.password", null);
+        return RedirectWithMessage("network", success: "Certificate removed. Restart the service to disable HTTPS.");
+    }
+
+    private static string HttpsCertPath() =>
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+                     "InventoryStore", "https.pfx");
+
     public async Task<IActionResult> OnPostSaveTunnelConfigAsync(
         string? tunnelToken, string? tunnelUrl, string? ltSubdomain, string? autostart, string? serveoSubdomain)
     {
@@ -161,7 +207,7 @@ public class IndexModel : PageModel
         await _settingsService.SetAsync("tunnel.autostart",          autostart);
         await _settingsService.SetAsync("tunnel.serveo.subdomain",   serveoSubdomain);
 
-        return RedirectWithMessage("tunnel", success: "Tunnel settings saved.");
+        return RedirectWithMessage("network", success: "Tunnel settings saved.");
     }
 
     public async Task<IActionResult> OnPostChangePasswordAsync(string currentPassword, string newPassword, string confirmPassword)
@@ -460,7 +506,7 @@ public class IndexModel : PageModel
     }
 
     private static string GetDbPath() => Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+        Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
         "InventoryStore", "inventory.db");
 
     public async Task<IActionResult> OnPostSavePublicViewSettingAsync(bool enabled)

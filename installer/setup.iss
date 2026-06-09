@@ -94,7 +94,7 @@ Filename: "{sys}\sc.exe"; Parameters: "delete InventoryStore"; Flags: runhidden 
 
 [UninstallDelete]
 ; Remove the data directory only if the user confirms (via Code section)
-Type: dirifempty; Name: "{localappdata}\InventoryStore"
+Type: dirifempty; Name: "{commonappdata}\InventoryStore"
 
 [Code]
 // Stop the service and tray before installing new files
@@ -129,7 +129,7 @@ begin
   begin
     if MsgBox('Do you want to remove all Inventory Store data (database and settings)?', mbConfirmation, MB_YESNO) = IDYES then
     begin
-      DelTree(ExpandConstant('{localappdata}\InventoryStore'), True, True, True);
+      DelTree(ExpandConstant('{commonappdata}\InventoryStore'), True, True, True);
     end;
   end;
 end;

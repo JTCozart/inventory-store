@@ -32,7 +32,7 @@
     @if (User.IsInRole("Admin"))
     {
         <option value="/Settings?tab=users"      selected="@(Model.Tab=="users")">Users</option>
-        <option value="/Settings?tab=tunnel"     selected="@(Model.Tab=="tunnel")">Remote Access</option>
+        <option value="/Settings?tab=network"     selected="@(Model.Tab=="network")">Network</option>
         <option value="/Settings?tab=publicview" selected="@(Model.Tab=="publicview")">Public View</option>
         <option value="/Settings?tab=database"       selected="@(Model.Tab=="database")">Database</option>
         <option value="/Settings?tab=notifications"  selected="@(Model.Tab=="notifications")">Notifications</option>
@@ -56,8 +56,8 @@
         <a href="/Settings?tab=users" class="nav-link @(Model.Tab == "users" ? "active" : "")">
             <i class="bi bi-people"></i> Users
         </a>
-        <a href="/Settings?tab=tunnel" class="nav-link @(Model.Tab == "tunnel" ? "active" : "")">
-            <i class="bi bi-cloud"></i> Remote Access
+        <a href="/Settings?tab=network" class="nav-link @(Model.Tab == "network" ? "active" : "")">
+            <i class="bi bi-diagram-3"></i> Network
         </a>
         <a href="/Settings?tab=publicview" class="nav-link @(Model.Tab == "publicview" ? "active" : "")">
             <i class="bi bi-eye"></i> Public View
@@ -309,7 +309,7 @@
     </div>
 }
 
-@if (Model.Tab == "tunnel" && User.IsInRole("Admin"))
+@if (Model.Tab == "network" && User.IsInRole("Admin"))
 {
     var isStopped = Model.TunnelState is TunnelService.TunnelState.Stopped or TunnelService.TunnelState.Error;
     var isRunning = Model.TunnelState == TunnelService.TunnelState.Running;
@@ -518,6 +518,94 @@
                                 <input type="hidden" name="serveoSubdomain" value="@Model.SavedServeoSubdomain" />
                                 <button type="submit" class="btn btn-sm btn-primary">Save</button>
                             </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button @(Model.HttpsEnabled || Model.HttpsCertUploaded ? "" : "collapsed")"
+                                type="button" data-bs-toggle="collapse" data-bs-target="#https-section">
+                            <i class="bi bi-lock me-2 text-primary"></i>
+                            Custom HTTPS / Port 443
+                            @if (Model.HttpsEnabled && Model.HttpsCertUploaded)
+                            {
+                                <span class="badge bg-success ms-2">Active</span>
+                            }
+                            else if (Model.HttpsCertUploaded)
+                            {
+                                <span class="badge bg-warning text-dark ms-2">Cert uploaded, disabled</span>
+                            }
+                        </button>
+                    </h2>
+                    <div id="https-section" class="accordion-collapse collapse @(Model.HttpsEnabled || Model.HttpsCertUploaded ? "show" : "")">
+                        <div class="accordion-body">
+                            <p class="text-muted small mb-3">
+                                Serve Inventory Store over HTTPS on your own domain using a certificate you provide.
+                                Supply a <strong>.pfx</strong> file (certificate + private key bundled together).
+                                Changes take effect after restarting the service.
+                            </p>
+                            <form method="post" asp-page-handler="SaveHttps" enctype="multipart/form-data">
+                                @Html.AntiForgeryToken()
+                                <div class="row g-3 mb-3">
+                                    <div class="col-12">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" id="https-enabled"
+                                                   name="httpsEnabled" value="true" @(Model.HttpsEnabled ? "checked" : "") />
+                                            <label class="form-check-label" for="https-enabled">Enable HTTPS</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-8">
+                                        <label class="form-label small mb-1">Domain <span class="text-muted">(for display only)</span></label>
+                                        <input type="text" name="httpsDomain" class="form-control form-control-sm"
+                                               value="@Model.HttpsDomain" placeholder="e.g. inventory.mycompany.com" />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label small mb-1">Port</label>
+                                        <input type="number" name="httpsPort" class="form-control form-control-sm"
+                                               value="@Model.HttpsPort" min="1" max="65535" />
+                                    </div>
+                                    <div class="col-md-8">
+                                        <label class="form-label small mb-1">
+                                            Certificate (.pfx)
+                                            @if (Model.HttpsCertUploaded)
+                                            {
+                                                <span class="text-success ms-1"><i class="bi bi-check-circle-fill"></i> Certificate uploaded</span>
+                                            }
+                                        </label>
+                                        <input type="file" name="certFile" class="form-control form-control-sm" accept=".pfx" />
+                                        <div class="form-text">Upload a new .pfx to replace the existing certificate.</div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label small mb-1">Certificate Password</label>
+                                        <input type="password" name="httpsCertPassword" class="form-control form-control-sm"
+                                               placeholder="Leave blank to keep current" autocomplete="new-password" />
+                                    </div>
+                                </div>
+                                <div class="d-flex gap-2 align-items-center flex-wrap">
+                                    <button type="submit" class="btn btn-sm btn-primary">
+                                        <i class="bi bi-floppy me-1"></i>Save
+                                    </button>
+                                    @if (Model.HttpsCertUploaded)
+                                    {
+                                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="clearHttpsCert()">
+                                            <i class="bi bi-trash me-1"></i>Remove Certificate
+                                        </button>
+                                    }
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="restartService()">
+                                        <i class="bi bi-arrow-clockwise me-1"></i>Restart Service
+                                    </button>
+                                    <span id="restart-status" class="small text-muted"></span>
+                                </div>
+                            </form>
+                            @if (!Model.HttpsCertUploaded)
+                            {
+                                <div class="alert alert-info small py-2 mt-3 mb-0">
+                                    <strong>How to create a .pfx:</strong>
+                                    If you have a PEM cert from Let's Encrypt or another CA, combine it with:
+                                    <code>openssl pkcs12 -export -out https.pfx -inkey privkey.pem -in fullchain.pem</code>
+                                </div>
+                            }
                         </div>
                     </div>
                 </div>
@@ -1269,7 +1357,7 @@
                 @if (User.IsInRole("Admin"))
                 {
                     <dt class="col-5">Database</dt>
-                    <dd class="col-7 text-break small">@System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "InventoryStore", "inventory.db")</dd>
+                    <dd class="col-7 text-break small">@System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "InventoryStore", "inventory.db")</dd>
                 }
             </dl>
             <button id="btn-check-updates" class="btn btn-sm btn-outline-secondary" onclick="checkForUpdates()">
@@ -1312,7 +1400,7 @@ function clearToken() {
 }
 </script>
 }
-@if (Model.Tab == "tunnel")
+@if (Model.Tab == "network")
 {
 <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 <script>
@@ -1497,6 +1585,40 @@ function clearToken() {
         }
     }
 })();
+
+function clearHttpsCert() {
+    if (!confirm('Remove the uploaded certificate? HTTPS will be disabled.')) return;
+    var form = document.createElement('form');
+    form.method = 'post';
+    form.action = '/Settings?handler=ClearHttpsCert';
+    var tok = document.createElement('input');
+    tok.type = 'hidden'; tok.name = '__RequestVerificationToken';
+    tok.value = document.getElementById('af-token').value;
+    form.appendChild(tok);
+    document.body.appendChild(form);
+    form.submit();
+}
+
+function restartService() {
+    var btn   = document.querySelector('[onclick="restartService()"]');
+    var label = document.getElementById('restart-status');
+    btn.disabled = true;
+    label.textContent = 'Restarting...';
+    label.className = 'small text-muted';
+    fetch('/api/admin/restart', {
+        method: 'POST',
+        headers: { 'RequestVerificationToken': document.getElementById('af-token').value }
+    })
+    .then(function() {
+        label.textContent = 'Service stopping - page will reload shortly...';
+        setTimeout(function() { location.reload(); }, 4000);
+    })
+    .catch(function() {
+        label.textContent = 'Restart failed.';
+        label.className = 'small text-danger';
+        btn.disabled = false;
+    });
+}
 </script>
 }
 

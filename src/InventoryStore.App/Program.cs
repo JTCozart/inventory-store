@@ -67,13 +67,51 @@ internal class Program
                 web.ConfigureServices(ConfigureServices);
                 web.Configure(ConfigureApp);
                 var isDev = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
-                web.UseUrls(isDev ? "http://localhost:5051" : "http://*:5050");
+                var httpPort = isDev ? 5051 : 5050;
+                var https = LoadHttpsConfig();
+
+                web.UseKestrel(options =>
+                {
+                    options.ListenAnyIP(httpPort);
+                    if (https.Enabled && File.Exists(https.CertPath))
+                    {
+                        options.ListenAnyIP(https.Port, listen =>
+                        {
+                            listen.UseHttps(https.CertPath, https.CertPassword);
+                        });
+                    }
+                });
             });
+
+    static (bool Enabled, int Port, string CertPath, string? CertPassword) LoadHttpsConfig()
+    {
+        var dataDir  = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "InventoryStore");
+        var certPath = Path.Combine(dataDir, "https.pfx");
+        var dbPath   = Path.Combine(dataDir, "inventory.db");
+        if (!File.Exists(dbPath)) return (false, 443, certPath, null);
+        try
+        {
+            using var conn = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={dbPath}");
+            conn.Open();
+            string? Get(string key)
+            {
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = "SELECT Value FROM AppSettings WHERE Key = @k";
+                cmd.Parameters.AddWithValue("@k", key);
+                return cmd.ExecuteScalar() as string;
+            }
+            var enabled  = Get("https.enabled") == "true";
+            var port     = int.TryParse(Get("https.port"), out var p) ? p : 443;
+            var password = Get("https.cert.password");
+            return (enabled, port, certPath, password);
+        }
+        catch { return (false, 443, certPath, null); }
+    }
 
     static void ConfigureServices(IServiceCollection services)
     {
         var dbPath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
             "InventoryStore",
             "inventory.db");
 
@@ -385,6 +423,12 @@ internal class Program
             {
                 var (ok, code) = await ntfy.SendTestAsync();
                 return Results.Ok(new { ok, code });
+            });
+
+            endpoints.MapPost("/api/admin/restart", [Authorize(Roles = "Admin")] (IHostApplicationLifetime lifetime) =>
+            {
+                _ = Task.Run(async () => { await Task.Delay(800); lifetime.StopApplication(); });
+                return Results.Ok();
             });
         });
 

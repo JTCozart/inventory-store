@@ -12,7 +12,7 @@ public sealed partial class TunnelService : IAsyncDisposable
         Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development" ? 5051 : 5050;
 
     private static readonly string CloudflaredPath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
         "InventoryStore", "tools", "cloudflared.exe");
 
     private const string CloudflaredDownloadUrl =
@@ -20,7 +20,7 @@ public sealed partial class TunnelService : IAsyncDisposable
 
     // ── Serveo / SSH paths ────────────────────────────────────────────────
     private static readonly string ServeoKeyPath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+        Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
         "InventoryStore", "serveo_ed25519");
 
     // ── State ─────────────────────────────────────────────────────────────
@@ -392,7 +392,7 @@ public sealed partial class TunnelService : IAsyncDisposable
                 throw new Exception("SSH key not found. Complete the Serveo setup in Settings first.");
 
             var keyFile = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
                 "InventoryStore", "serveo_key");
             Directory.CreateDirectory(Path.GetDirectoryName(keyFile)!);
             await File.WriteAllTextAsync(keyFile, privateKey);
