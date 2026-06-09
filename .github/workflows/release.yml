@@ -30,7 +30,7 @@ jobs:
           dotnet-version: '8.0.x'
 
       - name: Restore
-        run: dotnet restore InventoryTracker.sln
+        run: dotnet restore InventoryStore.sln
 
       - name: Generate icon
         shell: pwsh
@@ -39,7 +39,7 @@ jobs:
       - name: Publish service (InventoryStore.App)
         shell: pwsh
         run: |
-          dotnet publish src/InventoryTracker.App/InventoryTracker.App.csproj `
+          dotnet publish src/InventoryStore.App/InventoryStore.App.csproj `
             -c Release -r win-x64 --self-contained true `
             -p:PublishSingleFile=true `
             -p:IncludeNativeLibrariesForSelfExtract=true `
@@ -51,7 +51,7 @@ jobs:
       - name: Publish tray companion (InventoryStore.Tray)
         shell: pwsh
         run: |
-          dotnet publish src/InventoryTracker.Tray/InventoryTracker.Tray.csproj `
+          dotnet publish src/InventoryStore.Tray/InventoryStore.Tray.csproj `
             -c Release -r win-x64 --self-contained true `
             -p:PublishSingleFile=true `
             -p:IncludeNativeLibrariesForSelfExtract=true `

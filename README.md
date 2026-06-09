@@ -84,7 +84,7 @@ Go to **Settings → Remote Access** and choose:
 ### Run locally
 
 ```powershell
-cd src/InventoryTracker.App
+cd src/InventoryStore.App
 dotnet run
 ```
 
@@ -102,8 +102,8 @@ pwsh tools/New-Icon.ps1
 ```powershell
 # Requires Inno Setup: choco install innosetup
 $v = (Get-Date -Format "yyyyMMdd.HHmm")
-dotnet publish src/InventoryTracker.App  -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -o publish/app
-dotnet publish src/InventoryTracker.Tray -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -o publish/tray
+dotnet publish src/InventoryStore.App  -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -o publish/app
+dotnet publish src/InventoryStore.Tray -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -o publish/tray
 iscc /DAppVersion="$v" /DAppSemVer="1.$v" installer/setup.iss
 ```
 
@@ -123,14 +123,14 @@ GitHub Actions will build the installer and create a release automatically.
 ## Architecture
 
 ```
-InventoryTracker.Domain          - Entities, repository interfaces
-InventoryTracker.Application     - Services, DTOs, service interfaces
-InventoryTracker.Infrastructure  - EF Core (SQLite), repository implementations
-InventoryTracker.App             - ASP.NET Core web server + Windows service host
-InventoryTracker.Tray            - Lightweight tray companion (manages the service)
+InventoryStore.Domain          - Entities, repository interfaces
+InventoryStore.Application     - Services, DTOs, service interfaces
+InventoryStore.Infrastructure  - EF Core (SQLite), repository implementations
+InventoryStore.App             - ASP.NET Core web server + Windows service host
+InventoryStore.Tray            - Lightweight tray companion (manages the service)
 ```
 
-Data is stored in `%APPDATA%\InventoryTracker\inventory.db` (SQLite). The schema is automatically migrated on startup - no manual migration steps required.
+Data is stored in `%APPDATA%\InventoryStore\inventory.db` (SQLite). The schema is automatically migrated on startup - no manual migration steps required.
 
 ---
 

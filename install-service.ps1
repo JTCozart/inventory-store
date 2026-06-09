@@ -13,10 +13,10 @@ param(
     [string]$Action = "install"
 )
 
-$ServiceName = "InventoryTracker"
+$ServiceName = "InventoryStore"
 $DisplayName = "Inventory Tracker"
 $Description = "Inventory Tracker web server. Accessible at http://localhost:5050"
-$ExePath = Join-Path $PSScriptRoot "publish\InventoryTracker.App.exe"
+$ExePath = Join-Path $PSScriptRoot "publish\InventoryStore.App.exe"
 
 if ($Action -eq "install") {
     if (Get-Service -Name $ServiceName -ErrorAction SilentlyContinue) {
