@@ -235,8 +235,14 @@
       <li><a href="#consumables">Consumables</a></li>
       <li><a href="#barcode-scanning">Barcode Scanning</a></li>
       <li><a href="#product-lookup">Product Lookup &amp; Metadata</a></li>
-      <li><a href="#safety-data-sheets">Safety Data Sheets</a></li>
       <li><a href="#csv">CSV Import &amp; Export</a></li>
+
+      <li class="section-label">Modules</li>
+      <li><a href="#modules">About Modules</a></li>
+      <li><a href="#safety-data-sheets">Safety Data Sheets</a></li>
+      <li><a href="#cost-valuation">Cost &amp; Valuation</a></li>
+      <li><a href="#forecasting">Consumption Forecasting</a></li>
+      <li><a href="#webhooks">Webhooks &amp; Integrations</a></li>
 
       <li class="section-label">Reports</li>
       <li><a href="#reports">All Reports</a></li>
@@ -565,6 +571,22 @@
       </ul>
     </section>
 
+    <section id="modules">
+      <h2><i class="fa-solid fa-puzzle-piece"></i> About Modules</h2>
+      <p>Modules are optional add-ons. Each one is off by default and stays completely out of the way until an Admin turns it on, so you only see the extra features your team actually needs.</p>
+      <h3>Turning a module on or off</h3>
+      <ol>
+        <li>Go to <strong>Settings → Modules</strong> (Admin only)</li>
+        <li>Find the module and flip its switch to <strong>Enabled</strong> or <strong>Disabled</strong></li>
+        <li>When a module is on, click <strong>Configure</strong> to manage its settings and data</li>
+      </ol>
+      <p>The available modules are <strong>Safety Data Sheets</strong>, <strong>Cost &amp; Valuation</strong>, <strong>Consumption Forecasting</strong>, and <strong>Webhooks &amp; Integrations</strong>, each described below.</p>
+      <div class="callout">
+        <i class="fa-solid fa-circle-info"></i>
+        Turning a module off hides its buttons and screens but does not delete anything it has stored. Turn it back on and your data is still there.
+      </div>
+    </section>
+
     <section id="safety-data-sheets">
       <h2><i class="fa-solid fa-flask-vial"></i> Safety Data Sheets</h2>
       <p>If your team stores or uses chemicals, the optional <strong>Safety Data Sheets (SDS)</strong> module lets you keep hazard information on file for an item. It looks up safety data by chemical name from <strong>PubChem</strong>, a free public database run by the US National Institutes of Health. No account or API key is needed.</p>
@@ -573,11 +595,11 @@
       <p>An Admin enables it once: go to <strong>Settings → Modules → Safety Data Sheets</strong> and flip the switch to <strong>Enabled</strong>. While it is off, none of the SDS buttons appear anywhere in the app.</p>
 
       <h3>Attaching safety data to an item</h3>
+      <p>You can do this while <strong>adding</strong> an item or later by <strong>editing</strong> it (Admin or Manager). Both screens have a <strong>Safety Data Sheet</strong> section.</p>
       <ol>
-        <li>Open an item and click <strong>Edit</strong> (Admin or Manager)</li>
-        <li>In the <strong>Safety Data Sheet</strong> section, the chemical name is pre-filled from the item name. Adjust it to the exact chemical if needed (for example "sodium hypochlorite" rather than "bleach")</li>
+        <li>On the <strong>Add Item</strong> or <strong>Edit</strong> screen, find the <strong>Safety Data Sheet</strong> section and enter the chemical name (for example "sodium hypochlorite" rather than "bleach")</li>
         <li>Click <strong>Look up SDS</strong></li>
-        <li>If a match is found, the safety details are saved to the item right away</li>
+        <li>If a match is found, the safety details are attached to the item (right away when editing, or as soon as you save a new item)</li>
       </ol>
       <p>For each match the app stores the <strong>signal word</strong> (Danger or Warning), <strong>hazard pictograms</strong>, <strong>hazard statements</strong>, <strong>precaution statements</strong>, the <strong>CAS number</strong>, and a link to the full PubChem page.</p>
       <div class="callout">
@@ -586,10 +608,61 @@
       </div>
 
       <h3>Viewing safety info</h3>
-      <p>Once an item has safety data attached, a <strong>View SDS Info</strong> button appears on its detail screen for everyone, including Viewers. Click it to see the hazard summary and open the full PubChem record.</p>
+      <p>Once an item has safety data attached, the standard hazard pictograms (the red diamond symbols) appear next to its name in the inventory list and on the scan screen. The item's detail panel and the scan card also show a <strong>Safety</strong> section with the signal word and pictograms, plus a <strong>View SDS Info</strong> button (visible to everyone, including Viewers) that opens the full hazard summary and a link to the PubChem record.</p>
 
       <h3>The metadata table</h3>
       <p>To see everything on file, go to <strong>Settings → Modules → Safety Data Sheets</strong> and click <strong>Configure</strong>. The table lists each item that has safety data, along with its chemical name, CAS number, signal word, and hazards. Click the <strong>trash</strong> button on a row to remove that item's safety data.</p>
+    </section>
+
+    <section id="cost-valuation">
+      <h2><i class="fa-solid fa-coins"></i> Cost &amp; Valuation</h2>
+      <p>The optional <strong>Cost &amp; Valuation</strong> module lets you record what each item costs and see what your whole inventory is worth. Turn it on under <strong>Settings → Modules → Cost &amp; Valuation</strong>.</p>
+
+      <h3>Adding a cost to an item</h3>
+      <ol>
+        <li>Open an item and click <strong>Edit</strong> (Admin or Manager)</li>
+        <li>In the <strong>Cost &amp; Valuation</strong> section, enter the <strong>unit cost</strong>. Optionally add a <strong>purchase date</strong> and a <strong>useful life</strong> in months (used for depreciation on reusable items)</li>
+        <li>Click <strong>Save Cost</strong></li>
+      </ol>
+      <p>The item's detail panel then shows its unit cost and the line value (unit cost times quantity).</p>
+
+      <h3>Seeing your inventory value</h3>
+      <p>Click <strong>Configure</strong> on the module, or open <strong>Reports → Valuation</strong>, to see your <strong>total value</strong>, a <strong>book value</strong> after straight-line depreciation, a breakdown by category, and a per-item table. You can set your preferred currency symbol on the Configure screen.</p>
+      <div class="callout">
+        <i class="fa-solid fa-circle-info"></i>
+        Depreciation applies only to reusable items that have both a purchase date and a useful life. Consumables are always valued at full cost.
+      </div>
+    </section>
+
+    <section id="forecasting">
+      <h2><i class="fa-solid fa-chart-line"></i> Consumption Forecasting</h2>
+      <p>The optional <strong>Consumption Forecasting</strong> module predicts when your consumable items will run out, so you can reorder in time. Turn it on under <strong>Settings → Modules → Consumption Forecasting</strong>.</p>
+      <p>The app keeps a usage history every time you consume or restock a consumable. It then works out an <strong>average daily usage</strong> over a recent window of days and projects a <strong>run-out date</strong> from your current stock.</p>
+
+      <h3>Viewing the forecast</h3>
+      <p>Click <strong>Configure</strong> on the module, or open <strong>Reports → Forecast</strong>, to see each consumable with its average daily use, the days of stock remaining, and the projected run-out date, sorted soonest first. Items due to run out within two weeks are highlighted.</p>
+
+      <h3>Setting the window</h3>
+      <p>On the Configure screen you can change the <strong>usage window</strong> (30 days by default). A shorter window reacts faster to recent changes; a longer window smooths out day-to-day swings.</p>
+      <div class="callout">
+        <i class="fa-solid fa-circle-info"></i>
+        The usage history is recorded as soon as you install this version, even before you turn the module on, so a forecast is ready the moment you enable it.
+      </div>
+    </section>
+
+    <section id="webhooks">
+      <h2><i class="fa-solid fa-share-nodes"></i> Webhooks &amp; Integrations</h2>
+      <p>The optional <strong>Webhooks &amp; Integrations</strong> module sends a small message to a web address (URL) of your choice whenever something happens in your inventory. Use it to connect Inventory Store to tools like Slack, Zapier, or Make, or to your own scripts. Turn it on under <strong>Settings → Modules → Webhooks &amp; Integrations</strong>.</p>
+
+      <h3>Adding an endpoint</h3>
+      <ol>
+        <li>Click <strong>Configure</strong> on the module</li>
+        <li>Enter the <strong>payload URL</strong> that should receive the messages</li>
+        <li>Optionally enter a <strong>shared secret</strong> so the receiver can verify the message is genuine</li>
+        <li>Tick the <strong>events</strong> you want to send (checkout, check in, lost, found, consumed, restocked, low stock, item created, updated, or deleted)</li>
+        <li>Click <strong>Add</strong>. Use the <strong>Test</strong> button on a row to send a sample message and confirm it arrives</li>
+      </ol>
+      <p>Each message is sent as JSON and includes the event name, a timestamp, and details of the item. When you set a shared secret, the app adds a signature header (<code>X-InventoryStore-Signature</code>) so the receiving system can confirm the message really came from your app and was not changed in transit.</p>
     </section>
 
     <section id="csv">

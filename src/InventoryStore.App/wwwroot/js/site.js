@@ -4,6 +4,52 @@ window.escHtml = function(s) {
     return s == null ? '' : String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 };
 
+// Maps a GHS pictogram name (e.g. "Flammable") to its bundled symbol path. Keep in sync with
+// the server-side GhsPictograms helper.
+window.ghsPictogramImg = function (name) {
+    if (!name) return null;
+    var n = String(name).toLowerCase();
+    var map = [
+        ['explos', 'GHS01'], ['flam', 'GHS02'], ['oxidi', 'GHS03'],
+        ['compressed gas', 'GHS04'], ['gas cylinder', 'GHS04'], ['corros', 'GHS05'],
+        ['acute tox', 'GHS06'], ['toxic', 'GHS06'], ['environ', 'GHS09'],
+        ['health', 'GHS08'], ['irritant', 'GHS07'], ['harmful', 'GHS07']
+    ];
+    for (var i = 0; i < map.length; i++) {
+        if (n.indexOf(map[i][0]) !== -1) return '/img/ghs/' + map[i][1] + '.svg';
+    }
+    return null;
+};
+
+// Renders GHS pictogram <img> tags from a "A; B" string into the given element (SDS module).
+// Returns the number of pictograms rendered. Skips duplicates.
+window.renderPictograms = function (el, pictogramsString, size) {
+    if (!el) return 0;
+    el.innerHTML = '';
+    if (!(window.modules && window.modules.sds) || !pictogramsString) return 0;
+    var px = size || 20, seen = {}, count = 0;
+    pictogramsString.split(';').map(function (s) { return s.trim(); }).filter(Boolean).forEach(function (name) {
+        var src = window.ghsPictogramImg(name);
+        if (!src || seen[src]) return;
+        seen[src] = true;
+        var img = document.createElement('img');
+        img.src = src; img.alt = name; img.title = name;
+        img.width = px; img.height = px; img.className = 'ghs-pictogram';
+        el.appendChild(img);
+        count++;
+    });
+    return count;
+};
+
+// Sets a GHS signal-word badge (Danger / Warning) on an element, or hides it when empty.
+window.applySignalBadge = function (el, signal) {
+    if (!el) return;
+    if (!signal) { el.classList.add('d-none'); el.textContent = ''; return; }
+    el.textContent = signal;
+    el.className = 'badge ' + (/danger/i.test(signal) ? 'text-bg-danger' : 'text-bg-warning');
+    el.classList.remove('d-none');
+};
+
 window.showToast = function(msg, type) {
     var container = document.getElementById('toast-container');
     if (!container) return;

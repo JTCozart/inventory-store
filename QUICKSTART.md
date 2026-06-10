@@ -180,18 +180,20 @@ If locked out, right-click the tray icon and choose **Reset Admin Password**.
 
 ---
 
-## 15. Look up safety data sheets (optional module)
+## 15. Turn on optional modules
 
-For teams that handle chemicals, an Admin can turn on the Safety Data Sheets module:
+Inventory Store has optional add-ons under **Settings → Modules** (Admin only). Each one is off by default and stays out of the way until you switch it on, then click **Configure** to manage it:
 
-1. Go to **Settings → Modules → Safety Data Sheets** and switch it on
-2. Open an item and click **Edit**
-3. In the **Safety Data Sheet** section, enter the chemical name (e.g. `acetone`) and click **Look up SDS**
-4. Hazard details from PubChem (signal word, pictograms, CAS number, and a link) are saved to the item
+- **Safety Data Sheets** - keep chemical hazard info (signal word, GHS pictograms, CAS number) on items, looked up free from PubChem
+- **Cost & Valuation** - record a unit cost per item and see total inventory value, by category, with depreciation (also a Valuation report)
+- **Consumption Forecasting** - projects when consumables will run out from real usage history (also a Forecast report)
+- **Webhooks & Integrations** - send signed messages to a URL on inventory events, to connect Slack, Zapier, Make, or your own scripts
 
-A **View SDS Info** button then appears on that item's detail screen for everyone. To see everything on file, go to **Settings → Modules → Safety Data Sheets → Configure**.
+**Example - Safety Data Sheets:** switch it on, open an item, click **Edit**, enter the chemical name (e.g. `acetone`) in the **Safety Data Sheet** section, and click **Look up SDS**. The hazard pictograms then appear on the item and scan cards.
 
-> Tip: PubChem lists chemicals, not brand names. Search the chemical (e.g. "sodium hypochlorite") rather than a product name (e.g. "bleach"). If there is no exact match, the app suggests close chemical names to pick from.
+See the [User Guide](https://inventorystore.app/user-guide.html) for full details on each module.
+
+> Tip: For SDS, PubChem lists chemicals, not brand names. Search the chemical (e.g. "sodium hypochlorite") rather than a product name (e.g. "bleach"). If there is no exact match, the app suggests close chemical names to pick from.
 
 ---
 

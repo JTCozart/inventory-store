@@ -95,7 +95,22 @@ else
                     {
                         <tr class="inventory-row" data-item-id="@item.Id" style="cursor:pointer"
                             data-search="@item.Name @(item.SKU ?? "") @(item.Location ?? "") @(item.CategoryName ?? "")">
-                            <td class="fw-semibold"><div class="cell-truncate" title="@item.Name">@item.Name</div></td>
+                            <td class="fw-semibold">
+                                <div class="d-flex align-items-center gap-1">
+                                    <span class="cell-truncate" title="@item.Name">@item.Name</span>
+                                    @if (Model.HazmatEnabled && Model.ItemPictograms.TryGetValue(item.Id, out var pics))
+                                    {
+                                        foreach (var p in pics)
+                                        {
+                                            var img = InventoryStore.App.Modules.GhsPictograms.ImagePath(p);
+                                            if (img is not null)
+                                            {
+                                                <img src="@img" alt="@p" title="@p" width="22" height="22" class="ghs-pictogram" />
+                                            }
+                                        }
+                                    }
+                                </div>
+                            </td>
                             <td class="d-none d-md-table-cell">
                                 @if (item.ItemType == InventoryStore.Domain.Enums.ItemType.Reusable)
                                 {
@@ -350,6 +365,19 @@ else
                             <label class="form-label">Description</label>
                             <textarea id="add-description" class="form-control" rows="3"></textarea>
                         </div>
+                        <div class="col-12 d-none" id="add-sds-section">
+                            <hr class="my-1" />
+                            <label class="form-label">Safety Data Sheet <span class="text-muted small">(optional)</span></label>
+                            <div class="input-group">
+                                <input type="text" id="add-sds-name" class="form-control" placeholder="Chemical name, e.g. Acetone" />
+                                <button type="button" class="btn btn-outline-warning" id="add-sds-lookup-btn" onclick="lookupAddSds()">
+                                    <i class="bi bi-eyedropper me-1"></i>Look up SDS
+                                </button>
+                            </div>
+                            <div class="form-text">Searches PubChem; the hazard data is attached to the item when you save.</div>
+                            <div id="add-sds-status" class="small mb-1"></div>
+                            <div id="add-sds-result"></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -487,6 +515,50 @@ function confirmDelete(btn) {
 <script>
 // ── Add Item Modal ────────────────────────────────────────────────────────────
 var _addItemModal = null;
+var _addSdsName = null;   // confirmed chemical name to attach to the new item on save (SDS module)
+
+// Preview an SDS lookup in the Add modal (the item does not exist yet, so itemId=0 = no save).
+async function lookupAddSds() {
+    var nameField = document.getElementById('add-sds-name');
+    var name = (nameField.value || '').trim();
+    if (!name) { name = document.getElementById('add-name').value.trim(); nameField.value = name; }
+    var status = document.getElementById('add-sds-status');
+    var result = document.getElementById('add-sds-result');
+    var btn = document.getElementById('add-sds-lookup-btn');
+    _addSdsName = null;
+    result.innerHTML = '';
+    if (!name) { status.innerHTML = '<span class="text-danger">Enter a chemical name first.</span>'; return; }
+    btn.disabled = true;
+    status.innerHTML = '<span class="text-muted"><span class="spinner-border spinner-border-sm me-1"></span>Searching PubChem…</span>';
+    try {
+        var res = await fetch('/api/sds/lookup?itemId=0&name=' + encodeURIComponent(name));
+        if (!res.ok) { status.innerHTML = '<span class="text-danger">Lookup failed.</span>'; return; }
+        var data = await res.json();
+        if (!data.success) {
+            var html = '<span class="text-warning">' + escHtml(data.error || 'No data found.') + '</span>';
+            if (data.suggestions && data.suggestions.length) {
+                html += '<div class="mt-1"><span class="text-muted">Did you mean:</span> ' +
+                    data.suggestions.map(function (s) {
+                        return '<button type="button" class="btn btn-sm btn-outline-secondary me-1 mb-1" data-name="' + escHtml(s) + '" onclick="addSdsSuggest(this.dataset.name)">' + escHtml(s) + '</button>';
+                    }).join('') + '</div>';
+            } else {
+                html += '<div class="text-muted small mt-1">Try a chemical name rather than a brand or product name.</div>';
+            }
+            status.innerHTML = html;
+            return;
+        }
+        _addSdsName = name;
+        status.innerHTML = '<span class="text-success"><i class="bi bi-check-lg me-1"></i>Found. Will attach when you save.</span>';
+        result.innerHTML = (data.sheets || []).map(sdsCardHtml).join('');
+    } catch {
+        status.innerHTML = '<span class="text-danger">Network error.</span>';
+    } finally { btn.disabled = false; }
+}
+
+function addSdsSuggest(name) {
+    document.getElementById('add-sds-name').value = name;
+    lookupAddSds();
+}
 
 async function openAddItemModal() {
     if (!_addItemModal) _addItemModal = new bootstrap.Modal(document.getElementById('addItemModal'));
@@ -502,6 +574,17 @@ async function openAddItemModal() {
     document.getElementById('add-type-consumable').checked = true;
     applyAddItemType();
     document.getElementById('add-alert').classList.add('d-none');
+
+    // SDS ("hazmat") module: show the optional SDS lookup in the Add modal.
+    _addSdsName = null;
+    var addSdsSection = document.getElementById('add-sds-section');
+    if (addSdsSection) {
+        var sdsOn = window.modules && window.modules.sds;
+        addSdsSection.classList.toggle('d-none', !sdsOn);
+        document.getElementById('add-sds-name').value = '';
+        document.getElementById('add-sds-status').innerHTML = '';
+        document.getElementById('add-sds-result').innerHTML = '';
+    }
 
     // Load categories and locations
     try {
@@ -641,6 +724,12 @@ async function saveAddItem() {
         });
         const data = await res.json();
         if (data.success) {
+            // Attach the previewed SDS data to the freshly created item (SDS module).
+            if (window.modules && window.modules.sds && _addSdsName && data.id) {
+                try {
+                    await fetch('/api/sds/lookup?itemId=' + data.id + '&name=' + encodeURIComponent(_addSdsName));
+                } catch {}
+            }
             _addItemModal.hide();
             showFlashToast('Item added.');
             location.reload();

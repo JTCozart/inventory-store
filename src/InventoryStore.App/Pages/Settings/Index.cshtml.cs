@@ -21,6 +21,7 @@ public class IndexModel : PageModel
     private readonly ICategoryService _categoryService;
     private readonly IInventoryService _inventoryService;
     private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly InventoryStore.App.Modules.IModuleRegistry _modules;
     private readonly ILogger<IndexModel> _logger;
 
     public string Tab { get; private set; } = "account";
@@ -58,8 +59,13 @@ public class IndexModel : PageModel
     public bool    HttpsCertUploaded  { get; private set; }
 
     // Modules tab
-    public bool SdsModuleEnabled { get; private set; }
+    public IReadOnlyList<InventoryStore.App.Modules.ModuleDescriptor> Modules { get; private set; } = [];
+    public IReadOnlyDictionary<string, bool> EnabledMap { get; private set; } = new Dictionary<string, bool>();
     public string? ModuleSection { get; private set; }
+    public bool IsModuleEnabled(string key) => EnabledMap.TryGetValue(key, out var v) && v;
+    // Per-module Configure state
+    public string CostCurrency      { get; private set; } = "$";
+    public int    ForecastWindowDays { get; private set; } = 30;
 
     // Notifications tab
     public string? NtfyServer      { get; private set; }
@@ -73,7 +79,8 @@ public class IndexModel : PageModel
 
     public IndexModel(IUserAuthService authService, ISettingsService settingsService, TunnelService tunnel,
         ICategoryService categoryService, IInventoryService inventoryService,
-        IHttpContextAccessor httpContextAccessor, ILogger<IndexModel> logger)
+        IHttpContextAccessor httpContextAccessor, InventoryStore.App.Modules.IModuleRegistry modules,
+        ILogger<IndexModel> logger)
     {
         _authService          = authService;
         _settingsService      = settingsService;
@@ -81,6 +88,7 @@ public class IndexModel : PageModel
         _categoryService      = categoryService;
         _inventoryService     = inventoryService;
         _httpContextAccessor  = httpContextAccessor;
+        _modules              = modules;
         _logger               = logger;
     }
 
@@ -119,8 +127,11 @@ public class IndexModel : PageModel
 
         if (tab == "modules")
         {
-            ModuleSection    = section;
-            SdsModuleEnabled = await _settingsService.GetAsync("module.sds.enabled") == "true";
+            ModuleSection      = section;
+            Modules            = _modules.All;
+            EnabledMap         = await _modules.GetEnabledMapAsync();
+            CostCurrency       = await _settingsService.GetAsync("module.cost.currency") ?? "$";
+            ForecastWindowDays = int.TryParse(await _settingsService.GetAsync("module.forecast.windowdays"), out var w) && w > 0 ? w : 30;
         }
 
         if (tab == "notifications")
@@ -519,12 +530,29 @@ public class IndexModel : PageModel
         Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
         "InventoryStore", "inventory.db");
 
-    public async Task<IActionResult> OnPostSaveModulesAsync(bool sdsEnabled)
+    public async Task<IActionResult> OnPostToggleModuleAsync(string key, bool enabled)
     {
         if (!User.IsInRole("Admin")) return Forbid();
-        await _settingsService.SetAsync("module.sds.enabled", sdsEnabled ? "true" : null);
+        var module = _modules.Find(key);
+        if (module is null) return RedirectWithMessage("modules", error: "Unknown module.");
+        await _modules.SetEnabledAsync(key, enabled);
         return RedirectWithMessage("modules",
-            success: sdsEnabled ? "Safety Data Sheets module enabled." : "Safety Data Sheets module disabled.");
+            success: $"{module.Name} module {(enabled ? "enabled" : "disabled")}.");
+    }
+
+    public async Task<IActionResult> OnPostSaveCostSettingsAsync(string? currency)
+    {
+        if (!User.IsInRole("Admin")) return Forbid();
+        await _settingsService.SetAsync("module.cost.currency",
+            string.IsNullOrWhiteSpace(currency) ? "$" : currency.Trim());
+        return RedirectWithMessage("modules", success: "Currency saved.", section: "cost");
+    }
+
+    public async Task<IActionResult> OnPostSaveForecastSettingsAsync(int windowDays)
+    {
+        if (!User.IsInRole("Admin")) return Forbid();
+        await _settingsService.SetAsync("module.forecast.windowdays", (windowDays > 0 ? windowDays : 30).ToString());
+        return RedirectWithMessage("modules", success: "Forecast window saved.", section: "forecast");
     }
 
     public async Task<IActionResult> OnPostSavePublicViewSettingAsync(bool enabled)
@@ -541,8 +569,8 @@ public class IndexModel : PageModel
         return new JsonResult(new { success = true });
     }
 
-    private IActionResult RedirectWithMessage(string tab, string? success = null, string? error = null) =>
-        RedirectToPage(new { tab, success, error });
+    private IActionResult RedirectWithMessage(string tab, string? success = null, string? error = null, string? section = null) =>
+        RedirectToPage(new { tab, success, error, section });
 
     public class AddUserInput
     {

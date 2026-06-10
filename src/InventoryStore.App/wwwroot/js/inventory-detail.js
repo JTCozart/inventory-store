@@ -194,6 +194,8 @@ function populateView(s) {
 
     // SDS module: reveal the "View SDS Info" button only when this item has data attached.
     setupViewSds(s.id);
+    // Cost module: show the cost line when this item has a unit cost on file.
+    setupViewCost(s);
 
     document.getElementById('modal-content').classList.remove('d-none');
 }
@@ -581,6 +583,7 @@ function populateEditForm(data) {
 
     initEditCategoryWidget();
     setupEditSds(item);
+    setupEditCost(item);
 }
 
 function initEditCategoryWidget() {
@@ -764,7 +767,7 @@ function sdsCardHtml(s) {
 function setupEditSds(item) {
     const section = document.getElementById('edit-sds-section');
     if (!section) return;
-    if (!window.sdsModuleEnabled) { section.classList.add('d-none'); return; }
+    if (!(window.modules && window.modules.sds)) { section.classList.add('d-none'); return; }
     section.classList.remove('d-none');
     document.getElementById('edit-sds-name').value = item.name || '';
     document.getElementById('edit-sds-status').innerHTML = '';
@@ -827,10 +830,16 @@ function setupViewSds(itemId) {
     if (!block) return;
     _currentSdsRows = [];
     block.classList.add('d-none');
-    if (!window.sdsModuleEnabled) return;
+    if (!(window.modules && window.modules.sds)) return;
     fetchItemSds(itemId).then(rows => {
         _currentSdsRows = rows || [];
-        block.classList.toggle('d-none', _currentSdsRows.length === 0);
+        const has = _currentSdsRows.length > 0;
+        block.classList.toggle('d-none', !has);
+        if (!has) return;
+        const signal = (_currentSdsRows.find(r => r.signalWord) || {}).signalWord;
+        window.applySignalBadge(document.getElementById('modal-sds-signal'), signal);
+        const pics = _currentSdsRows.map(r => r.pictograms || '').filter(Boolean).join('; ');
+        window.renderPictograms(document.getElementById('modal-sds-pictograms'), pics, 30);
     });
 }
 
@@ -840,4 +849,70 @@ function viewSds() {
         ? _currentSdsRows.map(sdsCardHtml).join('')
         : '<div class="text-muted">No safety data attached.</div>';
     bootstrap.Modal.getOrCreateInstance(document.getElementById('sdsInfoModal')).show();
+}
+
+// ── Cost & Valuation module ───────────────────────────────────────────────────
+
+function moduleCurrency() { return window.costCurrency || '$'; }
+
+function fmtMoney(n) {
+    if (n == null || isNaN(n)) return '-';
+    return moduleCurrency() + Number(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function setupEditCost(item) {
+    const section = document.getElementById('edit-cost-section');
+    if (!section) return;
+    if (!(window.modules && window.modules.cost)) { section.classList.add('d-none'); return; }
+    section.classList.remove('d-none');
+    document.getElementById('edit-cost-currency').textContent = moduleCurrency();
+    document.getElementById('edit-cost-status').innerHTML = '';
+    document.getElementById('edit-cost-unit').value = '';
+    document.getElementById('edit-cost-purchase').value = '';
+    document.getElementById('edit-cost-life').value = '';
+    fetch(`/api/cost/item/${_editItemId}`).then(r => r.ok ? r.json() : null).then(c => {
+        if (!c) return;
+        document.getElementById('edit-cost-unit').value = c.unitCost ?? '';
+        document.getElementById('edit-cost-purchase').value = c.purchaseDate || '';
+        document.getElementById('edit-cost-life').value = c.usefulLifeMonths ?? '';
+    }).catch(() => {});
+}
+
+async function saveCost() {
+    const status = document.getElementById('edit-cost-status');
+    const btn    = document.getElementById('edit-cost-save-btn');
+    const unit   = parseFloat(document.getElementById('edit-cost-unit').value);
+    if (isNaN(unit) || unit < 0) { status.innerHTML = '<span class="text-danger">Enter a valid unit cost.</span>'; return; }
+    const payload = {
+        unitCost: unit,
+        purchaseDate: document.getElementById('edit-cost-purchase').value || null,
+        usefulLifeMonths: parseInt(document.getElementById('edit-cost-life').value) || null
+    };
+    btn.disabled = true;
+    status.innerHTML = '';
+    try {
+        const res = await fetch(`/api/cost/item/${_editItemId}`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+        });
+        status.innerHTML = res.ok
+            ? '<span class="text-success"><i class="bi bi-check-lg me-1"></i>Saved.</span>'
+            : '<span class="text-danger">Save failed.</span>';
+    } catch {
+        status.innerHTML = '<span class="text-danger">Network error.</span>';
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+function setupViewCost(s) {
+    const block = document.getElementById('modal-cost-block');
+    if (!block) return;
+    block.classList.add('d-none');
+    if (!(window.modules && window.modules.cost)) return;
+    fetch(`/api/cost/item/${s.id}`).then(r => r.ok ? r.json() : null).then(c => {
+        if (!c || c.unitCost == null) return;
+        document.getElementById('modal-cost-unit').textContent = fmtMoney(c.unitCost);
+        document.getElementById('modal-cost-line').textContent = fmtMoney(c.unitCost * (s.quantity || 0));
+        block.classList.remove('d-none');
+    }).catch(() => {});
 }

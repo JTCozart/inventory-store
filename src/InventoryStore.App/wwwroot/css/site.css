@@ -795,12 +795,42 @@ th.sort-desc::after { content: ' ↓'; color: #0d6efd; }
     white-space: nowrap;
 }
 
+/* GHS hazard pictograms (SDS module) shown beside item names and in safety sections */
+.ghs-pictogram {
+    flex-shrink: 0;
+    vertical-align: middle;
+    border-radius: 3px;
+}
+/* The pictograms are red/white/black diamonds; on dark backgrounds give them a light chip so
+   the white interior and black symbol stay legible. */
+[data-bs-theme="dark"] .ghs-pictogram {
+    background: #fff;
+    padding: 1px;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, .15);
+}
+
 /* ── Dark mode table-warning (bump opacity) ──── */
 
 [data-bs-theme="dark"] .table-warning {
     --bs-table-color:        #fff;
     --bs-table-bg:           rgba(255, 193, 7, 0.28);
     --bs-table-border-color: rgba(255, 193, 7, 0.38);
+}
+
+/* ── Light theme: legible warning (amber) buttons ──── */
+/* Bootstrap's default btn-outline-warning is yellow text/border on white, which is very hard to
+   read in light mode (e.g. the SDS "Look up" / "View SDS Info" buttons). Darken the resting state
+   to a readable amber and give it a faint tint, keeping the filled yellow hover. */
+html:not([data-bs-theme="dark"]) .btn-outline-warning {
+    --bs-btn-color:               #8a6116;
+    --bs-btn-border-color:        #c79100;
+    --bs-btn-bg:                  #fff9e9;
+    --bs-btn-hover-color:         #000;
+    --bs-btn-hover-bg:            #ffc107;
+    --bs-btn-hover-border-color:  #e0a800;
+    --bs-btn-active-color:        #000;
+    --bs-btn-active-bg:           #ffc107;
+    --bs-btn-active-border-color: #e0a800;
 }
 
 /* UPC product lookup modal */

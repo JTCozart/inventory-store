@@ -48,6 +48,7 @@ public class SetupModel : PageModel
             {
                 new(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new(ClaimTypes.Name, user.DisplayName),
+                new(InventoryStore.App.Extensions.ClaimsPrincipalExtensions.UsernameClaimType, user.Username),
                 new(ClaimTypes.Role, user.Role.ToString())
             };
             var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);

@@ -11,8 +11,11 @@ public class IndexModel : PageModel
 {
     private readonly IReportService _reportService;
     private readonly IInventoryService _inventoryService;
+    private readonly InventoryStore.App.Modules.IModuleRegistry _modules;
 
     public string Tab { get; private set; } = "stock";
+    public bool CostEnabled { get; private set; }
+    public bool ForecastEnabled { get; private set; }
 
     public StockReportDto?        StockReport     { get; private set; }
     public CheckedOutReportDto?   CheckedOut      { get; private set; }
@@ -24,10 +27,12 @@ public class IndexModel : PageModel
     public DateTime? ActivityFrom { get; private set; }
     public DateTime? ActivityTo   { get; private set; }
 
-    public IndexModel(IReportService reportService, IInventoryService inventoryService)
+    public IndexModel(IReportService reportService, IInventoryService inventoryService,
+        InventoryStore.App.Modules.IModuleRegistry modules)
     {
         _reportService    = reportService;
         _inventoryService = inventoryService;
+        _modules          = modules;
     }
 
     public async Task<IActionResult> OnGetExportCsvAsync()
@@ -44,6 +49,8 @@ public class IndexModel : PageModel
     public async Task OnGetAsync(string tab = "stock")
     {
         Tab = tab;
+        CostEnabled     = await _modules.IsEnabledAsync("cost");
+        ForecastEnabled = await _modules.IsEnabledAsync("forecast");
         switch (tab)
         {
             case "checkout":

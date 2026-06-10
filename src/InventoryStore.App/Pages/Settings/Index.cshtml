@@ -1372,42 +1372,48 @@
     </div>
 }
 
-@if (Model.Tab == "modules" && User.IsInRole("Admin") && Model.ModuleSection != "sds")
+@if (Model.Tab == "modules" && User.IsInRole("Admin") && string.IsNullOrEmpty(Model.ModuleSection))
 {
-    @* ── Module list ─────────────────────────────────────────────── *@
-    <div class="card" style="max-width: 720px;">
-        <div class="card-header fw-semibold"><i class="bi bi-eyedropper me-2"></i>Safety Data Sheets</div>
-        <div class="card-body">
-            <p class="text-muted small mb-3">
-                Look up chemical safety information (GHS hazard data) for inventory items from
-                <a href="https://pubchem.ncbi.nlm.nih.gov/" target="_blank">PubChem</a> and attach it to the item.
-                When enabled, a <strong>Look up SDS</strong> action appears on the item edit panel and a
-                <strong>View SDS Info</strong> button appears on the item view.
-            </p>
-            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
-                <form method="post" asp-page-handler="SaveModules">
-                    <div class="form-check form-switch mb-0">
-                        <input class="form-check-input" type="checkbox" role="switch" id="sds-enabled"
-                               name="sdsEnabled" value="true" @(Model.SdsModuleEnabled ? "checked" : "")
-                               onchange="this.form.submit()" />
-                        <label class="form-check-label" for="sds-enabled">
-                            @(Model.SdsModuleEnabled ? "Enabled" : "Disabled")
-                        </label>
+    @* ── Module list (registry-driven) ──────────────────────────── *@
+    <p class="text-muted mb-3" style="max-width: 720px;">
+        Optional add-ons. Turn one on to reveal its features; while it is off it stays out of everyone's way.
+    </p>
+    @foreach (var mod in Model.Modules)
+    {
+        var on = Model.IsModuleEnabled(mod.Key);
+        <div class="card mb-3" style="max-width: 720px;">
+            <div class="card-body">
+                <div class="d-flex align-items-start gap-3">
+                    <i class="bi @mod.Icon fs-4 text-secondary mt-1"></i>
+                    <div class="flex-grow-1">
+                        <div class="fw-semibold">@mod.Name</div>
+                        <p class="text-muted small mb-2">@mod.Description</p>
+                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                            <form method="post" asp-page-handler="ToggleModule">
+                                <input type="hidden" name="key" value="@mod.Key" />
+                                <input type="hidden" name="enabled" value="@(on ? "false" : "true")" />
+                                <div class="form-check form-switch mb-0">
+                                    <input class="form-check-input" type="checkbox" role="switch"
+                                           @(on ? "checked" : "") onchange="this.form.submit()" />
+                                    <label class="form-check-label">@(on ? "Enabled" : "Disabled")</label>
+                                </div>
+                            </form>
+                            @if (mod.HasConfigure && on)
+                            {
+                                <a href="/Settings?tab=modules&section=@mod.Key" class="btn btn-sm btn-outline-secondary">
+                                    <i class="bi bi-gear me-1"></i>Configure
+                                </a>
+                            }
+                            else if (mod.HasConfigure)
+                            {
+                                <span class="text-muted small">Enable to configure</span>
+                            }
+                        </div>
                     </div>
-                </form>
-                @if (Model.SdsModuleEnabled)
-                {
-                    <a href="/Settings?tab=modules&section=sds" class="btn btn-sm btn-outline-secondary">
-                        <i class="bi bi-gear me-1"></i>Configure
-                    </a>
-                }
-                else
-                {
-                    <span class="text-muted small">Enable to configure</span>
-                }
+                </div>
             </div>
         </div>
-    </div>
+    }
 }
 
 @if (Model.Tab == "modules" && User.IsInRole("Admin") && Model.ModuleSection == "sds")
@@ -1419,7 +1425,7 @@
         </a>
     </div>
 
-    @if (!Model.SdsModuleEnabled)
+    @if (!Model.IsModuleEnabled("sds"))
     {
         <div class="alert alert-warning" style="max-width: 1080px;">
             The Safety Data Sheets module is disabled. <a href="/Settings?tab=modules">Enable it</a> to manage metadata.
@@ -1464,8 +1470,162 @@
     }
 }
 
+@if (Model.Tab == "modules" && User.IsInRole("Admin") && Model.ModuleSection == "cost")
+{
+    <div class="mb-3">
+        <a href="/Settings?tab=modules" class="text-decoration-none small"><i class="bi bi-arrow-left me-1"></i>Modules</a>
+    </div>
+    @if (!Model.IsModuleEnabled("cost"))
+    {
+        <div class="alert alert-warning" style="max-width: 1080px;">
+            The Cost &amp; Valuation module is disabled. <a href="/Settings?tab=modules">Enable it</a> to configure.
+        </div>
+    }
+    else
+    {
+        <div class="card mb-3" style="max-width: 720px;">
+            <div class="card-header fw-semibold"><i class="bi bi-cash-coin me-2"></i>Cost &amp; Valuation</div>
+            <div class="card-body">
+                <form method="post" asp-page-handler="SaveCostSettings" class="row g-2 align-items-end">
+                    <div class="col-auto">
+                        <label class="form-label small mb-1">Currency symbol</label>
+                        <input type="text" name="currency" value="@Model.CostCurrency" maxlength="8" class="form-control" style="width:120px" />
+                    </div>
+                    <div class="col-auto">
+                        <button type="submit" class="btn btn-primary">Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card" style="max-width: 1080px;">
+            <div class="card-header d-flex align-items-center justify-content-between">
+                <span class="fw-semibold">Valuation summary</span>
+                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="loadValuation()" title="Reload"><i class="bi bi-arrow-repeat"></i></button>
+            </div>
+            <div class="card-body">
+                <div id="val-error" class="alert alert-danger d-none"></div>
+                <div id="val-summary" class="row g-3 mb-3"></div>
+                <div id="val-empty" class="text-center text-muted py-3 d-none">No item costs recorded yet. Add a unit cost on an item's edit panel.</div>
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle">
+                        <thead><tr><th>Item</th><th>Category</th><th class="text-end">Qty</th><th class="text-end">Unit Cost</th><th class="text-end">Line Value</th><th class="text-end">Book Value</th></tr></thead>
+                        <tbody id="val-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+@if (Model.Tab == "modules" && User.IsInRole("Admin") && Model.ModuleSection == "forecast")
+{
+    <div class="mb-3">
+        <a href="/Settings?tab=modules" class="text-decoration-none small"><i class="bi bi-arrow-left me-1"></i>Modules</a>
+    </div>
+    @if (!Model.IsModuleEnabled("forecast"))
+    {
+        <div class="alert alert-warning" style="max-width: 1080px;">
+            The Consumption Forecasting module is disabled. <a href="/Settings?tab=modules">Enable it</a> to configure.
+        </div>
+    }
+    else
+    {
+        <div class="card mb-3" style="max-width: 720px;">
+            <div class="card-header fw-semibold"><i class="bi bi-graph-down-arrow me-2"></i>Consumption Forecasting</div>
+            <div class="card-body">
+                <form method="post" asp-page-handler="SaveForecastSettings" class="row g-2 align-items-end">
+                    <div class="col-auto">
+                        <label class="form-label small mb-1">Usage window (days)</label>
+                        <input type="number" name="windowDays" value="@Model.ForecastWindowDays" min="1" class="form-control" style="width:120px" />
+                    </div>
+                    <div class="col-auto"><button type="submit" class="btn btn-primary">Save</button></div>
+                    <div class="col-12"><span class="form-text">Run-out dates are projected from average daily use over this many recent days.</span></div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card" style="max-width: 1080px;">
+            <div class="card-header d-flex align-items-center justify-content-between">
+                <span class="fw-semibold">Forecast</span>
+                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="loadForecast()" title="Reload"><i class="bi bi-arrow-repeat"></i></button>
+            </div>
+            <div class="card-body">
+                <div id="fc-error" class="alert alert-danger d-none"></div>
+                <div id="fc-empty" class="text-center text-muted py-3 d-none">No consumption recorded yet in this window.</div>
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle">
+                        <thead><tr><th>Item</th><th class="text-end">In Stock</th><th class="text-end">Avg/Day</th><th class="text-end">Days Left</th><th>Projected Run-out</th></tr></thead>
+                        <tbody id="fc-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+@if (Model.Tab == "modules" && User.IsInRole("Admin") && Model.ModuleSection == "webhooks")
+{
+    <div class="mb-3">
+        <a href="/Settings?tab=modules" class="text-decoration-none small"><i class="bi bi-arrow-left me-1"></i>Modules</a>
+    </div>
+    @if (!Model.IsModuleEnabled("webhooks"))
+    {
+        <div class="alert alert-warning" style="max-width: 1080px;">
+            The Webhooks module is disabled. <a href="/Settings?tab=modules">Enable it</a> to configure.
+        </div>
+    }
+    else
+    {
+        <div class="card mb-3" style="max-width: 820px;">
+            <div class="card-header fw-semibold"><i class="bi bi-broadcast me-2"></i>Add endpoint</div>
+            <div class="card-body">
+                <div class="mb-2">
+                    <label class="form-label small mb-1">Payload URL</label>
+                    <input type="url" id="wh-url" class="form-control" placeholder="https://example.com/hook" />
+                </div>
+                <div class="mb-2">
+                    <label class="form-label small mb-1">Shared secret <span class="text-muted">(optional, for HMAC signature)</span></label>
+                    <input type="text" id="wh-secret" class="form-control" placeholder="Leave blank for unsigned" />
+                </div>
+                <div class="mb-2">
+                    <label class="form-label small mb-1">Events</label>
+                    <div id="wh-events" class="d-flex flex-wrap gap-2">
+                        @foreach (var ev in new[]{"item.checkout","item.checkin","item.lost","item.found","item.consumed","item.restocked","item.lowstock","item.created","item.updated","item.deleted"})
+                        {
+                            <div class="form-check">
+                                <input class="form-check-input wh-event" type="checkbox" value="@ev" id="wh-ev-@ev" checked />
+                                <label class="form-check-label small" for="wh-ev-@ev">@ev</label>
+                            </div>
+                        }
+                    </div>
+                </div>
+                <button type="button" class="btn btn-primary btn-sm" onclick="addWebhook()"><i class="bi bi-plus-lg me-1"></i>Add</button>
+                <span id="wh-add-status" class="small ms-2"></span>
+            </div>
+        </div>
+
+        <div class="card" style="max-width: 1080px;">
+            <div class="card-header d-flex align-items-center justify-content-between">
+                <span class="fw-semibold">Endpoints</span>
+                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="loadWebhooks()" title="Reload"><i class="bi bi-arrow-repeat"></i></button>
+            </div>
+            <div class="card-body">
+                <div id="wh-error" class="alert alert-danger d-none"></div>
+                <div id="wh-empty" class="text-center text-muted py-3 d-none">No endpoints yet.</div>
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle">
+                        <thead><tr><th>URL</th><th>Events</th><th>Signed</th><th>Last status</th><th></th></tr></thead>
+                        <tbody id="wh-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+}
+
 @section Scripts {
-@if (Model.Tab == "modules" && Model.ModuleSection == "sds" && Model.SdsModuleEnabled)
+@if (Model.Tab == "modules" && Model.ModuleSection == "sds" && Model.IsModuleEnabled("sds"))
 {
 <script>
 function sdsEsc(s) {
@@ -1517,6 +1677,115 @@ async function deleteSds(id) {
     } catch {}
 }
 document.addEventListener('DOMContentLoaded', loadSdsTable);
+</script>
+}
+@if (Model.Tab == "modules" && Model.ModuleSection == "cost" && Model.IsModuleEnabled("cost"))
+{
+<script>
+function modEsc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function money(cur,n){ if(n==null||isNaN(n)) return '-'; return cur + Number(n).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}); }
+async function loadValuation() {
+    var err=document.getElementById('val-error'), empty=document.getElementById('val-empty');
+    var sum=document.getElementById('val-summary'), tbody=document.getElementById('val-tbody');
+    err.classList.add('d-none'); empty.classList.add('d-none'); tbody.innerHTML=''; sum.innerHTML='';
+    try {
+        var res = await fetch('/api/cost/valuation');
+        if (!res.ok) throw new Error();
+        var d = await res.json();
+        var cur = d.currency || '$';
+        sum.innerHTML =
+            '<div class="col-auto"><div class="text-muted small">Total value</div><div class="fs-5 fw-semibold">'+money(cur,d.totalValue)+'</div></div>' +
+            '<div class="col-auto"><div class="text-muted small">Book value (after depreciation)</div><div class="fs-5 fw-semibold">'+money(cur,d.totalBookValue)+'</div></div>' +
+            '<div class="col-auto"><div class="text-muted small">Items costed</div><div class="fs-5 fw-semibold">'+d.itemsCosted+'</div></div>';
+        if (!d.items.length) { empty.classList.remove('d-none'); return; }
+        tbody.innerHTML = d.items.map(function(r){
+            return '<tr>'+
+                '<td>'+modEsc(r.name)+'</td>'+
+                '<td>'+modEsc(r.category)+'</td>'+
+                '<td class="text-end">'+r.quantity+'</td>'+
+                '<td class="text-end">'+money(cur,r.unitCost)+'</td>'+
+                '<td class="text-end">'+money(cur,r.lineValue)+'</td>'+
+                '<td class="text-end">'+money(cur,r.bookValue)+'</td>'+
+                '</tr>';
+        }).join('');
+    } catch { err.textContent='Could not load valuation.'; err.classList.remove('d-none'); }
+}
+document.addEventListener('DOMContentLoaded', loadValuation);
+</script>
+}
+@if (Model.Tab == "modules" && Model.ModuleSection == "forecast" && Model.IsModuleEnabled("forecast"))
+{
+<script>
+function fcEsc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+async function loadForecast() {
+    var err=document.getElementById('fc-error'), empty=document.getElementById('fc-empty'), tbody=document.getElementById('fc-tbody');
+    err.classList.add('d-none'); empty.classList.add('d-none'); tbody.innerHTML='';
+    try {
+        var res = await fetch('/api/forecast');
+        if (!res.ok) throw new Error();
+        var rows = await res.json();
+        if (!rows.length) { empty.classList.remove('d-none'); return; }
+        tbody.innerHTML = rows.map(function(r){
+            var days = r.daysRemaining==null ? '∞' : Math.round(r.daysRemaining);
+            var runout = r.runOutDate ? new Date(r.runOutDate).toLocaleDateString() : '<span class="text-muted">—</span>';
+            var cls = (r.daysRemaining!=null && r.daysRemaining<=14) ? ' class="text-danger fw-semibold"' : '';
+            return '<tr'+cls+'>'+
+                '<td>'+fcEsc(r.name)+'</td>'+
+                '<td class="text-end">'+r.quantity+'</td>'+
+                '<td class="text-end">'+r.avgDailyUse.toFixed(2)+'</td>'+
+                '<td class="text-end">'+days+'</td>'+
+                '<td>'+runout+'</td>'+
+                '</tr>';
+        }).join('');
+    } catch { err.textContent='Could not load forecast.'; err.classList.remove('d-none'); }
+}
+document.addEventListener('DOMContentLoaded', loadForecast);
+</script>
+}
+@if (Model.Tab == "modules" && Model.ModuleSection == "webhooks" && Model.IsModuleEnabled("webhooks"))
+{
+<script>
+function whEsc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+async function loadWebhooks() {
+    var err=document.getElementById('wh-error'), empty=document.getElementById('wh-empty'), tbody=document.getElementById('wh-tbody');
+    err.classList.add('d-none'); empty.classList.add('d-none'); tbody.innerHTML='';
+    try {
+        var res = await fetch('/api/webhooks');
+        if (!res.ok) throw new Error();
+        var rows = await res.json();
+        if (!rows.length) { empty.classList.remove('d-none'); return; }
+        tbody.innerHTML = rows.map(function(r){
+            var last = r.lastStatus ? whEsc(r.lastStatus) : '<span class="text-muted">never</span>';
+            return '<tr>'+
+                '<td class="text-break small">'+whEsc(r.url)+'</td>'+
+                '<td class="small">'+whEsc(r.events)+'</td>'+
+                '<td>'+(r.signed?'<i class="bi bi-shield-check text-success"></i>':'<span class="text-muted">no</span>')+'</td>'+
+                '<td class="small">'+last+'</td>'+
+                '<td class="text-end text-nowrap">'+
+                    '<button class="btn btn-sm btn-outline-secondary me-1" onclick="testWebhook('+r.id+')" title="Send test"><i class="bi bi-send"></i></button>'+
+                    '<button class="btn btn-sm btn-outline-danger" onclick="deleteWebhook('+r.id+')" title="Delete"><i class="bi bi-trash"></i></button>'+
+                '</td></tr>';
+        }).join('');
+    } catch { err.textContent='Could not load endpoints.'; err.classList.remove('d-none'); }
+}
+async function addWebhook() {
+    var url=document.getElementById('wh-url').value.trim();
+    var secret=document.getElementById('wh-secret').value.trim();
+    var status=document.getElementById('wh-add-status');
+    var events=Array.from(document.querySelectorAll('.wh-event:checked')).map(function(c){return c.value;});
+    if(!url){ status.innerHTML='<span class="text-danger">Enter a URL.</span>'; return; }
+    if(!events.length){ status.innerHTML='<span class="text-danger">Pick at least one event.</span>'; return; }
+    status.innerHTML='';
+    try {
+        var res = await fetch('/api/webhooks', { method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ url:url, secret:secret||null, events:events.join(',') }) });
+        if (res.ok) { document.getElementById('wh-url').value=''; document.getElementById('wh-secret').value=''; loadWebhooks(); }
+        else status.innerHTML='<span class="text-danger">Add failed.</span>';
+    } catch { status.innerHTML='<span class="text-danger">Network error.</span>'; }
+}
+async function deleteWebhook(id){ if(!confirm('Delete this endpoint?'))return; try{ var r=await fetch('/api/webhooks/'+id+'/delete',{method:'POST'}); if(r.ok)loadWebhooks(); }catch{} }
+async function testWebhook(id){ try{ var r=await fetch('/api/webhooks/'+id+'/test',{method:'POST'}); var d=await r.json(); alert(d.ok?('Sent: HTTP '+d.status):('Failed: '+(d.error||('HTTP '+d.status)))); loadWebhooks(); }catch{ alert('Network error.'); } }
+document.addEventListener('DOMContentLoaded', loadWebhooks);
 </script>
 }
 @if (Model.Tab == "notifications")

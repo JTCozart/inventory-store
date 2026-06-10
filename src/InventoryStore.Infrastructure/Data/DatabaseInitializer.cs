@@ -63,6 +63,43 @@ public class DatabaseInitializer
         await AddColumnIfMissingAsync(conn, "ProductMetadata", "Size",   "TEXT NULL");
         await AddColumnIfMissingAsync(conn, "ProductMetadata", "Weight", "TEXT NULL");
         await EnsureSafetyDataSheetsTableAsync(conn);
+        await EnsureItemCostsTableAsync(conn);
+        await EnsureStockMovementsTableAsync(conn);
+        await EnsureWebhookEndpointsTableAsync(conn);
+        await BackfillActivityLogUsernamesAsync(conn);
+    }
+
+    // One-time correction: older activity-log rows stored a user's display name (first/last) instead
+    // of their login name. Each row carries a UserId, so set Username to the matching user's login
+    // name. Guarded by a flag so it runs once and never rewrites history again.
+    private static async Task BackfillActivityLogUsernamesAsync(SqliteConnection conn)
+    {
+        const string flagKey = "migration.activitylog.usernames";
+
+        await using (var check = conn.CreateCommand())
+        {
+            check.CommandText = "SELECT Value FROM AppSettings WHERE Key = $k";
+            check.Parameters.AddWithValue("$k", flagKey);
+            if (await check.ExecuteScalarAsync() is string v && v == "done") return;
+        }
+
+        await using (var update = conn.CreateCommand())
+        {
+            update.CommandText = @"
+                UPDATE ActivityLogs
+                SET Username = (SELECT u.Username FROM Users u WHERE u.Id = ActivityLogs.UserId)
+                WHERE UserId IS NOT NULL
+                  AND EXISTS (SELECT 1 FROM Users u WHERE u.Id = ActivityLogs.UserId);";
+            await update.ExecuteNonQueryAsync();
+        }
+
+        await using (var flag = conn.CreateCommand())
+        {
+            flag.CommandText = "INSERT INTO AppSettings (Key, Value, UpdatedAt) VALUES ($k, 'done', $t)";
+            flag.Parameters.AddWithValue("$k", flagKey);
+            flag.Parameters.AddWithValue("$t", DateTime.UtcNow.ToString("o"));
+            await flag.ExecuteNonQueryAsync();
+        }
     }
 
     private static async Task MakeUsersEmailNullableAsync(SqliteConnection conn)
@@ -124,7 +161,8 @@ public class DatabaseInitializer
     }
 
     private static readonly HashSet<string> _allowedTables = new(StringComparer.OrdinalIgnoreCase)
-        { "Users", "InventoryItems", "CheckoutRecords", "Clients", "ProductMetadata", "SafetyDataSheets" };
+        { "Users", "InventoryItems", "CheckoutRecords", "Clients", "ProductMetadata", "SafetyDataSheets",
+          "ItemCosts", "StockMovements", "WebhookEndpoints" };
 
     private static readonly HashSet<string> _allowedColumns = new(StringComparer.OrdinalIgnoreCase)
         { "FirstName", "LastName", "ItemType", "CheckedOutCount", "LostCount", "ScanWarning", "CategoryId", "ExpiryDate", "IsPublic", "ClientId", "Email", "IsMetadataMatched", "MetadataSource", "SelectedMetadataId", "Size", "Weight" };
@@ -239,6 +277,61 @@ public class DatabaseInitializer
             );
             CREATE INDEX IF NOT EXISTS IX_SafetyDataSheets_InventoryItemId
                 ON SafetyDataSheets (InventoryItemId);";
+        await cmd.ExecuteNonQueryAsync();
+    }
+
+    private static async Task EnsureItemCostsTableAsync(SqliteConnection conn)
+    {
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+            CREATE TABLE IF NOT EXISTS ItemCosts (
+                Id               INTEGER PRIMARY KEY AUTOINCREMENT,
+                InventoryItemId  INTEGER NOT NULL,
+                UnitCost         TEXT    NOT NULL,
+                PurchaseDate     TEXT    NULL,
+                UsefulLifeMonths INTEGER NULL,
+                UpdatedAt        TEXT    NOT NULL,
+                FOREIGN KEY (InventoryItemId) REFERENCES InventoryItems (Id) ON DELETE CASCADE
+            );
+            CREATE UNIQUE INDEX IF NOT EXISTS IX_ItemCosts_InventoryItemId
+                ON ItemCosts (InventoryItemId);";
+        await cmd.ExecuteNonQueryAsync();
+    }
+
+    private static async Task EnsureStockMovementsTableAsync(SqliteConnection conn)
+    {
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+            CREATE TABLE IF NOT EXISTS StockMovements (
+                Id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                InventoryItemId INTEGER NOT NULL,
+                ChangeType      TEXT    NOT NULL,
+                Quantity        INTEGER NOT NULL,
+                Timestamp       TEXT    NOT NULL,
+                UserId          INTEGER NULL,
+                Username        TEXT    NULL,
+                Notes           TEXT    NULL,
+                FOREIGN KEY (InventoryItemId) REFERENCES InventoryItems (Id) ON DELETE CASCADE
+            );
+            CREATE INDEX IF NOT EXISTS IX_StockMovements_InventoryItemId ON StockMovements (InventoryItemId);
+            CREATE INDEX IF NOT EXISTS IX_StockMovements_Timestamp ON StockMovements (Timestamp);";
+        await cmd.ExecuteNonQueryAsync();
+    }
+
+    private static async Task EnsureWebhookEndpointsTableAsync(SqliteConnection conn)
+    {
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+            CREATE TABLE IF NOT EXISTS WebhookEndpoints (
+                Id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                Url        TEXT    NOT NULL,
+                Events     TEXT    NOT NULL,
+                Secret     TEXT    NULL,
+                Enabled    INTEGER NOT NULL DEFAULT 1,
+                CreatedAt  TEXT    NOT NULL,
+                LastStatus TEXT    NULL,
+                LastSentAt TEXT    NULL
+            );";
         await cmd.ExecuteNonQueryAsync();
     }
 

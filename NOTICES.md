@@ -101,6 +101,14 @@ https://www.sqlite.org/copyright.html
 
 ---
 
+## GHS Hazard Pictograms
+
+The Globally Harmonized System (GHS) hazard pictograms bundled in `wwwroot/img/ghs` are the standard
+symbols published by the United Nations and are in the public domain.  
+https://unece.org/transport/dangerous-goods/ghs-pictograms
+
+---
+
 ## External Data Services
 
 Inventory Store can query the following free public data services at runtime when you use the related features. These services are not bundled with the installer, and a request is only made when you perform a lookup.

@@ -34,6 +34,14 @@
     <option value="/Reports?tab=expiry"    selected="@(Model.Tab=="expiry")">Expiry</option>
     <option value="/Reports?tab=barcodes"  selected="@(Model.Tab=="barcodes")">Barcode Sheet</option>
     <option value="/Reports?tab=activity"  selected="@(Model.Tab=="activity")">Activity Log</option>
+    @if (Model.CostEnabled)
+    {
+        <option value="/Reports?tab=valuation" selected="@(Model.Tab=="valuation")">Valuation</option>
+    }
+    @if (Model.ForecastEnabled)
+    {
+        <option value="/Reports?tab=forecast" selected="@(Model.Tab=="forecast")">Forecast</option>
+    }
 </select>
 
 <div class="page-layout">
@@ -45,6 +53,14 @@
     <a href="/Reports?tab=expiry"    class="nav-link @tExpiry">   <i class="bi bi-calendar-x"></i> Expiry</a>
     <a href="/Reports?tab=barcodes"  class="nav-link @tBarcodes"> <i class="bi bi-upc"></i> Barcode Sheet</a>
     <a href="/Reports?tab=activity"  class="nav-link @tActivity"> <i class="bi bi-clock-history"></i> Activity Log</a>
+    @if (Model.CostEnabled)
+    {
+        <a href="/Reports?tab=valuation" class="nav-link @(Model.Tab == "valuation" ? "active" : "")"><i class="bi bi-cash-coin"></i> Valuation</a>
+    }
+    @if (Model.ForecastEnabled)
+    {
+        <a href="/Reports?tab=forecast" class="nav-link @(Model.Tab == "forecast" ? "active" : "")"><i class="bi bi-graph-down-arrow"></i> Forecast</a>
+    }
 </nav>
 <div class="page-content">
 
@@ -527,7 +543,74 @@
     </div>
 }
 
+@if (Model.Tab == "valuation" && Model.CostEnabled)
+{
+    <div class="print-title d-none">Inventory Valuation</div>
+    <div id="val-error" class="alert alert-danger d-none"></div>
+    <div id="val-summary" class="row g-3 mb-3"></div>
+    <div id="val-empty" class="text-center text-muted py-3 d-none">No item costs recorded yet.</div>
+    <div class="table-responsive">
+        <table class="table table-sm align-middle">
+            <thead><tr><th>Item</th><th>Category</th><th class="text-end">Qty</th><th class="text-end">Unit Cost</th><th class="text-end">Line Value</th><th class="text-end">Book Value</th></tr></thead>
+            <tbody id="val-tbody"></tbody>
+        </table>
+    </div>
+}
+
+@if (Model.Tab == "forecast" && Model.ForecastEnabled)
+{
+    <div class="print-title d-none">Consumption Forecast</div>
+    <div id="fc-error" class="alert alert-danger d-none"></div>
+    <div id="fc-empty" class="text-center text-muted py-3 d-none">No consumption recorded yet in the forecast window.</div>
+    <div class="table-responsive">
+        <table class="table table-sm align-middle">
+            <thead><tr><th>Item</th><th class="text-end">In Stock</th><th class="text-end">Avg/Day</th><th class="text-end">Days Left</th><th>Projected Run-out</th></tr></thead>
+            <tbody id="fc-tbody"></tbody>
+        </table>
+    </div>
+}
+
 @section Scripts {
+@if (Model.Tab == "valuation" && Model.CostEnabled)
+{
+<script>
+function modEsc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function money(cur,n){ if(n==null||isNaN(n)) return '-'; return cur + Number(n).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}); }
+(async function(){
+    var err=document.getElementById('val-error'), empty=document.getElementById('val-empty');
+    var sum=document.getElementById('val-summary'), tbody=document.getElementById('val-tbody');
+    try {
+        var res=await fetch('/api/cost/valuation'); if(!res.ok) throw new Error();
+        var d=await res.json(); var cur=d.currency||'$';
+        sum.innerHTML='<div class="col-auto"><div class="text-muted small">Total value</div><div class="fs-5 fw-semibold">'+money(cur,d.totalValue)+'</div></div>'+
+            '<div class="col-auto"><div class="text-muted small">Book value</div><div class="fs-5 fw-semibold">'+money(cur,d.totalBookValue)+'</div></div>'+
+            '<div class="col-auto"><div class="text-muted small">Items costed</div><div class="fs-5 fw-semibold">'+d.itemsCosted+'</div></div>';
+        if(!d.items.length){ empty.classList.remove('d-none'); return; }
+        tbody.innerHTML=d.items.map(function(r){return '<tr><td>'+modEsc(r.name)+'</td><td>'+modEsc(r.category)+'</td><td class="text-end">'+r.quantity+'</td><td class="text-end">'+money(cur,r.unitCost)+'</td><td class="text-end">'+money(cur,r.lineValue)+'</td><td class="text-end">'+money(cur,r.bookValue)+'</td></tr>';}).join('');
+    } catch { err.textContent='Could not load valuation.'; err.classList.remove('d-none'); }
+})();
+</script>
+}
+@if (Model.Tab == "forecast" && Model.ForecastEnabled)
+{
+<script>
+function fcEsc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+(async function(){
+    var err=document.getElementById('fc-error'), empty=document.getElementById('fc-empty'), tbody=document.getElementById('fc-tbody');
+    try {
+        var res=await fetch('/api/forecast'); if(!res.ok) throw new Error();
+        var rows=await res.json();
+        if(!rows.length){ empty.classList.remove('d-none'); return; }
+        tbody.innerHTML=rows.map(function(r){
+            var days=r.daysRemaining==null?'∞':Math.round(r.daysRemaining);
+            var runout=r.runOutDate?new Date(r.runOutDate).toLocaleDateString():'<span class="text-muted">—</span>';
+            var cls=(r.daysRemaining!=null&&r.daysRemaining<=14)?' class="text-danger fw-semibold"':'';
+            return '<tr'+cls+'><td>'+fcEsc(r.name)+'</td><td class="text-end">'+r.quantity+'</td><td class="text-end">'+r.avgDailyUse.toFixed(2)+'</td><td class="text-end">'+days+'</td><td>'+runout+'</td></tr>';
+        }).join('');
+    } catch { err.textContent='Could not load forecast.'; err.classList.remove('d-none'); }
+})();
+</script>
+}
 <script>
 (function () {
     function debounce(fn, ms) {

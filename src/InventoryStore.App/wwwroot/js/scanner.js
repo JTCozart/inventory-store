@@ -212,6 +212,34 @@
             .catch(function () { showNotFound(query); });
     }
 
+    // SDS ("hazmat") module: show a Safety section (signal word + GHS pictograms) for the scanned item.
+    function clearScanSafety() {
+        var section = document.getElementById('scan-sds-section');
+        if (section) section.classList.add('d-none');
+        var sig = document.getElementById('scan-sds-signal');
+        if (sig) { sig.classList.add('d-none'); sig.textContent = ''; }
+        var pic = document.getElementById('scan-sds-pictograms');
+        if (pic) pic.innerHTML = '';
+    }
+
+    function loadScanSafety(itemId) {
+        clearScanSafety();
+        var section = document.getElementById('scan-sds-section');
+        if (!section || !(window.modules && window.modules.sds)) return;
+        fetch('/api/sds/item/' + itemId, { credentials: 'include' })
+            .then(function (r) { return r.ok ? r.json() : []; })
+            .then(function (rows) {
+                rows = rows || [];
+                if (!rows.length) return;
+                var signal = (rows.find(function (r) { return r.signalWord; }) || {}).signalWord;
+                var pics = rows.map(function (r) { return r.pictograms || ''; }).filter(Boolean).join('; ');
+                window.applySignalBadge(document.getElementById('scan-sds-signal'), signal);
+                var n = window.renderPictograms(document.getElementById('scan-sds-pictograms'), pics, 28);
+                if (signal || n > 0) section.classList.remove('d-none');
+            })
+            .catch(function () {});
+    }
+
     function loadItemStatus(item) {
         currentItem = item;
         currentScannedSku = item.sku || null;
@@ -219,6 +247,7 @@
         document.getElementById('item-meta').textContent =
             (item.location || '') + (item.sku ? ' · ' + item.sku : '');
         document.getElementById('item-edit-link').href = '/Inventory/Edit?id=' + item.id;
+        loadScanSafety(item.id);
         updateItemImage(item);
         document.getElementById('scan-warning').classList.add('d-none');
         document.getElementById('reusable-actions').classList.add('d-none');
@@ -280,6 +309,7 @@
         document.getElementById('item-name').textContent = 'Item not found';
         document.getElementById('item-meta').textContent = '';
         document.getElementById('item-stats').innerHTML = '';
+        clearScanSafety();
         document.getElementById('scan-warning').classList.add('d-none');
         document.getElementById('reusable-actions').classList.add('d-none');
         document.getElementById('consumable-actions').classList.add('d-none');

@@ -16,7 +16,11 @@ A self-hosted inventory management system for small teams. Runs as a Windows ser
 - **Barcode scanning** - camera-based scanner (UPC, EAN, CODE_128, QR codes) or manual SKU entry; print barcode sheets
 - **Smart product lookup** - scan a barcode and pull product details from free public databases (Open Library, UPC Item DB, Open Food Facts); auto-fills name, image, brand, category, size, and weight when adding or editing items
 - **Product metadata library** - browse, refresh, and delete the product data cached from lookups; deleting unlinks it from any items automatically
-- **Safety Data Sheets (optional module)** - look up chemical hazard data (signal word, pictograms, CAS number, hazard statements) for an item by chemical name from PubChem, free and keyless; turn it on under Settings → Modules
+- **Modules** - optional add-ons you switch on or off under Settings → Modules; each stays out of the way until enabled
+- **Safety Data Sheets (module)** - look up chemical hazard data (signal word, GHS pictograms, CAS number, hazard statements) for an item by chemical name from PubChem, free and keyless; pictograms show on the inventory list, scan, and item cards
+- **Cost & Valuation (module)** - record a unit cost per item; total inventory value, category breakdown, and straight-line depreciation, with a Valuation report
+- **Consumption Forecasting (module)** - projects run-out dates for consumables from a real usage history, with a Forecast report
+- **Webhooks & Integrations (module)** - send signed JSON to any URL on inventory events (checkout, low stock, item changes); connect Slack, Zapier, Make, or your own scripts
 - **CSV import / export** - bulk-load your inventory from a spreadsheet or export for backup
 - **Low stock alerts** - configurable minimum quantity thresholds
 - **Reports** - stock levels, active checkouts, lost items, expiry, take-inventory sheet, barcode sheet, activity log

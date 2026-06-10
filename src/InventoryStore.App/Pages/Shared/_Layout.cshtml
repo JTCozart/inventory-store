@@ -1,6 +1,7 @@
 @inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
 @inject InventoryStore.App.Services.UpdateInfo UpdateInfo
 @inject InventoryStore.Application.Interfaces.Services.ISettingsService Settings
+@inject InventoryStore.App.Modules.IModuleRegistry Modules
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -128,7 +129,9 @@ else
 @if (User.Identity?.IsAuthenticated == true)
 {
     var _canWrite = User.IsInRole("Admin") || User.IsInRole("Manager");
-    var _sdsModuleEnabled = (await Settings.GetAsync("module.sds.enabled")) == "true";
+    var _moduleMap = await Modules.GetEnabledMapAsync();
+    var _modulesJson = System.Text.Json.JsonSerializer.Serialize(_moduleMap);
+    var _costCurrency = (await Settings.GetAsync("module.cost.currency")) ?? "$";
     <text>
     <input type="hidden" id="af-token" value="@Antiforgery.GetAndStoreTokens(Context).RequestToken">
 
@@ -199,9 +202,21 @@ else
                 <div id="modal-detail-desc"></div>
               </div>
               <div id="modal-sds-block" class="mb-3 d-none">
+                <div class="text-muted text-uppercase small fw-semibold mb-1">Safety</div>
+                <div class="d-flex align-items-center gap-2 flex-wrap mb-2">
+                  <span id="modal-sds-signal" class="badge d-none"></span>
+                  <span id="modal-sds-pictograms" class="d-flex align-items-center gap-1"></span>
+                </div>
                 <button type="button" class="btn btn-sm btn-outline-warning" onclick="viewSds()">
                   <i class="bi bi-eyedropper me-1"></i>View SDS Info
                 </button>
+              </div>
+              <div id="modal-cost-block" class="mb-3 d-none">
+                <div class="text-muted text-uppercase small fw-semibold mb-1">Cost &amp; Valuation</div>
+                <dl class="row mb-0 small">
+                  <dt class="col-4 col-sm-3 text-muted fw-normal">Unit Cost</dt><dd class="col-8 col-sm-9 mb-1" id="modal-cost-unit">-</dd>
+                  <dt class="col-4 col-sm-3 text-muted fw-normal">Line Value</dt><dd class="col-8 col-sm-9 mb-1" id="modal-cost-line">-</dd>
+                </dl>
               </div>
               <hr>
               <div id="actions-reusable" class="d-none">
@@ -366,6 +381,33 @@ else
                   <div class="col-12">
                     <div id="edit-sds-status" class="small mb-2"></div>
                     <div id="edit-sds-result"></div>
+                  </div>
+                </div>
+              </div>
+
+              <div id="edit-cost-section" class="d-none">
+                <h6 class="text-uppercase text-muted small fw-semibold mb-2 mt-3">Cost &amp; Valuation</h6>
+                <div class="row g-3">
+                  <div class="col-md-4">
+                    <label class="form-label">Unit Cost</label>
+                    <div class="input-group">
+                      <span class="input-group-text" id="edit-cost-currency">$</span>
+                      <input type="number" id="edit-cost-unit" class="form-control" min="0" step="0.01" />
+                    </div>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label">Purchase Date <span class="text-muted small">(optional)</span></label>
+                    <input type="date" id="edit-cost-purchase" class="form-control" />
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label">Useful Life <span class="text-muted small">(months, reusables)</span></label>
+                    <input type="number" id="edit-cost-life" class="form-control" min="0" step="1" />
+                  </div>
+                  <div class="col-12">
+                    <button type="button" class="btn btn-sm btn-outline-primary" id="edit-cost-save-btn" onclick="saveCost()">
+                      <i class="bi bi-cash-coin me-1"></i>Save Cost
+                    </button>
+                    <span id="edit-cost-status" class="small ms-2"></span>
                   </div>
                 </div>
               </div>
@@ -595,6 +637,14 @@ else
                             </a>
                         </div>
 
+                        <div id="scan-sds-section" class="d-none mb-2">
+                            <div class="text-muted text-uppercase small fw-semibold mb-1">Safety</div>
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <span id="scan-sds-signal" class="badge d-none"></span>
+                                <span id="scan-sds-pictograms" class="d-flex align-items-center gap-1"></span>
+                            </div>
+                        </div>
+
                         <div id="scanner-action-alert" class="d-none alert py-2 px-3 mb-2" role="alert"></div>
 
                         <div id="scan-warning" class="d-none alert alert-warning py-2 px-3 mb-2">
@@ -754,7 +804,8 @@ else
     </div>
 
     <script>window.canManage = @(_canWrite ? "true" : "false");</script>
-    <script>window.sdsModuleEnabled = @(_sdsModuleEnabled ? "true" : "false");</script>
+    <script>window.modules = @Html.Raw(_modulesJson);</script>
+    <script>window.costCurrency = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(_costCurrency));</script>
     <script src="https://cdn.jsdelivr.net/npm/@@zxing/library@@0.21.3/umd/index.min.js"></script>
     <script src="~/js/scanner.js"></script>
     </text>

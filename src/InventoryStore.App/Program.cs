@@ -1,6 +1,7 @@
 using InventoryStore.App.Extensions;
 using InventoryStore.App.Services;
 using InventoryStore.App.Tray;
+using InventoryStore.App.Modules;
 using InventoryStore.Application.Interfaces.Services;
 using InventoryStore.Domain.Interfaces.Repositories;
 using InventoryStore.Infrastructure.Data;
@@ -23,6 +24,8 @@ internal record CheckInRequest(int RecordId, string? Notes);
 internal record MarkLostRequest(int RecordId, string? Notes);
 internal record ConsumeRequest(int ItemId, int Quantity, string? Notes);
 internal record RestockRequest(int ItemId, int Quantity, string? Notes);
+internal record CostInput(decimal UnitCost, string? PurchaseDate, int? UsefulLifeMonths);
+internal record WebhookInput(string Url, string? Events, string? Secret);
 
 // Fetches product metadata from the three public APIs. Shared by the barcode-lookup
 // endpoint and the metadata-explorer refresh action. Pure fetch — no DB access.
@@ -398,6 +401,15 @@ internal class Program
         });
         services.AddScoped<InventoryStore.Application.Interfaces.Services.INtfyService,
                            InventoryStore.App.Services.NtfyService>();
+        services.AddHttpClient("webhook", c =>
+        {
+            c.DefaultRequestHeaders.UserAgent.ParseAdd("InventoryStore/1.0 (webhooks)");
+            c.Timeout = TimeSpan.FromSeconds(10);
+        });
+        services.AddScoped<InventoryStore.Application.Interfaces.Services.IWebhookService,
+                           InventoryStore.App.Services.WebhookService>();
+
+        services.AddScoped<InventoryStore.App.Modules.IModuleRegistry, InventoryStore.App.Modules.ModuleRegistry>();
 
         services.AddSingleton<TunnelService>();
         services.AddSingleton<UpdateInfo>();
@@ -675,19 +687,19 @@ internal class Program
 
             // Stored SDS for an item (read by the view + edit modals).
             endpoints.MapGet("/api/sds/item/{itemId:int}", [Authorize] async (
-                int itemId, ISettingsService settings, ISafetyDataSheetRepository sdsRepo) =>
+                int itemId, IModuleRegistry modules, ISafetyDataSheetRepository sdsRepo) =>
             {
-                if (await settings.GetAsync("module.sds.enabled") != "true") return Results.NotFound();
+                if (!await modules.IsEnabledAsync("sds")) return Results.NotFound();
                 var rows = await sdsRepo.GetByInventoryItemIdAsync(itemId);
                 return Results.Ok(rows.Select(SdsJson));
             });
 
             // Look up safety data from PubChem and (re)attach it to the item.
             endpoints.MapGet("/api/sds/lookup", [Authorize(Roles = "Admin,Manager")] async (
-                int itemId, string? name, ISettingsService settings,
+                int itemId, string? name, IModuleRegistry modules,
                 ISafetyDataSheetRepository sdsRepo, IHttpClientFactory httpFactory) =>
             {
-                if (await settings.GetAsync("module.sds.enabled") != "true") return Results.NotFound();
+                if (!await modules.IsEnabledAsync("sds")) return Results.NotFound();
                 name = (name ?? "").Trim();
                 if (string.IsNullOrWhiteSpace(name)) return Results.BadRequest(new { error = "name required" });
 
@@ -706,17 +718,22 @@ internal class Program
                 }
 
                 sheet.InventoryItemId = itemId;
-                await sdsRepo.DeleteByInventoryItemIdAsync(itemId);
-                await sdsRepo.AddRangeAsync(new[] { sheet });
+                // itemId <= 0 is a preview (the item does not exist yet, e.g. the Add modal): fetch
+                // and return the data without persisting. The caller attaches it after the item is created.
+                if (itemId > 0)
+                {
+                    await sdsRepo.DeleteByInventoryItemIdAsync(itemId);
+                    await sdsRepo.AddRangeAsync(new[] { sheet });
+                }
 
                 return Results.Ok(new { success = true, sheets = new[] { SdsJson(sheet) } });
             });
 
             // All SDS rows for the Settings → Modules metadata table (with item name).
             endpoints.MapGet("/api/sds", [Authorize(Roles = "Admin,Manager")] async (
-                ISettingsService settings, AppDbContext db) =>
+                IModuleRegistry modules, AppDbContext db) =>
             {
-                if (await settings.GetAsync("module.sds.enabled") != "true") return Results.NotFound();
+                if (!await modules.IsEnabledAsync("sds")) return Results.NotFound();
 
                 var rows = await db.SafetyDataSheets.OrderByDescending(s => s.FetchedAt).ToListAsync();
                 var itemIds = rows.Select(r => r.InventoryItemId).Distinct().ToList();
@@ -735,11 +752,170 @@ internal class Program
             });
 
             endpoints.MapPost("/api/sds/{id:int}/delete", [Authorize(Roles = "Admin,Manager")] async (
-                int id, ISettingsService settings, ISafetyDataSheetRepository sdsRepo) =>
+                int id, IModuleRegistry modules, ISafetyDataSheetRepository sdsRepo) =>
             {
-                if (await settings.GetAsync("module.sds.enabled") != "true") return Results.NotFound();
+                if (!await modules.IsEnabledAsync("sds")) return Results.NotFound();
                 await sdsRepo.DeleteAsync(id);
                 return Results.Ok(new { success = true });
+            });
+
+            // ── Cost & Valuation module ───────────────────────────────────
+            endpoints.MapGet("/api/cost/item/{itemId:int}", [Authorize] async (
+                int itemId, IModuleRegistry modules, IItemCostRepository costRepo) =>
+            {
+                if (!await modules.IsEnabledAsync("cost")) return Results.NotFound();
+                var row = await costRepo.GetByInventoryItemIdAsync(itemId);
+                return Results.Ok(row is null ? null : new
+                {
+                    row.InventoryItemId, row.UnitCost, row.PurchaseDate, row.UsefulLifeMonths
+                });
+            });
+
+            endpoints.MapPost("/api/cost/item/{itemId:int}", [Authorize(Roles = "Admin,Manager")] async (
+                int itemId, CostInput body, IModuleRegistry modules, IItemCostRepository costRepo) =>
+            {
+                if (!await modules.IsEnabledAsync("cost")) return Results.NotFound();
+                if (body.UnitCost < 0) return Results.BadRequest(new { error = "Unit cost cannot be negative." });
+                DateOnly? purchase = DateOnly.TryParse(body.PurchaseDate, out var d) ? d : null;
+                await costRepo.UpsertAsync(itemId, body.UnitCost, purchase, body.UsefulLifeMonths);
+                return Results.Ok(new { success = true });
+            });
+
+            endpoints.MapGet("/api/cost/valuation", [Authorize(Roles = "Admin,Manager")] async (
+                IModuleRegistry modules, ISettingsService settings, AppDbContext db) =>
+            {
+                if (!await modules.IsEnabledAsync("cost")) return Results.NotFound();
+                var currency = await settings.GetAsync("module.cost.currency") ?? "$";
+
+                var costs = await db.ItemCosts.ToListAsync();
+                var costMap = costs.ToDictionary(c => c.InventoryItemId);
+                var items = await db.InventoryItems
+                    .Include(i => i.Category)
+                    .ToListAsync();
+
+                var today = DateOnly.FromDateTime(DateTime.UtcNow);
+                var rows = new List<(decimal LineValue, object Row)>();
+                decimal totalValue = 0m, totalBookValue = 0m;
+                var byCategory = new Dictionary<string, decimal>();
+
+                foreach (var item in items)
+                {
+                    if (!costMap.TryGetValue(item.Id, out var cost)) continue;
+                    var qty       = item.Quantity;
+                    var lineValue = cost.UnitCost * qty;
+                    totalValue   += lineValue;
+
+                    // Straight-line book value (reusables with a useful life and purchase date).
+                    decimal bookValue = lineValue;
+                    if (item is ReusableItem && cost.PurchaseDate is { } pd && cost.UsefulLifeMonths is > 0)
+                    {
+                        var monthsOwned = (today.Year - pd.Year) * 12 + today.Month - pd.Month;
+                        var remaining   = Math.Clamp(1m - (decimal)monthsOwned / cost.UsefulLifeMonths.Value, 0m, 1m);
+                        bookValue       = lineValue * remaining;
+                    }
+                    totalBookValue += bookValue;
+
+                    var catName = item.Category?.Name ?? "Uncategorized";
+                    byCategory[catName] = byCategory.GetValueOrDefault(catName) + lineValue;
+
+                    rows.Add((lineValue, new
+                    {
+                        item.Id, item.Name, item.Quantity, cost.UnitCost,
+                        LineValue = lineValue, BookValue = bookValue,
+                        cost.PurchaseDate, cost.UsefulLifeMonths, Category = catName
+                    }));
+                }
+
+                return Results.Ok(new
+                {
+                    currency,
+                    totalValue,
+                    totalBookValue,
+                    itemsCosted = rows.Count,
+                    byCategory = byCategory.OrderByDescending(kv => kv.Value).Select(kv => new { Category = kv.Key, Value = kv.Value }),
+                    items = rows.OrderByDescending(r => r.LineValue).Select(r => r.Row)
+                });
+            });
+
+            // ── Consumption Forecasting module ────────────────────────────
+            endpoints.MapGet("/api/forecast", [Authorize(Roles = "Admin,Manager")] async (
+                IModuleRegistry modules, ISettingsService settings,
+                IStockMovementRepository movements, AppDbContext db) =>
+            {
+                if (!await modules.IsEnabledAsync("forecast")) return Results.NotFound();
+
+                var windowDays = int.TryParse(await settings.GetAsync("module.forecast.windowdays"), out var w) && w > 0 ? w : 30;
+                var cutoff     = DateTime.UtcNow.AddDays(-windowDays);
+
+                var consumes = (await movements.GetConsumeSinceAsync(cutoff)).ToList();
+                var usedByItem = consumes.GroupBy(m => m.InventoryItemId)
+                    .ToDictionary(g => g.Key, g => g.Sum(m => m.Quantity));
+
+                // Consumables only — reusables don't deplete the same way.
+                var items = await db.InventoryItems.OfType<ConsumableItem>().ToListAsync();
+
+                var rows = new List<(double Sort, object Row)>();
+                foreach (var item in items)
+                {
+                    if (!usedByItem.TryGetValue(item.Id, out var used) || used <= 0) continue;
+                    var avgDaily = (double)used / windowDays;
+                    double? daysRemaining = avgDaily > 0 ? item.Quantity / avgDaily : null;
+                    DateTime? runOut = daysRemaining.HasValue ? DateTime.UtcNow.AddDays(daysRemaining.Value) : null;
+                    rows.Add((daysRemaining ?? double.MaxValue, new
+                    {
+                        item.Id, item.Name, item.Quantity,
+                        AvgDailyUse = avgDaily, DaysRemaining = daysRemaining,
+                        RunOutDate = runOut
+                    }));
+                }
+
+                return Results.Ok(rows.OrderBy(r => r.Sort).Select(r => r.Row));
+            });
+
+            // ── Webhooks module ───────────────────────────────────────────
+            endpoints.MapGet("/api/webhooks", [Authorize(Roles = "Admin")] async (
+                IModuleRegistry modules, IWebhookEndpointRepository repo) =>
+            {
+                if (!await modules.IsEnabledAsync("webhooks")) return Results.NotFound();
+                var rows = await repo.GetAllAsync();
+                return Results.Ok(rows.Select(w => new
+                {
+                    w.Id, w.Url, w.Events, w.Enabled, w.LastStatus, w.LastSentAt,
+                    signed = !string.IsNullOrWhiteSpace(w.Secret)
+                }));
+            });
+
+            endpoints.MapPost("/api/webhooks", [Authorize(Roles = "Admin")] async (
+                WebhookInput body, IModuleRegistry modules, IWebhookEndpointRepository repo) =>
+            {
+                if (!await modules.IsEnabledAsync("webhooks")) return Results.NotFound();
+                if (string.IsNullOrWhiteSpace(body.Url) || !Uri.TryCreate(body.Url, UriKind.Absolute, out _))
+                    return Results.BadRequest(new { error = "A valid absolute URL is required." });
+                var created = await repo.CreateAsync(new WebhookEndpoint
+                {
+                    Url = body.Url.Trim(),
+                    Events = string.IsNullOrWhiteSpace(body.Events) ? "all" : body.Events.Trim(),
+                    Secret = string.IsNullOrWhiteSpace(body.Secret) ? null : body.Secret.Trim(),
+                    Enabled = true,
+                    CreatedAt = DateTime.UtcNow
+                });
+                return Results.Ok(new { success = true, created.Id });
+            });
+
+            endpoints.MapPost("/api/webhooks/{id:int}/delete", [Authorize(Roles = "Admin")] async (
+                int id, IModuleRegistry modules, IWebhookEndpointRepository repo) =>
+            {
+                if (!await modules.IsEnabledAsync("webhooks")) return Results.NotFound();
+                await repo.DeleteAsync(id);
+                return Results.Ok(new { success = true });
+            });
+
+            endpoints.MapPost("/api/webhooks/{id:int}/test", [Authorize(Roles = "Admin")] async (
+                int id, IModuleRegistry modules, IWebhookService webhooks) =>
+            {
+                if (!await modules.IsEnabledAsync("webhooks")) return Results.NotFound();
+                var (ok, status, error) = await webhooks.SendTestAsync(id);
+                return Results.Ok(new { ok, status, error });
             });
 
             // ── Inventory API ─────────────────────────────────────────────

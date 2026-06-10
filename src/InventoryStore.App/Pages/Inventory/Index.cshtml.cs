@@ -15,9 +15,16 @@ public class IndexModel : PageModel
     private readonly IInventoryService _inventoryService;
     private readonly ICheckoutService _checkoutService;
     private readonly ICategoryService _categoryService;
+    private readonly InventoryStore.App.Modules.IModuleRegistry _modules;
+    private readonly InventoryStore.Domain.Interfaces.Repositories.ISafetyDataSheetRepository _sdsRepo;
 
     public IEnumerable<InventoryItemDto> Items { get; private set; } = [];
     public IEnumerable<CategoryDto> Categories { get; private set; } = [];
+
+    // SDS ("hazmat") module: GHS pictogram names per item id, for the list. Empty when disabled.
+    public bool HazmatEnabled { get; private set; }
+    public IReadOnlyDictionary<int, List<string>> ItemPictograms { get; private set; } =
+        new Dictionary<int, List<string>>();
     public string? Query { get; private set; }
     public int? Open { get; private set; }
     public int? CategoryFilter { get; private set; }
@@ -25,11 +32,15 @@ public class IndexModel : PageModel
     public int TotalCount { get; private set; }
     public bool IsFiltered => !string.IsNullOrWhiteSpace(Query) || CategoryFilter.HasValue;
 
-    public IndexModel(IInventoryService inventoryService, ICheckoutService checkoutService, ICategoryService categoryService)
+    public IndexModel(IInventoryService inventoryService, ICheckoutService checkoutService,
+        ICategoryService categoryService, InventoryStore.App.Modules.IModuleRegistry modules,
+        InventoryStore.Domain.Interfaces.Repositories.ISafetyDataSheetRepository sdsRepo)
     {
         _inventoryService = inventoryService;
         _checkoutService  = checkoutService;
         _categoryService  = categoryService;
+        _modules          = modules;
+        _sdsRepo          = sdsRepo;
     }
 
     public async Task OnGetAsync(string? q, int? open, int? category, string? importResult)
@@ -49,6 +60,24 @@ public class IndexModel : PageModel
         Items = category.HasValue
             ? items.Where(i => i.CategoryId == category.Value)
             : items;
+
+        HazmatEnabled = await _modules.IsEnabledAsync("sds");
+        if (HazmatEnabled)
+        {
+            var ids = Items.Select(i => i.Id).ToHashSet();
+            var pics = new Dictionary<int, List<string>>();
+            foreach (var sds in await _sdsRepo.GetAllAsync())
+            {
+                if (!ids.Contains(sds.InventoryItemId)) continue;
+                var names = InventoryStore.App.Modules.GhsPictograms.Split(sds.Pictograms).ToList();
+                if (names.Count == 0) continue;
+                if (!pics.TryGetValue(sds.InventoryItemId, out var list))
+                    pics[sds.InventoryItemId] = list = new List<string>();
+                foreach (var n in names)
+                    if (!list.Contains(n, StringComparer.OrdinalIgnoreCase)) list.Add(n);
+            }
+            ItemPictograms = pics;
+        }
     }
 
     public async Task<IActionResult> OnGetItemStatusAsync(int id)
@@ -81,10 +110,10 @@ public class IndexModel : PageModel
         var type = Enum.TryParse<ItemType>(itemType, out var t) ? t : ItemType.Consumable;
         try
         {
-            await _inventoryService.CreateItemAsync(new CreateInventoryItemDto(
+            var created = await _inventoryService.CreateItemAsync(new CreateInventoryItemDto(
                 name, quantity, description, location, sku, minimumQuantity, type, scanWarning, categoryId, expiry
             ), uid, uname);
-            return new JsonResult(new { success = true });
+            return new JsonResult(new { success = true, id = created.Id });
         }
         catch (Exception)
         {

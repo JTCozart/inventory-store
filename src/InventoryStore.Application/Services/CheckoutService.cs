@@ -12,7 +12,9 @@ public class CheckoutService : ICheckoutService
     private readonly IInventoryRepository _inventoryRepo;
     private readonly ICheckoutRepository _checkoutRepo;
     private readonly IActivityLogRepository _activityRepo;
+    private readonly IStockMovementRepository _stockMovementRepo;
     private readonly INtfyService _ntfy;
+    private readonly IWebhookService _webhooks;
 
     private static readonly ConcurrentDictionary<int, SemaphoreSlim> _itemLocks = new();
 
@@ -23,13 +25,20 @@ public class CheckoutService : ICheckoutService
         IInventoryRepository inventoryRepo,
         ICheckoutRepository checkoutRepo,
         IActivityLogRepository activityRepo,
-        INtfyService ntfy)
+        IStockMovementRepository stockMovementRepo,
+        INtfyService ntfy,
+        IWebhookService webhooks)
     {
-        _inventoryRepo = inventoryRepo;
-        _checkoutRepo  = checkoutRepo;
-        _activityRepo  = activityRepo;
-        _ntfy          = ntfy;
+        _inventoryRepo     = inventoryRepo;
+        _checkoutRepo      = checkoutRepo;
+        _activityRepo      = activityRepo;
+        _stockMovementRepo = stockMovementRepo;
+        _ntfy              = ntfy;
+        _webhooks          = webhooks;
     }
+
+    private static object ItemPayload(InventoryItem item) =>
+        new { id = item.Id, name = item.Name, sku = item.SKU, quantity = item.Quantity };
 
     public async Task<ItemStatusDto> GetItemStatusAsync(int inventoryItemId)
     {
@@ -85,6 +94,8 @@ public class CheckoutService : ICheckoutService
             });
 
             _ = _ntfy.NotifyCheckoutAsync(item.Name, dto.CheckedOutBy, null);
+            _ = _webhooks.DispatchAsync("item.checkout",
+                new { item = ItemPayload(item), actor = username, checkedOutBy = dto.CheckedOutBy, quantity = dto.Quantity });
             return MapRecord(created, item.Name);
         }
         finally
@@ -126,6 +137,8 @@ public class CheckoutService : ICheckoutService
         });
 
         _ = _ntfy.NotifyCheckinAsync(item.Name, record.CheckedOutBy);
+        _ = _webhooks.DispatchAsync("item.checkin",
+            new { item = ItemPayload(item), actor = username, checkedOutBy = record.CheckedOutBy, quantity = record.Quantity });
         return MapRecord(record, item.Name);
     }
 
@@ -161,6 +174,8 @@ public class CheckoutService : ICheckoutService
         });
 
         _ = _ntfy.NotifyLostAsync(item.Name, record.CheckedOutBy);
+        _ = _webhooks.DispatchAsync("item.lost",
+            new { item = ItemPayload(item), actor = username, checkedOutBy = record.CheckedOutBy, quantity = record.Quantity });
         return MapRecord(record, item.Name);
     }
 
@@ -195,6 +210,8 @@ public class CheckoutService : ICheckoutService
             Details = $"{record.Quantity}x '{item.Name}' marked as found (was checked out by '{record.CheckedOutBy}')"
         });
 
+        _ = _webhooks.DispatchAsync("item.found",
+            new { item = ItemPayload(item), actor = username, checkedOutBy = record.CheckedOutBy, quantity = record.Quantity });
         return MapRecord(record, item.Name);
     }
 
@@ -226,8 +243,23 @@ public class CheckoutService : ICheckoutService
                           + (dto.Notes is not null ? $": {dto.Notes}" : "")
             });
 
+            // Ledger entry feeding the Consumption Forecasting module (recorded regardless of
+            // whether that module is enabled, so history is ready when it is turned on).
+            await _stockMovementRepo.AddAsync(new StockMovement
+            {
+                InventoryItemId = item.Id, ChangeType = "Consume", Quantity = dto.Quantity,
+                UserId = userId, Username = username, Notes = dto.Notes, Timestamp = DateTime.UtcNow
+            });
+
+            _ = _webhooks.DispatchAsync("item.consumed",
+                new { item = ItemPayload(item), actor = username, quantity = dto.Quantity, notes = dto.Notes });
+
             if (consumable.IsLowStock)
+            {
                 _ = _ntfy.NotifyLowStockAsync(item.Name, consumable.Quantity, consumable.MinimumQuantity);
+                _ = _webhooks.DispatchAsync("item.lowstock",
+                    new { item = ItemPayload(item), available = consumable.Quantity, minimum = consumable.MinimumQuantity });
+            }
         }
         finally
         {
@@ -254,6 +286,15 @@ public class CheckoutService : ICheckoutService
             Details = $"Restocked {dto.Quantity}x '{item.Name}'"
                       + (dto.Notes is not null ? $": {dto.Notes}" : "")
         });
+
+        await _stockMovementRepo.AddAsync(new StockMovement
+        {
+            InventoryItemId = item.Id, ChangeType = "Restock", Quantity = dto.Quantity,
+            UserId = userId, Username = username, Notes = dto.Notes, Timestamp = DateTime.UtcNow
+        });
+
+        _ = _webhooks.DispatchAsync("item.restocked",
+            new { item = ItemPayload(item), actor = username, quantity = dto.Quantity, notes = dto.Notes });
     }
 
     public async Task<IEnumerable<CheckoutRecordDto>> GetAllActiveCheckoutsAsync()

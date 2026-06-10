@@ -16,6 +16,9 @@ public class AppDbContext : DbContext
     public DbSet<Client> Clients => Set<Client>();
     public DbSet<ProductMetadata> ProductMetadata => Set<ProductMetadata>();
     public DbSet<SafetyDataSheet> SafetyDataSheets => Set<SafetyDataSheet>();
+    public DbSet<ItemCost> ItemCosts => Set<ItemCost>();
+    public DbSet<StockMovement> StockMovements => Set<StockMovement>();
+    public DbSet<WebhookEndpoint> WebhookEndpoints => Set<WebhookEndpoint>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -115,6 +118,38 @@ public class AppDbContext : DbContext
              .WithMany()
              .HasForeignKey(s => s.InventoryItemId)
              .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ItemCost>(e =>
+        {
+            e.HasKey(c => c.Id);
+            e.HasIndex(c => c.InventoryItemId).IsUnique();
+            e.Property(c => c.UnitCost).HasColumnType("TEXT");
+            e.HasOne<InventoryItem>()
+             .WithMany()
+             .HasForeignKey(c => c.InventoryItemId)
+             .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<StockMovement>(e =>
+        {
+            e.HasKey(m => m.Id);
+            e.HasIndex(m => m.InventoryItemId);
+            e.HasIndex(m => m.Timestamp);
+            e.Property(m => m.ChangeType).IsRequired().HasMaxLength(20);
+            e.HasOne<InventoryItem>()
+             .WithMany()
+             .HasForeignKey(m => m.InventoryItemId)
+             .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<WebhookEndpoint>(e =>
+        {
+            e.HasKey(w => w.Id);
+            e.Property(w => w.Url).IsRequired().HasMaxLength(2000);
+            e.Property(w => w.Events).IsRequired().HasMaxLength(500);
+            e.Property(w => w.Secret).HasMaxLength(200);
+            e.Property(w => w.LastStatus).HasMaxLength(100);
         });
 
         modelBuilder.Entity<Client>(e =>

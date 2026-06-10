@@ -12,16 +12,22 @@ public class InventoryService : IInventoryService
     private readonly IInventoryRepository _inventoryRepository;
     private readonly IActivityLogRepository _activityLogRepository;
     private readonly ICategoryRepository _categoryRepository;
+    private readonly IWebhookService _webhooks;
 
     public InventoryService(
         IInventoryRepository inventoryRepository,
         IActivityLogRepository activityLogRepository,
-        ICategoryRepository categoryRepository)
+        ICategoryRepository categoryRepository,
+        IWebhookService webhooks)
     {
         _inventoryRepository  = inventoryRepository;
         _activityLogRepository = activityLogRepository;
         _categoryRepository   = categoryRepository;
+        _webhooks             = webhooks;
     }
+
+    private static object ItemPayload(InventoryItem item) =>
+        new { id = item.Id, name = item.Name, sku = item.SKU, quantity = item.Quantity };
 
     public async Task<IEnumerable<InventoryItemDto>> GetAllItemsAsync()
         => (await _inventoryRepository.GetAllAsync()).Select(MapToDto);
@@ -64,6 +70,7 @@ public class InventoryService : IInventoryService
             Details = $"Created {dto.ItemType} item '{created.Name}'"
         });
 
+        _ = _webhooks.DispatchAsync("item.created", new { item = ItemPayload(created), actor = username });
         return MapToDto(created);
     }
 
@@ -103,6 +110,8 @@ public class InventoryService : IInventoryService
             Action = "Updated", EntityType = "InventoryItem", EntityId = id,
             Details = $"Updated item '{item.Name}'"
         });
+
+        _ = _webhooks.DispatchAsync("item.updated", new { item = ItemPayload(item), actor = username });
     }
 
     public async Task DeleteItemAsync(int id, int userId, string username)
@@ -118,6 +127,8 @@ public class InventoryService : IInventoryService
             Action = "Deleted", EntityType = "InventoryItem", EntityId = id,
             Details = $"Deleted item '{item.Name}'"
         });
+
+        _ = _webhooks.DispatchAsync("item.deleted", new { item = ItemPayload(item), actor = username });
     }
 
     public async Task<IEnumerable<InventoryItemDto>> GetLowStockItemsAsync()
