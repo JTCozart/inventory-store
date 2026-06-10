@@ -235,6 +235,7 @@
       <li><a href="#consumables">Consumables</a></li>
       <li><a href="#barcode-scanning">Barcode Scanning</a></li>
       <li><a href="#product-lookup">Product Lookup &amp; Metadata</a></li>
+      <li><a href="#safety-data-sheets">Safety Data Sheets</a></li>
       <li><a href="#csv">CSV Import &amp; Export</a></li>
 
       <li class="section-label">Reports</li>
@@ -562,6 +563,33 @@
         <li><strong>Refresh</strong> (circular arrow) - re-fetch that product from its source and update the stored copy. Existing item links are preserved.</li>
         <li><strong>Delete</strong> (trash) - remove the cached record. Click once to arm the button, then click <strong>Confirm</strong> to proceed. Deleting <em>unlinks</em> the product from every item that was using it, then removes it from storage.</li>
       </ul>
+    </section>
+
+    <section id="safety-data-sheets">
+      <h2><i class="fa-solid fa-flask-vial"></i> Safety Data Sheets</h2>
+      <p>If your team stores or uses chemicals, the optional <strong>Safety Data Sheets (SDS)</strong> module lets you keep hazard information on file for an item. It looks up safety data by chemical name from <strong>PubChem</strong>, a free public database run by the US National Institutes of Health. No account or API key is needed.</p>
+
+      <h3>Turning the module on</h3>
+      <p>An Admin enables it once: go to <strong>Settings → Modules → Safety Data Sheets</strong> and flip the switch to <strong>Enabled</strong>. While it is off, none of the SDS buttons appear anywhere in the app.</p>
+
+      <h3>Attaching safety data to an item</h3>
+      <ol>
+        <li>Open an item and click <strong>Edit</strong> (Admin or Manager)</li>
+        <li>In the <strong>Safety Data Sheet</strong> section, the chemical name is pre-filled from the item name. Adjust it to the exact chemical if needed (for example "sodium hypochlorite" rather than "bleach")</li>
+        <li>Click <strong>Look up SDS</strong></li>
+        <li>If a match is found, the safety details are saved to the item right away</li>
+      </ol>
+      <p>For each match the app stores the <strong>signal word</strong> (Danger or Warning), <strong>hazard pictograms</strong>, <strong>hazard statements</strong>, <strong>precaution statements</strong>, the <strong>CAS number</strong>, and a link to the full PubChem page.</p>
+      <div class="callout">
+        <i class="fa-solid fa-circle-info"></i>
+        PubChem lists chemicals, not brand-name products. If you search a product or common name that has no exact match, the app shows a short list of close chemical names you can click to try instead.
+      </div>
+
+      <h3>Viewing safety info</h3>
+      <p>Once an item has safety data attached, a <strong>View SDS Info</strong> button appears on its detail screen for everyone, including Viewers. Click it to see the hazard summary and open the full PubChem record.</p>
+
+      <h3>The metadata table</h3>
+      <p>To see everything on file, go to <strong>Settings → Modules → Safety Data Sheets</strong> and click <strong>Configure</strong>. The table lists each item that has safety data, along with its chemical name, CAS number, signal word, and hazards. Click the <strong>trash</strong> button on a row to remove that item's safety data.</p>
     </section>
 
     <section id="csv">

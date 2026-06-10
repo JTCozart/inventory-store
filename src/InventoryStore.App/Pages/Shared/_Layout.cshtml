@@ -1,5 +1,6 @@
 @inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
 @inject InventoryStore.App.Services.UpdateInfo UpdateInfo
+@inject InventoryStore.Application.Interfaces.Services.ISettingsService Settings
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -127,6 +128,7 @@ else
 @if (User.Identity?.IsAuthenticated == true)
 {
     var _canWrite = User.IsInRole("Admin") || User.IsInRole("Manager");
+    var _sdsModuleEnabled = (await Settings.GetAsync("module.sds.enabled")) == "true";
     <text>
     <input type="hidden" id="af-token" value="@Antiforgery.GetAndStoreTokens(Context).RequestToken">
 
@@ -195,6 +197,11 @@ else
               <div id="modal-desc-block" class="mb-3 d-none">
                 <div class="text-muted text-uppercase small fw-semibold mb-1">Description</div>
                 <div id="modal-detail-desc"></div>
+              </div>
+              <div id="modal-sds-block" class="mb-3 d-none">
+                <button type="button" class="btn btn-sm btn-outline-warning" onclick="viewSds()">
+                  <i class="bi bi-eyedropper me-1"></i>View SDS Info
+                </button>
               </div>
               <hr>
               <div id="actions-reusable" class="d-none">
@@ -341,6 +348,27 @@ else
                   <textarea id="edit-description" class="form-control" rows="3"></textarea>
                 </div>
               </div>
+
+              <div id="edit-sds-section" class="d-none">
+                <h6 class="text-uppercase text-muted small fw-semibold mb-2 mt-3">Safety Data Sheet</h6>
+                <div class="row g-3">
+                  <div class="col-12">
+                    <label class="form-label">Chemical name <span class="text-muted small">(for SDS lookup)</span></label>
+                    <div class="input-group">
+                      <input type="text" id="edit-sds-name" class="form-control" placeholder="e.g. Acetone" />
+                      <button type="button" class="btn btn-outline-warning" id="edit-sds-lookup-btn"
+                              onclick="lookupSds()" title="Look up safety data from PubChem">
+                        <i class="bi bi-eyedropper me-1"></i>Look up SDS
+                      </button>
+                    </div>
+                    <div class="form-text">Searches PubChem for GHS hazard data and attaches it to this item.</div>
+                  </div>
+                  <div class="col-12">
+                    <div id="edit-sds-status" class="small mb-2"></div>
+                    <div id="edit-sds-result"></div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
           <div class="modal-footer">
@@ -372,6 +400,22 @@ else
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Safety Data Sheet info modal (read-only view) -->
+    <div class="modal fade" id="sdsInfoModal" tabindex="-1" style="z-index: 1070">
+      <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title"><i class="bi bi-eyedropper me-2"></i>Safety Data Sheet Info</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body" id="sds-info-body"></div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
           </div>
         </div>
       </div>
@@ -710,6 +754,7 @@ else
     </div>
 
     <script>window.canManage = @(_canWrite ? "true" : "false");</script>
+    <script>window.sdsModuleEnabled = @(_sdsModuleEnabled ? "true" : "false");</script>
     <script src="https://cdn.jsdelivr.net/npm/@@zxing/library@@0.21.3/umd/index.min.js"></script>
     <script src="~/js/scanner.js"></script>
     </text>

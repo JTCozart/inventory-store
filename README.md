@@ -16,6 +16,7 @@ A self-hosted inventory management system for small teams. Runs as a Windows ser
 - **Barcode scanning** - camera-based scanner (UPC, EAN, CODE_128, QR codes) or manual SKU entry; print barcode sheets
 - **Smart product lookup** - scan a barcode and pull product details from free public databases (Open Library, UPC Item DB, Open Food Facts); auto-fills name, image, brand, category, size, and weight when adding or editing items
 - **Product metadata library** - browse, refresh, and delete the product data cached from lookups; deleting unlinks it from any items automatically
+- **Safety Data Sheets (optional module)** - look up chemical hazard data (signal word, pictograms, CAS number, hazard statements) for an item by chemical name from PubChem, free and keyless; turn it on under Settings → Modules
 - **CSV import / export** - bulk-load your inventory from a spreadsheet or export for backup
 - **Low stock alerts** - configurable minimum quantity thresholds
 - **Reports** - stock levels, active checkouts, lost items, expiry, take-inventory sheet, barcode sheet, activity log

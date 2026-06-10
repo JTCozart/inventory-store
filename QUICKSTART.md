@@ -180,6 +180,21 @@ If locked out, right-click the tray icon and choose **Reset Admin Password**.
 
 ---
 
+## 15. Look up safety data sheets (optional module)
+
+For teams that handle chemicals, an Admin can turn on the Safety Data Sheets module:
+
+1. Go to **Settings → Modules → Safety Data Sheets** and switch it on
+2. Open an item and click **Edit**
+3. In the **Safety Data Sheet** section, enter the chemical name (e.g. `acetone`) and click **Look up SDS**
+4. Hazard details from PubChem (signal word, pictograms, CAS number, and a link) are saved to the item
+
+A **View SDS Info** button then appears on that item's detail screen for everyone. To see everything on file, go to **Settings → Modules → Safety Data Sheets → Configure**.
+
+> Tip: PubChem lists chemicals, not brand names. Search the chemical (e.g. "sodium hypochlorite") rather than a product name (e.g. "bleach"). If there is no exact match, the app suggests close chemical names to pick from.
+
+---
+
 ## Tray icon menu
 
 | Item | Action |

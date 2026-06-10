@@ -62,6 +62,7 @@ public class DatabaseInitializer
         await EnsureProductMetadataTableAsync(conn);
         await AddColumnIfMissingAsync(conn, "ProductMetadata", "Size",   "TEXT NULL");
         await AddColumnIfMissingAsync(conn, "ProductMetadata", "Weight", "TEXT NULL");
+        await EnsureSafetyDataSheetsTableAsync(conn);
     }
 
     private static async Task MakeUsersEmailNullableAsync(SqliteConnection conn)
@@ -123,7 +124,7 @@ public class DatabaseInitializer
     }
 
     private static readonly HashSet<string> _allowedTables = new(StringComparer.OrdinalIgnoreCase)
-        { "Users", "InventoryItems", "CheckoutRecords", "Clients", "ProductMetadata" };
+        { "Users", "InventoryItems", "CheckoutRecords", "Clients", "ProductMetadata", "SafetyDataSheets" };
 
     private static readonly HashSet<string> _allowedColumns = new(StringComparer.OrdinalIgnoreCase)
         { "FirstName", "LastName", "ItemType", "CheckedOutCount", "LostCount", "ScanWarning", "CategoryId", "ExpiryDate", "IsPublic", "ClientId", "Email", "IsMetadataMatched", "MetadataSource", "SelectedMetadataId", "Size", "Weight" };
@@ -214,6 +215,30 @@ public class DatabaseInitializer
                 FetchedAt   TEXT    NOT NULL
             );
             CREATE INDEX IF NOT EXISTS IX_ProductMetadata_Barcode ON ProductMetadata (Barcode);";
+        await cmd.ExecuteNonQueryAsync();
+    }
+
+    private static async Task EnsureSafetyDataSheetsTableAsync(SqliteConnection conn)
+    {
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+            CREATE TABLE IF NOT EXISTS SafetyDataSheets (
+                Id                      INTEGER PRIMARY KEY AUTOINCREMENT,
+                InventoryItemId         INTEGER NOT NULL,
+                Source                  TEXT    NOT NULL,
+                ChemicalName            TEXT    NOT NULL,
+                Cid                     TEXT    NULL,
+                CasNumber               TEXT    NULL,
+                SignalWord              TEXT    NULL,
+                Pictograms              TEXT    NULL,
+                HazardStatements        TEXT    NULL,
+                PrecautionaryStatements TEXT    NULL,
+                SdsUrl                  TEXT    NULL,
+                FetchedAt               TEXT    NOT NULL,
+                FOREIGN KEY (InventoryItemId) REFERENCES InventoryItems (Id) ON DELETE CASCADE
+            );
+            CREATE INDEX IF NOT EXISTS IX_SafetyDataSheets_InventoryItemId
+                ON SafetyDataSheets (InventoryItemId);";
         await cmd.ExecuteNonQueryAsync();
     }
 

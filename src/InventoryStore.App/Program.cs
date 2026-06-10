@@ -2,6 +2,7 @@ using InventoryStore.App.Extensions;
 using InventoryStore.App.Services;
 using InventoryStore.App.Tray;
 using InventoryStore.Application.Interfaces.Services;
+using InventoryStore.Domain.Interfaces.Repositories;
 using InventoryStore.Infrastructure.Data;
 using InventoryStore.Infrastructure.Extensions;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -112,8 +113,178 @@ internal static class BarcodeMetadataFetcher
     }
 }
 
+// Fetches chemical safety data from PubChem (free, keyless). Resolves a chemical name to a
+// PubChem CID, then pulls GHS classification (signal word, pictograms, hazard / precautionary
+// statements) and CAS number. Pure fetch — no DB access. Used by the optional SDS module.
+internal static class PubChemSdsFetcher
+{
+    private const string Base = "https://pubchem.ncbi.nlm.nih.gov/rest";
+
+    public static async Task<SafetyDataSheet?> FetchAsync(System.Net.Http.HttpClient http, string name)
+    {
+        name = name.Trim();
+        if (string.IsNullOrWhiteSpace(name)) return null;
+
+        // 1. Resolve name → CID
+        string? cid = null;
+        try
+        {
+            var json = await http.GetStringAsync($"{Base}/pug/compound/name/{Uri.EscapeDataString(name)}/cids/JSON");
+            var doc = JsonDocument.Parse(json);
+            if (doc.RootElement.TryGetProperty("IdentifierList", out var il)
+                && il.TryGetProperty("CID", out var cids)
+                && cids.ValueKind == JsonValueKind.Array && cids.GetArrayLength() > 0)
+                cid = cids[0].ToString();
+        }
+        catch { }
+
+        if (string.IsNullOrEmpty(cid)) return null;
+
+        var sheet = new SafetyDataSheet
+        {
+            Source       = "pubchem",
+            ChemicalName = name,
+            Cid          = cid,
+            SdsUrl       = $"https://pubchem.ncbi.nlm.nih.gov/compound/{cid}#section=Safety-and-Hazards",
+            FetchedAt    = DateTime.UtcNow
+        };
+
+        // 2. GHS classification
+        try
+        {
+            var json = await http.GetStringAsync($"{Base}/pug_view/data/compound/{cid}/JSON?heading=GHS+Classification");
+            var doc = JsonDocument.Parse(json);
+            var info = new List<JsonElement>();
+            CollectInformation(doc.RootElement, info);
+
+            sheet.SignalWord              = FirstStringFor(info, "Signal");
+            sheet.Pictograms              = JoinPictograms(info);
+            sheet.HazardStatements        = JoinStringsFor(info, "GHS Hazard Statements", "\n");
+            sheet.PrecautionaryStatements = JoinStringsFor(info, "Precautionary Statement", "\n");
+        }
+        catch { }
+
+        // 3. CAS number
+        try
+        {
+            var json = await http.GetStringAsync($"{Base}/pug_view/data/compound/{cid}/JSON?heading=CAS");
+            var doc = JsonDocument.Parse(json);
+            var info = new List<JsonElement>();
+            CollectInformation(doc.RootElement, info);
+            sheet.CasNumber = FirstStringFor(info, "CAS");
+        }
+        catch { }
+
+        return sheet;
+    }
+
+    // When an exact name lookup fails, PubChem's autocomplete maps common / partial / product
+    // terms to indexed chemical names (e.g. "bleach" → "Household bleach", "aceton" → "acetone").
+    public static async Task<List<string>> SuggestAsync(System.Net.Http.HttpClient http, string name, int limit = 6)
+    {
+        var suggestions = new List<string>();
+        try
+        {
+            var json = await http.GetStringAsync(
+                $"https://pubchem.ncbi.nlm.nih.gov/rest/autocomplete/compound/{Uri.EscapeDataString(name)}/json?limit={limit}");
+            var doc = JsonDocument.Parse(json);
+            if (doc.RootElement.TryGetProperty("dictionary_terms", out var dt)
+                && dt.TryGetProperty("compound", out var comp) && comp.ValueKind == JsonValueKind.Array)
+                foreach (var c in comp.EnumerateArray())
+                    if (c.ValueKind == JsonValueKind.String)
+                    {
+                        var v = c.GetString();
+                        if (!string.IsNullOrWhiteSpace(v)) suggestions.Add(v!);
+                    }
+        }
+        catch { }
+        return suggestions.Take(limit).ToList();
+    }
+
+    // PubChem PUG-View nests data as Record → Section[] → (Section[] | Information[]).
+    // Walk the tree and collect every Information node.
+    private static void CollectInformation(JsonElement el, List<JsonElement> acc)
+    {
+        if (el.ValueKind != JsonValueKind.Object) return;
+        if (el.TryGetProperty("Record", out var rec)) CollectInformation(rec, acc);
+        if (el.TryGetProperty("Information", out var infoArr) && infoArr.ValueKind == JsonValueKind.Array)
+            foreach (var i in infoArr.EnumerateArray()) acc.Add(i);
+        if (el.TryGetProperty("Section", out var secArr) && secArr.ValueKind == JsonValueKind.Array)
+            foreach (var s in secArr.EnumerateArray()) CollectInformation(s, acc);
+    }
+
+    private static IEnumerable<string> StringsOf(JsonElement information)
+    {
+        if (information.TryGetProperty("Value", out var val)
+            && val.TryGetProperty("StringWithMarkup", out var swm)
+            && swm.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var s in swm.EnumerateArray())
+                if (s.TryGetProperty("String", out var str) && str.ValueKind == JsonValueKind.String)
+                {
+                    var v = str.GetString();
+                    if (!string.IsNullOrWhiteSpace(v)) yield return v!.Trim();
+                }
+        }
+    }
+
+    private static JsonElement? FindInfo(List<JsonElement> info, string nameContains)
+    {
+        foreach (var i in info)
+            if (i.TryGetProperty("Name", out var n) && n.ValueKind == JsonValueKind.String
+                && n.GetString()!.Contains(nameContains, StringComparison.OrdinalIgnoreCase))
+                return i;
+        return null;
+    }
+
+    private static string? FirstStringFor(List<JsonElement> info, string nameContains)
+    {
+        var match = FindInfo(info, nameContains);
+        return match is null ? null : StringsOf(match.Value).FirstOrDefault();
+    }
+
+    private static string? JoinStringsFor(List<JsonElement> info, string nameContains, string sep)
+    {
+        var match = FindInfo(info, nameContains);
+        if (match is null) return null;
+        var items = StringsOf(match.Value).Distinct().ToList();
+        return items.Count > 0 ? string.Join(sep, items) : null;
+    }
+
+    // Pictogram names live in the Markup "Extra" field (the String is just whitespace
+    // placeholders for the icons), e.g. "Flammable", "Irritant".
+    private static string? JoinPictograms(List<JsonElement> info)
+    {
+        var match = FindInfo(info, "Pictogram");
+        if (match is null) return null;
+        var names = new List<string>();
+        if (match.Value.TryGetProperty("Value", out var val)
+            && val.TryGetProperty("StringWithMarkup", out var swm)
+            && swm.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var s in swm.EnumerateArray())
+                if (s.TryGetProperty("Markup", out var markup) && markup.ValueKind == JsonValueKind.Array)
+                    foreach (var m in markup.EnumerateArray())
+                        if (m.TryGetProperty("Extra", out var extra) && extra.ValueKind == JsonValueKind.String)
+                        {
+                            var v = extra.GetString();
+                            if (!string.IsNullOrWhiteSpace(v) && !names.Contains(v!)) names.Add(v!);
+                        }
+        }
+        return names.Count > 0 ? string.Join("; ", names) : null;
+    }
+}
+
 internal class Program
 {
+    // Shared JSON shape for an SDS row returned to the browser.
+    internal static object SdsJson(SafetyDataSheet s) => new
+    {
+        s.Id, s.InventoryItemId, s.Source, s.ChemicalName, s.Cid, s.CasNumber,
+        s.SignalWord, s.Pictograms, s.HazardStatements, s.PrecautionaryStatements,
+        s.SdsUrl, s.FetchedAt
+    };
+
     [STAThread]
     static void Main(string[] args)
     {
@@ -219,6 +390,11 @@ internal class Program
         {
             c.DefaultRequestHeaders.UserAgent.ParseAdd("InventoryStore/1.0 (barcode-lookup)");
             c.Timeout = TimeSpan.FromSeconds(10);
+        });
+        services.AddHttpClient("sds", c =>
+        {
+            c.DefaultRequestHeaders.UserAgent.ParseAdd("InventoryStore/1.0 (sds-lookup)");
+            c.Timeout = TimeSpan.FromSeconds(15);
         });
         services.AddScoped<InventoryStore.Application.Interfaces.Services.INtfyService,
                            InventoryStore.App.Services.NtfyService>();
@@ -492,6 +668,78 @@ internal class Program
                 await db.SaveChangesAsync();
 
                 return Results.Ok(new { success = true, unlinked = linked.Count });
+            });
+
+            // ── Safety Data Sheets module ─────────────────────────────────
+            // All endpoints return 404 when the module is disabled in Settings → Modules.
+
+            // Stored SDS for an item (read by the view + edit modals).
+            endpoints.MapGet("/api/sds/item/{itemId:int}", [Authorize] async (
+                int itemId, ISettingsService settings, ISafetyDataSheetRepository sdsRepo) =>
+            {
+                if (await settings.GetAsync("module.sds.enabled") != "true") return Results.NotFound();
+                var rows = await sdsRepo.GetByInventoryItemIdAsync(itemId);
+                return Results.Ok(rows.Select(SdsJson));
+            });
+
+            // Look up safety data from PubChem and (re)attach it to the item.
+            endpoints.MapGet("/api/sds/lookup", [Authorize(Roles = "Admin,Manager")] async (
+                int itemId, string? name, ISettingsService settings,
+                ISafetyDataSheetRepository sdsRepo, IHttpClientFactory httpFactory) =>
+            {
+                if (await settings.GetAsync("module.sds.enabled") != "true") return Results.NotFound();
+                name = (name ?? "").Trim();
+                if (string.IsNullOrWhiteSpace(name)) return Results.BadRequest(new { error = "name required" });
+
+                var http  = httpFactory.CreateClient("sds");
+                var sheet = await PubChemSdsFetcher.FetchAsync(http, name);
+                if (sheet is null)
+                {
+                    // Brand / product / common names often aren't indexed — offer chemical-name suggestions.
+                    var suggestions = await PubChemSdsFetcher.SuggestAsync(http, name);
+                    return Results.Ok(new
+                    {
+                        success = false,
+                        error = $"No exact chemical match for \"{name}\".",
+                        suggestions
+                    });
+                }
+
+                sheet.InventoryItemId = itemId;
+                await sdsRepo.DeleteByInventoryItemIdAsync(itemId);
+                await sdsRepo.AddRangeAsync(new[] { sheet });
+
+                return Results.Ok(new { success = true, sheets = new[] { SdsJson(sheet) } });
+            });
+
+            // All SDS rows for the Settings → Modules metadata table (with item name).
+            endpoints.MapGet("/api/sds", [Authorize(Roles = "Admin,Manager")] async (
+                ISettingsService settings, AppDbContext db) =>
+            {
+                if (await settings.GetAsync("module.sds.enabled") != "true") return Results.NotFound();
+
+                var rows = await db.SafetyDataSheets.OrderByDescending(s => s.FetchedAt).ToListAsync();
+                var itemIds = rows.Select(r => r.InventoryItemId).Distinct().ToList();
+                var nameMap = await db.InventoryItems
+                    .Where(i => itemIds.Contains(i.Id))
+                    .Select(i => new { i.Id, i.Name })
+                    .ToDictionaryAsync(i => i.Id, i => i.Name);
+
+                return Results.Ok(rows.Select(s => new
+                {
+                    s.Id, s.InventoryItemId,
+                    ItemName = nameMap.TryGetValue(s.InventoryItemId, out var nm) ? nm : "(deleted item)",
+                    s.Source, s.ChemicalName, s.Cid, s.CasNumber, s.SignalWord,
+                    s.Pictograms, s.HazardStatements, s.PrecautionaryStatements, s.SdsUrl, s.FetchedAt
+                }));
+            });
+
+            endpoints.MapPost("/api/sds/{id:int}/delete", [Authorize(Roles = "Admin,Manager")] async (
+                int id, ISettingsService settings, ISafetyDataSheetRepository sdsRepo) =>
+            {
+                if (await settings.GetAsync("module.sds.enabled") != "true") return Results.NotFound();
+                await sdsRepo.DeleteAsync(id);
+                return Results.Ok(new { success = true });
             });
 
             // ── Inventory API ─────────────────────────────────────────────

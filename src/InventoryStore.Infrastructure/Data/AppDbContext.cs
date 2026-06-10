@@ -15,6 +15,7 @@ public class AppDbContext : DbContext
     public DbSet<CheckoutRecord> CheckoutRecords => Set<CheckoutRecord>();
     public DbSet<Client> Clients => Set<Client>();
     public DbSet<ProductMetadata> ProductMetadata => Set<ProductMetadata>();
+    public DbSet<SafetyDataSheet> SafetyDataSheets => Set<SafetyDataSheet>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -95,6 +96,25 @@ public class AppDbContext : DbContext
             e.Property(p => p.Category).HasMaxLength(200);
             e.Property(p => p.Size).HasMaxLength(100);
             e.Property(p => p.Weight).HasMaxLength(100);
+        });
+
+        modelBuilder.Entity<SafetyDataSheet>(e =>
+        {
+            e.HasKey(s => s.Id);
+            e.HasIndex(s => s.InventoryItemId);
+            e.Property(s => s.Source).IsRequired().HasMaxLength(50);
+            e.Property(s => s.ChemicalName).IsRequired().HasMaxLength(500);
+            e.Property(s => s.Cid).HasMaxLength(50);
+            e.Property(s => s.CasNumber).HasMaxLength(50);
+            e.Property(s => s.SignalWord).HasMaxLength(50);
+            e.Property(s => s.Pictograms).HasMaxLength(1000);
+            e.Property(s => s.SdsUrl).HasMaxLength(2000);
+
+            // SDS rows are owned by their item — remove them when the item is deleted.
+            e.HasOne<InventoryItem>()
+             .WithMany()
+             .HasForeignKey(s => s.InventoryItemId)
+             .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<Client>(e =>

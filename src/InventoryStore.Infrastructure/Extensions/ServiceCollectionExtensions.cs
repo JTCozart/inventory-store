@@ -24,6 +24,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IAppSettingRepository, AppSettingRepository>();
         services.AddScoped<ICheckoutRepository, CheckoutRepository>();
         services.AddScoped<IClientRepository, ClientRepository>();
+        services.AddScoped<ISafetyDataSheetRepository, SafetyDataSheetRepository>();
 
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
 

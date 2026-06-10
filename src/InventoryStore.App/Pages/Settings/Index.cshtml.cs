@@ -57,6 +57,10 @@ public class IndexModel : PageModel
     public string? HttpsDomain        { get; private set; }
     public bool    HttpsCertUploaded  { get; private set; }
 
+    // Modules tab
+    public bool SdsModuleEnabled { get; private set; }
+    public string? ModuleSection { get; private set; }
+
     // Notifications tab
     public string? NtfyServer      { get; private set; }
     public string? NtfyTopic       { get; private set; }
@@ -80,7 +84,7 @@ public class IndexModel : PageModel
         _logger               = logger;
     }
 
-    public async Task OnGetAsync(string tab = "account", string? success = null, string? error = null)
+    public async Task OnGetAsync(string tab = "account", string? success = null, string? error = null, string? section = null)
     {
         Tab            = tab;
         SuccessMessage = success;
@@ -111,6 +115,12 @@ public class IndexModel : PageModel
             var portStr   = await _settingsService.GetAsync("https.port");
             HttpsPort     = int.TryParse(portStr, out var p) ? p : 443;
             HttpsCertUploaded = System.IO.File.Exists(HttpsCertPath());
+        }
+
+        if (tab == "modules")
+        {
+            ModuleSection    = section;
+            SdsModuleEnabled = await _settingsService.GetAsync("module.sds.enabled") == "true";
         }
 
         if (tab == "notifications")
@@ -508,6 +518,14 @@ public class IndexModel : PageModel
     private static string GetDbPath() => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
         "InventoryStore", "inventory.db");
+
+    public async Task<IActionResult> OnPostSaveModulesAsync(bool sdsEnabled)
+    {
+        if (!User.IsInRole("Admin")) return Forbid();
+        await _settingsService.SetAsync("module.sds.enabled", sdsEnabled ? "true" : null);
+        return RedirectWithMessage("modules",
+            success: sdsEnabled ? "Safety Data Sheets module enabled." : "Safety Data Sheets module disabled.");
+    }
 
     public async Task<IActionResult> OnPostSavePublicViewSettingAsync(bool enabled)
     {

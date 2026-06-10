@@ -101,4 +101,19 @@ https://www.sqlite.org/copyright.html
 
 ---
 
+## External Data Services
+
+Inventory Store can query the following free public data services at runtime when you use the related features. These services are not bundled with the installer, and a request is only made when you perform a lookup.
+
+- **PubChem** (U.S. National Institutes of Health / National Library of Medicine) - chemical safety data for the optional Safety Data Sheets module.  
+  https://pubchem.ncbi.nlm.nih.gov/
+- **Open Library** - book details for ISBN barcode lookups.  
+  https://openlibrary.org/
+- **UPC Item DB** - general retail product details for barcode lookups.  
+  https://www.upcitemdb.com/
+- **Open Food Facts** - food and beverage details for barcode lookups.  
+  https://world.openfoodfacts.org/
+
+---
+
 *This list reflects dependencies known at the time of release. Transitive dependencies may introduce additional third-party components under their respective licenses.*

@@ -36,6 +36,7 @@
         <option value="/Settings?tab=publicview" selected="@(Model.Tab=="publicview")">Public View</option>
         <option value="/Settings?tab=database"       selected="@(Model.Tab=="database")">Database</option>
         <option value="/Settings?tab=notifications"  selected="@(Model.Tab=="notifications")">Notifications</option>
+        <option value="/Settings?tab=modules"        selected="@(Model.Tab=="modules")">Modules</option>
     }
     @if (User.IsInRole("Admin") || User.IsInRole("Manager"))
     {
@@ -67,6 +68,9 @@
         </a>
         <a href="/Settings?tab=notifications" class="nav-link @(Model.Tab == "notifications" ? "active" : "")">
             <i class="bi bi-bell"></i> Notifications
+        </a>
+        <a href="/Settings?tab=modules" class="nav-link @(Model.Tab == "modules" ? "active" : "")">
+            <i class="bi bi-puzzle"></i> Modules
         </a>
     }
     @if (User.IsInRole("Admin") || User.IsInRole("Manager"))
@@ -1368,7 +1372,153 @@
     </div>
 }
 
+@if (Model.Tab == "modules" && User.IsInRole("Admin") && Model.ModuleSection != "sds")
+{
+    @* ── Module list ─────────────────────────────────────────────── *@
+    <div class="card" style="max-width: 720px;">
+        <div class="card-header fw-semibold"><i class="bi bi-eyedropper me-2"></i>Safety Data Sheets</div>
+        <div class="card-body">
+            <p class="text-muted small mb-3">
+                Look up chemical safety information (GHS hazard data) for inventory items from
+                <a href="https://pubchem.ncbi.nlm.nih.gov/" target="_blank">PubChem</a> and attach it to the item.
+                When enabled, a <strong>Look up SDS</strong> action appears on the item edit panel and a
+                <strong>View SDS Info</strong> button appears on the item view.
+            </p>
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <form method="post" asp-page-handler="SaveModules">
+                    <div class="form-check form-switch mb-0">
+                        <input class="form-check-input" type="checkbox" role="switch" id="sds-enabled"
+                               name="sdsEnabled" value="true" @(Model.SdsModuleEnabled ? "checked" : "")
+                               onchange="this.form.submit()" />
+                        <label class="form-check-label" for="sds-enabled">
+                            @(Model.SdsModuleEnabled ? "Enabled" : "Disabled")
+                        </label>
+                    </div>
+                </form>
+                @if (Model.SdsModuleEnabled)
+                {
+                    <a href="/Settings?tab=modules&section=sds" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-gear me-1"></i>Configure
+                    </a>
+                }
+                else
+                {
+                    <span class="text-muted small">Enable to configure</span>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@if (Model.Tab == "modules" && User.IsInRole("Admin") && Model.ModuleSection == "sds")
+{
+    @* ── SDS configure: metadata table ──────────────────────────── *@
+    <div class="mb-3">
+        <a href="/Settings?tab=modules" class="text-decoration-none small">
+            <i class="bi bi-arrow-left me-1"></i>Modules
+        </a>
+    </div>
+
+    @if (!Model.SdsModuleEnabled)
+    {
+        <div class="alert alert-warning" style="max-width: 1080px;">
+            The Safety Data Sheets module is disabled. <a href="/Settings?tab=modules">Enable it</a> to manage metadata.
+        </div>
+    }
+    else
+    {
+        <div class="card" style="max-width: 1080px;">
+            <div class="card-header d-flex align-items-center justify-content-between">
+                <span class="fw-semibold"><i class="bi bi-eyedropper me-2"></i>Safety Data Sheets — Metadata</span>
+                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="loadSdsTable()" title="Reload list">
+                    <i class="bi bi-arrow-repeat"></i>
+                </button>
+            </div>
+            <div class="card-body">
+                <p class="text-muted small">
+                    Safety data attached to inventory items. Deleting a row removes the SDS info from that item.
+                </p>
+                <div id="sds-table-error" class="alert alert-danger d-none"></div>
+                <div id="sds-table-empty" class="text-center text-muted py-4 d-none">
+                    No safety data sheets yet. Attach one from an item's edit panel.
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle">
+                        <thead>
+                            <tr>
+                                <th>Item</th>
+                                <th>Chemical</th>
+                                <th>CAS</th>
+                                <th>Signal</th>
+                                <th>Hazards</th>
+                                <th>Source</th>
+                                <th class="text-end">Fetched</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="sds-table-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+}
+
 @section Scripts {
+@if (Model.Tab == "modules" && Model.ModuleSection == "sds" && Model.SdsModuleEnabled)
+{
+<script>
+function sdsEsc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+        return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c];
+    });
+}
+async function loadSdsTable() {
+    var tbody = document.getElementById('sds-table-tbody');
+    var err   = document.getElementById('sds-table-error');
+    var empty = document.getElementById('sds-table-empty');
+    err.classList.add('d-none');
+    empty.classList.add('d-none');
+    tbody.innerHTML = '';
+    try {
+        var res = await fetch('/api/sds');
+        if (!res.ok) throw new Error();
+        var rows = await res.json();
+        if (!rows.length) { empty.classList.remove('d-none'); return; }
+        tbody.innerHTML = rows.map(function (r) {
+            var hazards = r.hazardStatements
+                ? sdsEsc(r.hazardStatements).replace(/\n/g, '<br>')
+                : '<span class="text-muted">—</span>';
+            var link = r.sdsUrl
+                ? ' <a href="' + sdsEsc(r.sdsUrl) + '" target="_blank" title="Open in PubChem"><i class="bi bi-box-arrow-up-right"></i></a>'
+                : '';
+            var fetched = r.fetchedAt ? new Date(r.fetchedAt).toLocaleDateString() : '';
+            return '<tr>' +
+                '<td>' + sdsEsc(r.itemName) + '</td>' +
+                '<td>' + sdsEsc(r.chemicalName) + link + '</td>' +
+                '<td>' + sdsEsc(r.casNumber || '—') + '</td>' +
+                '<td>' + sdsEsc(r.signalWord || '—') + '</td>' +
+                '<td class="small">' + hazards + '</td>' +
+                '<td>' + sdsEsc(r.source) + '</td>' +
+                '<td class="text-end text-nowrap small text-muted">' + fetched + '</td>' +
+                '<td class="text-end"><button class="btn btn-sm btn-outline-danger" onclick="deleteSds(' + r.id + ')" title="Delete"><i class="bi bi-trash"></i></button></td>' +
+                '</tr>';
+        }).join('');
+    } catch {
+        err.textContent = 'Could not load safety data sheets.';
+        err.classList.remove('d-none');
+    }
+}
+async function deleteSds(id) {
+    if (!confirm('Remove this safety data sheet?')) return;
+    try {
+        var res = await fetch('/api/sds/' + id + '/delete', { method: 'POST' });
+        if (res.ok) loadSdsTable();
+    } catch {}
+}
+document.addEventListener('DOMContentLoaded', loadSdsTable);
+</script>
+}
 @if (Model.Tab == "notifications")
 {
 <script>

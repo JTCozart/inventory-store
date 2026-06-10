@@ -7,6 +7,7 @@ let _editModal = null;
 let _editItemId = null;
 let _canWrite = false;
 let _currentItemData = null;
+let _currentSdsRows = [];
 
 const _SWATCH_COLORS = ['#0d6efd','#198754','#dc3545','#ffc107','#fd7e14','#6f42c1','#d63384','#0dcaf0','#20c997','#6c757d','#212529'];
 
@@ -191,6 +192,8 @@ function populateView(s) {
         buildLostCheckouts(s.lostCheckouts || []);
     }
 
+    // SDS module: reveal the "View SDS Info" button only when this item has data attached.
+    setupViewSds(s.id);
 
     document.getElementById('modal-content').classList.remove('d-none');
 }
@@ -577,6 +580,7 @@ function populateEditForm(data) {
         ).join('');
 
     initEditCategoryWidget();
+    setupEditSds(item);
 }
 
 function initEditCategoryWidget() {
@@ -723,4 +727,117 @@ function showEditAlert(msg, type) {
     el.className = `alert alert-${type} mb-3`;
     el.textContent = msg;
     el.classList.remove('d-none');
+}
+
+// ── Safety Data Sheets module ─────────────────────────────────────────────────
+
+async function fetchItemSds(itemId) {
+    try {
+        const res = await fetch(`/api/sds/item/${itemId}`);
+        if (!res.ok) return [];   // 404 when the module is disabled
+        return await res.json();
+    } catch { return []; }
+}
+
+// Shared SDS card markup, used by the edit panel, the view modal and lookups.
+function sdsCardHtml(s) {
+    const signal = s.signalWord
+        ? `<span class="badge ${/danger/i.test(s.signalWord) ? 'bg-danger' : 'bg-warning text-dark'} me-2">${esc(s.signalWord)}</span>`
+        : '';
+    const cas = s.casNumber
+        ? `<div class="small mb-1"><span class="text-muted">CAS:</span> ${esc(s.casNumber)}</div>` : '';
+    const pics = s.pictograms
+        ? `<div class="small mb-1"><span class="text-muted">Pictograms:</span> ${esc(s.pictograms)}</div>` : '';
+    const hazards = s.hazardStatements
+        ? `<div class="small mb-1"><span class="text-muted">Hazards:</span><br>${esc(s.hazardStatements).replace(/\n/g, '<br>')}</div>` : '';
+    const precaution = s.precautionaryStatements
+        ? `<div class="small mb-1"><span class="text-muted">Precautions:</span><br>${esc(s.precautionaryStatements).replace(/\n/g, '<br>')}</div>` : '';
+    const link = s.sdsUrl
+        ? `<a href="${esc(s.sdsUrl)}" target="_blank" class="btn btn-sm btn-outline-secondary mt-1"><i class="bi bi-box-arrow-up-right me-1"></i>Open in PubChem</a>` : '';
+    return `<div class="border rounded p-2 mb-2">
+        <div class="d-flex align-items-center mb-1">${signal}<strong>${esc(s.chemicalName)}</strong></div>
+        ${cas}${pics}${hazards}${precaution}${link}
+    </div>`;
+}
+
+// Edit panel: reveal the SDS section, prefill the chemical name, show any attached data.
+function setupEditSds(item) {
+    const section = document.getElementById('edit-sds-section');
+    if (!section) return;
+    if (!window.sdsModuleEnabled) { section.classList.add('d-none'); return; }
+    section.classList.remove('d-none');
+    document.getElementById('edit-sds-name').value = item.name || '';
+    document.getElementById('edit-sds-status').innerHTML = '';
+    document.getElementById('edit-sds-result').innerHTML = '';
+    fetchItemSds(_editItemId).then(renderEditSds);
+}
+
+function renderEditSds(rows) {
+    const el = document.getElementById('edit-sds-result');
+    if (!el) return;
+    el.innerHTML = (rows && rows.length)
+        ? rows.map(sdsCardHtml).join('')
+        : '<div class="text-muted small">No SDS attached yet.</div>';
+}
+
+// Look up safety data from PubChem and attach it to the current item (persists immediately).
+async function lookupSds() {
+    const name   = (document.getElementById('edit-sds-name').value || '').trim();
+    const status = document.getElementById('edit-sds-status');
+    const btn    = document.getElementById('edit-sds-lookup-btn');
+    if (!name) { status.innerHTML = '<span class="text-danger">Enter a chemical name first.</span>'; return; }
+    btn.disabled = true;
+    status.innerHTML = '<span class="text-muted"><span class="spinner-border spinner-border-sm me-1"></span>Searching PubChem…</span>';
+    try {
+        const res = await fetch(`/api/sds/lookup?itemId=${_editItemId}&name=${encodeURIComponent(name)}`);
+        if (!res.ok) { status.innerHTML = '<span class="text-danger">Lookup failed.</span>'; return; }
+        const data = await res.json();
+        if (!data.success) {
+            let html = `<span class="text-warning">${esc(data.error || 'No data found.')}</span>`;
+            if (data.suggestions && data.suggestions.length) {
+                html += '<div class="mt-1"><span class="text-muted">Did you mean:</span> ' +
+                    data.suggestions.map(s =>
+                        `<button type="button" class="btn btn-sm btn-outline-secondary me-1 mb-1" data-name="${esc(s)}" onclick="sdsSuggest(this.dataset.name)">${esc(s)}</button>`
+                    ).join('') + '</div>';
+            } else {
+                html += '<div class="text-muted small mt-1">Try a chemical name (e.g. “sodium hypochlorite”) rather than a brand or product name.</div>';
+            }
+            status.innerHTML = html;
+            renderEditSds([]);
+            return;
+        }
+        status.innerHTML = '<span class="text-success"><i class="bi bi-check-lg me-1"></i>Safety data attached.</span>';
+        renderEditSds(data.sheets);
+    } catch {
+        status.innerHTML = '<span class="text-danger">Network error.</span>';
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+// Apply a PubChem suggestion and re-run the lookup with the exact chemical name.
+function sdsSuggest(name) {
+    document.getElementById('edit-sds-name').value = name;
+    lookupSds();
+}
+
+// View modal: show the "View SDS Info" button only when this item has data attached.
+function setupViewSds(itemId) {
+    const block = document.getElementById('modal-sds-block');
+    if (!block) return;
+    _currentSdsRows = [];
+    block.classList.add('d-none');
+    if (!window.sdsModuleEnabled) return;
+    fetchItemSds(itemId).then(rows => {
+        _currentSdsRows = rows || [];
+        block.classList.toggle('d-none', _currentSdsRows.length === 0);
+    });
+}
+
+function viewSds() {
+    const body = document.getElementById('sds-info-body');
+    body.innerHTML = (_currentSdsRows && _currentSdsRows.length)
+        ? _currentSdsRows.map(sdsCardHtml).join('')
+        : '<div class="text-muted">No safety data attached.</div>';
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('sdsInfoModal')).show();
 }
