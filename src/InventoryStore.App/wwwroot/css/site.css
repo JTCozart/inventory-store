@@ -444,6 +444,10 @@ html, body {
     word-break: break-word;
 }
 
+/* Spinning refresh icon (metadata explorer) */
+.spin { animation: icon-spin .7s linear infinite; display: inline-block; }
+@keyframes icon-spin { to { transform: rotate(360deg); } }
+
 /* ── Item-type selection cards ───────────────── */
 
 .type-option {

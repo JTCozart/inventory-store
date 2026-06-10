@@ -4,7 +4,7 @@
   <!-- Homepage -->
   <url>
     <loc>https://inventorystore.app/</loc>
-    <lastmod>2026-06-08</lastmod>
+    <lastmod>2026-06-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>1.0</priority>
   </url>
@@ -12,63 +12,77 @@
   <!-- User Guide -->
   <url>
     <loc>https://inventorystore.app/user-guide.html</loc>
-    <lastmod>2026-06-08</lastmod>
+    <lastmod>2026-06-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
+  </url>
+
+  <!-- Release Notes -->
+  <url>
+    <loc>https://inventorystore.app/release-notes.html</loc>
+    <lastmod>2026-06-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
   </url>
 
   <!-- User Guide sections (anchor deep-links for rich search snippets) -->
   <url>
     <loc>https://inventorystore.app/user-guide.html#installation</loc>
-    <lastmod>2026-06-08</lastmod>
+    <lastmod>2026-06-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://inventorystore.app/user-guide.html#dashboard</loc>
-    <lastmod>2026-06-08</lastmod>
+    <lastmod>2026-06-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://inventorystore.app/user-guide.html#checkout</loc>
-    <lastmod>2026-06-08</lastmod>
+    <lastmod>2026-06-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://inventorystore.app/user-guide.html#clients</loc>
-    <lastmod>2026-06-08</lastmod>
+    <lastmod>2026-06-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://inventorystore.app/user-guide.html#barcode-scanning</loc>
-    <lastmod>2026-06-08</lastmod>
+    <lastmod>2026-06-09</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://inventorystore.app/user-guide.html#product-lookup</loc>
+    <lastmod>2026-06-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://inventorystore.app/user-guide.html#reports</loc>
-    <lastmod>2026-06-08</lastmod>
+    <lastmod>2026-06-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://inventorystore.app/user-guide.html#notifications</loc>
-    <lastmod>2026-06-08</lastmod>
+    <lastmod>2026-06-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://inventorystore.app/user-guide.html#remote-access</loc>
-    <lastmod>2026-06-08</lastmod>
+    <lastmod>2026-06-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://inventorystore.app/user-guide.html#csv</loc>
-    <lastmod>2026-06-08</lastmod>
+    <lastmod>2026-06-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>

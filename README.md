@@ -14,7 +14,8 @@ A self-hosted inventory management system for small teams. Runs as a Windows ser
 - **Categories** - organize items into color-coded groups with filtering
 - **Expiry dates** - track expiry on any item; Expired and Expiring Soon badges; dedicated expiry report
 - **Barcode scanning** - camera-based scanner (UPC, EAN, CODE_128, QR codes) or manual SKU entry; print barcode sheets
-- **Smart product lookup** - scan a barcode and look up product details from free public databases (Open Library, UPC Item DB, Open Food Facts); automatically fills in name and metadata when adding new items
+- **Smart product lookup** - scan a barcode and pull product details from free public databases (Open Library, UPC Item DB, Open Food Facts); auto-fills name, image, brand, category, size, and weight when adding or editing items
+- **Product metadata library** - browse, refresh, and delete the product data cached from lookups; deleting unlinks it from any items automatically
 - **CSV import / export** - bulk-load your inventory from a spreadsheet or export for backup
 - **Low stock alerts** - configurable minimum quantity thresholds
 - **Reports** - stock levels, active checkouts, lost items, expiry, take-inventory sheet, barcode sheet, activity log

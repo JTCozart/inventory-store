@@ -23,6 +23,95 @@ internal record MarkLostRequest(int RecordId, string? Notes);
 internal record ConsumeRequest(int ItemId, int Quantity, string? Notes);
 internal record RestockRequest(int ItemId, int Quantity, string? Notes);
 
+// Fetches product metadata from the three public APIs. Shared by the barcode-lookup
+// endpoint and the metadata-explorer refresh action. Pure fetch — no DB access.
+internal static class BarcodeMetadataFetcher
+{
+    public static async Task<List<ProductMetadata>> FetchAsync(System.Net.Http.HttpClient http, string barcode)
+    {
+        var results = new List<ProductMetadata>();
+
+        // 1. Open Library (ISBN-13 prefix 978/979)
+        if (barcode.StartsWith("978") || barcode.StartsWith("979"))
+        {
+            try
+            {
+                var json = await http.GetStringAsync($"https://openlibrary.org/api/books?bibkeys=ISBN:{barcode}&format=json&jscmd=data");
+                var doc = JsonDocument.Parse(json);
+                if (doc.RootElement.TryGetProperty($"ISBN:{barcode}", out var book))
+                {
+                    var name = book.TryGetProperty("title", out var t) ? t.GetString() : null;
+                    string? desc = null;
+                    if (book.TryGetProperty("description", out var d))
+                        desc = d.ValueKind == JsonValueKind.String ? d.GetString()
+                            : d.TryGetProperty("value", out var dv) ? dv.GetString() : null;
+                    string? img = null;
+                    if (book.TryGetProperty("cover", out var cover))
+                        img = cover.TryGetProperty("large", out var cl) ? cl.GetString()
+                            : cover.TryGetProperty("medium", out var cm) ? cm.GetString() : null;
+                    var publisher = book.TryGetProperty("publishers", out var pubs) && pubs.GetArrayLength() > 0
+                        && pubs[0].TryGetProperty("name", out var pn) ? pn.GetString() : null;
+                    var subject = book.TryGetProperty("subjects", out var subs) && subs.GetArrayLength() > 0
+                        && subs[0].TryGetProperty("name", out var sn) ? sn.GetString() : null;
+                    string? pages = book.TryGetProperty("number_of_pages", out var np) && np.ValueKind == JsonValueKind.Number
+                        ? np.GetInt32() + " pages" : null;
+                    string? weight = book.TryGetProperty("weight", out var wt) ? wt.GetString() : null;
+                    if (!string.IsNullOrWhiteSpace(name))
+                        results.Add(new ProductMetadata { Barcode = barcode, Source = "openlibrary", Name = name!, Description = desc, ImageUrl = img, Brand = publisher, Category = subject, Size = pages, Weight = weight, FetchedAt = DateTime.UtcNow });
+                }
+            }
+            catch { }
+        }
+
+        // 2. UPC Item DB (free trial, general retail)
+        try
+        {
+            var json = await http.GetStringAsync($"https://api.upcitemdb.com/prod/trial/lookup?upc={barcode}");
+            var doc = JsonDocument.Parse(json);
+            if (doc.RootElement.TryGetProperty("items", out var items) && items.GetArrayLength() > 0)
+            {
+                var item = items[0];
+                var name  = item.TryGetProperty("title",       out var t) ? t.GetString() : null;
+                var desc  = item.TryGetProperty("description", out var d) ? d.GetString() : null;
+                var brand = item.TryGetProperty("brand",       out var b) ? b.GetString() : null;
+                var cat   = item.TryGetProperty("category",    out var c) ? c.GetString() : null;
+                var size  = item.TryGetProperty("size",        out var sz) ? sz.GetString() : null;
+                var weight = item.TryGetProperty("weight",     out var wt) ? wt.GetString() : null;
+                string? img = null;
+                if (item.TryGetProperty("images", out var imgs) && imgs.GetArrayLength() > 0)
+                    img = imgs[0].GetString();
+                if (!string.IsNullOrWhiteSpace(name))
+                    results.Add(new ProductMetadata { Barcode = barcode, Source = "upcitemdb", Name = name!, Description = desc, ImageUrl = img, Brand = brand, Category = cat, Size = size, Weight = weight, FetchedAt = DateTime.UtcNow });
+            }
+        }
+        catch { }
+
+        // 3. Open Food Facts (food & beverages)
+        try
+        {
+            var json = await http.GetStringAsync($"https://world.openfoodfacts.org/api/v2/product/{barcode}?fields=product_name,brands,categories_tags,image_url,ingredients_text,quantity");
+            var doc = JsonDocument.Parse(json);
+            if (doc.RootElement.TryGetProperty("status", out var s) && s.GetInt32() == 1
+                && doc.RootElement.TryGetProperty("product", out var prod))
+            {
+                var name  = prod.TryGetProperty("product_name", out var n)  ? n.GetString() : null;
+                var brand = prod.TryGetProperty("brands",        out var b)  ? b.GetString() : null;
+                var img   = prod.TryGetProperty("image_url",     out var i)  ? i.GetString() : null;
+                var ing   = prod.TryGetProperty("ingredients_text", out var ig) ? ig.GetString() : null;
+                var qty   = prod.TryGetProperty("quantity",        out var q)  ? q.GetString() : null;
+                string? cat = null;
+                if (prod.TryGetProperty("categories_tags", out var cats) && cats.GetArrayLength() > 0)
+                    cat = cats[0].GetString()?.Replace("en:", "", StringComparison.OrdinalIgnoreCase);
+                if (!string.IsNullOrWhiteSpace(name))
+                    results.Add(new ProductMetadata { Barcode = barcode, Source = "openfoodfacts", Name = name!, Description = ing, ImageUrl = img, Brand = brand, Category = cat, Size = qty, FetchedAt = DateTime.UtcNow });
+            }
+        }
+        catch { }
+
+        return results;
+    }
+}
+
 internal class Program
 {
     [STAThread]
@@ -308,84 +397,7 @@ internal class Program
                     return Results.Ok(cached.Select(p => new { p.Id, p.Source, p.Name, p.Description, p.ImageUrl, p.Brand, p.Category, p.Size, p.Weight }));
 
                 var http = httpFactory.CreateClient("barcode");
-                var results = new List<ProductMetadata>();
-
-                // 1. Open Library (ISBN-13 prefix 978/979)
-                if (barcode.StartsWith("978") || barcode.StartsWith("979"))
-                {
-                    try
-                    {
-                        var json = await http.GetStringAsync($"https://openlibrary.org/api/books?bibkeys=ISBN:{barcode}&format=json&jscmd=data");
-                        var doc = JsonDocument.Parse(json);
-                        if (doc.RootElement.TryGetProperty($"ISBN:{barcode}", out var book))
-                        {
-                            var name = book.TryGetProperty("title", out var t) ? t.GetString() : null;
-                            string? desc = null;
-                            if (book.TryGetProperty("description", out var d))
-                                desc = d.ValueKind == JsonValueKind.String ? d.GetString()
-                                    : d.TryGetProperty("value", out var dv) ? dv.GetString() : null;
-                            string? img = null;
-                            if (book.TryGetProperty("cover", out var cover))
-                                img = cover.TryGetProperty("large", out var cl) ? cl.GetString()
-                                    : cover.TryGetProperty("medium", out var cm) ? cm.GetString() : null;
-                            var publisher = book.TryGetProperty("publishers", out var pubs) && pubs.GetArrayLength() > 0
-                                && pubs[0].TryGetProperty("name", out var pn) ? pn.GetString() : null;
-                            var subject = book.TryGetProperty("subjects", out var subs) && subs.GetArrayLength() > 0
-                                && subs[0].TryGetProperty("name", out var sn) ? sn.GetString() : null;
-                            string? pages = book.TryGetProperty("number_of_pages", out var np) && np.ValueKind == JsonValueKind.Number
-                                ? np.GetInt32() + " pages" : null;
-                            string? weight = book.TryGetProperty("weight", out var wt) ? wt.GetString() : null;
-                            if (!string.IsNullOrWhiteSpace(name))
-                                results.Add(new ProductMetadata { Barcode = barcode, Source = "openlibrary", Name = name!, Description = desc, ImageUrl = img, Brand = publisher, Category = subject, Size = pages, Weight = weight, FetchedAt = DateTime.UtcNow });
-                        }
-                    }
-                    catch { }
-                }
-
-                // 2. UPC Item DB (free trial — general retail)
-                try
-                {
-                    var json = await http.GetStringAsync($"https://api.upcitemdb.com/prod/trial/lookup?upc={barcode}");
-                    var doc = JsonDocument.Parse(json);
-                    if (doc.RootElement.TryGetProperty("items", out var items) && items.GetArrayLength() > 0)
-                    {
-                        var item = items[0];
-                        var name  = item.TryGetProperty("title",       out var t) ? t.GetString() : null;
-                        var desc  = item.TryGetProperty("description", out var d) ? d.GetString() : null;
-                        var brand = item.TryGetProperty("brand",       out var b) ? b.GetString() : null;
-                        var cat   = item.TryGetProperty("category",    out var c) ? c.GetString() : null;
-                        var size  = item.TryGetProperty("size",        out var sz) ? sz.GetString() : null;
-                        var weight = item.TryGetProperty("weight",     out var wt) ? wt.GetString() : null;
-                        string? img = null;
-                        if (item.TryGetProperty("images", out var imgs) && imgs.GetArrayLength() > 0)
-                            img = imgs[0].GetString();
-                        if (!string.IsNullOrWhiteSpace(name))
-                            results.Add(new ProductMetadata { Barcode = barcode, Source = "upcitemdb", Name = name!, Description = desc, ImageUrl = img, Brand = brand, Category = cat, Size = size, Weight = weight, FetchedAt = DateTime.UtcNow });
-                    }
-                }
-                catch { }
-
-                // 3. Open Food Facts (food & beverages)
-                try
-                {
-                    var json = await http.GetStringAsync($"https://world.openfoodfacts.org/api/v2/product/{barcode}?fields=product_name,brands,categories_tags,image_url,ingredients_text");
-                    var doc = JsonDocument.Parse(json);
-                    if (doc.RootElement.TryGetProperty("status", out var s) && s.GetInt32() == 1
-                        && doc.RootElement.TryGetProperty("product", out var prod))
-                    {
-                        var name  = prod.TryGetProperty("product_name", out var n)  ? n.GetString() : null;
-                        var brand = prod.TryGetProperty("brands",        out var b)  ? b.GetString() : null;
-                        var img   = prod.TryGetProperty("image_url",     out var i)  ? i.GetString() : null;
-                        var ing   = prod.TryGetProperty("ingredients_text", out var ig) ? ig.GetString() : null;
-                        var qty   = prod.TryGetProperty("quantity",        out var q)  ? q.GetString() : null;
-                        string? cat = null;
-                        if (prod.TryGetProperty("categories_tags", out var cats) && cats.GetArrayLength() > 0)
-                            cat = cats[0].GetString()?.Replace("en:", "", StringComparison.OrdinalIgnoreCase);
-                        if (!string.IsNullOrWhiteSpace(name))
-                            results.Add(new ProductMetadata { Barcode = barcode, Source = "openfoodfacts", Name = name!, Description = ing, ImageUrl = img, Brand = brand, Category = cat, Size = qty, FetchedAt = DateTime.UtcNow });
-                    }
-                }
-                catch { }
+                var results = await BarcodeMetadataFetcher.FetchAsync(http, barcode);
 
                 if (results.Count > 0)
                 {
@@ -394,6 +406,92 @@ internal class Program
                 }
 
                 return Results.Ok(results.Select(p => new { p.Id, p.Source, p.Name, p.Description, p.ImageUrl, p.Brand, p.Category, p.Size, p.Weight }));
+            });
+
+            // ── Product metadata explorer ─────────────────────────────────
+            endpoints.MapGet("/api/metadata", [Authorize] async (IServiceScopeFactory scopeFactory) =>
+            {
+                await using var scope = scopeFactory.CreateAsyncScope();
+                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+                var rows = await db.ProductMetadata
+                    .OrderBy(p => p.Barcode).ThenBy(p => p.Source)
+                    .ToListAsync();
+
+                var counts = await db.InventoryItems
+                    .Where(i => i.SelectedMetadataId != null)
+                    .GroupBy(i => i.SelectedMetadataId)
+                    .Select(g => new { Id = g.Key, Count = g.Count() })
+                    .ToListAsync();
+                var countMap = counts.Where(x => x.Id.HasValue).ToDictionary(x => x.Id!.Value, x => x.Count);
+
+                return Results.Ok(rows.Select(p => new
+                {
+                    p.Id, p.Barcode, p.Source, p.Name, p.Description, p.ImageUrl,
+                    p.Brand, p.Category, p.Size, p.Weight, p.FetchedAt,
+                    LinkedCount = countMap.TryGetValue(p.Id, out var c) ? c : 0
+                }));
+            });
+
+            endpoints.MapPost("/api/metadata/{id:int}/refresh", [Authorize(Roles = "Admin,Manager")] async (
+                int id, IServiceScopeFactory scopeFactory, IHttpClientFactory httpFactory) =>
+            {
+                await using var scope = scopeFactory.CreateAsyncScope();
+                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+                var row = await db.ProductMetadata.FindAsync(id);
+                if (row is null) return Results.NotFound(new { error = "Metadata not found." });
+
+                var http = httpFactory.CreateClient("barcode");
+                var fresh = await BarcodeMetadataFetcher.FetchAsync(http, row.Barcode);
+                var match = fresh.FirstOrDefault(f => string.Equals(f.Source, row.Source, StringComparison.OrdinalIgnoreCase));
+                if (match is null)
+                    return Results.Ok(new { success = false, error = "No data returned from the source." });
+
+                row.Name = match.Name;
+                row.Description = match.Description;
+                row.ImageUrl = match.ImageUrl;
+                row.Brand = match.Brand;
+                row.Category = match.Category;
+                row.Size = match.Size;
+                row.Weight = match.Weight;
+                row.FetchedAt = DateTime.UtcNow;
+                await db.SaveChangesAsync();
+
+                var linked = await db.InventoryItems.CountAsync(i => i.SelectedMetadataId == id);
+                return Results.Ok(new
+                {
+                    success = true,
+                    item = new
+                    {
+                        row.Id, row.Barcode, row.Source, row.Name, row.Description, row.ImageUrl,
+                        row.Brand, row.Category, row.Size, row.Weight, row.FetchedAt,
+                        LinkedCount = linked
+                    }
+                });
+            });
+
+            endpoints.MapPost("/api/metadata/{id:int}/delete", [Authorize(Roles = "Admin,Manager")] async (
+                int id, IServiceScopeFactory scopeFactory) =>
+            {
+                await using var scope = scopeFactory.CreateAsyncScope();
+                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+                var row = await db.ProductMetadata.FindAsync(id);
+                if (row is null) return Results.NotFound(new { error = "Metadata not found." });
+
+                // Unlink any items pointing at this metadata before removing it.
+                var linked = await db.InventoryItems.Where(i => i.SelectedMetadataId == id).ToListAsync();
+                foreach (var it in linked)
+                {
+                    it.SelectedMetadataId = null;
+                    it.IsMetadataMatched = false;
+                }
+
+                db.ProductMetadata.Remove(row);
+                await db.SaveChangesAsync();
+
+                return Results.Ok(new { success = true, unlinked = linked.Count });
             });
 
             // ── Inventory API ─────────────────────────────────────────────

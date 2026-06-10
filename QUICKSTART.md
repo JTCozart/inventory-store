@@ -34,7 +34,7 @@ Categories let you group and filter items (e.g. Tools, Electronics, Safety).
    - **Quantity** - total units you have
    - **Minimum Quantity** - triggers a Low Stock warning when available stock reaches this level
    - **SKU / Barcode** - scan with camera or type manually; used for barcode labels and scanning
-     - Optional: Click the **Lookup** button next to SKU to find the product name and details automatically (works with retail barcodes, ISBN, and QR codes)
+     - Optional: Click the **Lookup** button (magnifying glass) next to SKU to pull product details automatically - name, image, brand, category, size, and weight (works with retail barcodes, ISBN, and QR codes)
    - **Location** - shelf, bin, or room
    - **Category** - optional group (created in Settings)
    - **Expiry Date** - optional; items show Expired / Expiring Soon badges when due
@@ -84,8 +84,10 @@ The item is added and the scanner resets for the next barcode.
 ## 7. Consume or restock a consumable item
 
 1. Open the item detail panel
-2. Enter the quantity and optional notes
-3. Click **Consume** to decrement stock, or **Restock** to add stock
+2. In the **Adjust Stock** control, set the quantity and optional notes
+3. Click the **−** button to consume (use) stock, or the **+** button to add stock
+
+The **In Stock** number briefly flashes red (consumed) or green (added) to confirm the change.
 
 ---
 

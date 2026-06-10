@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Release Notes | Inventory Store</title>
+  <meta name="description" content="Release notes and changelog for Inventory Store - new features, improvements, and fixes in each version of the self-hosted inventory management app." />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="https://inventorystore.app/release-notes.html" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --blue:   #2563eb;
+      --blue-d: #1d4ed8;
+      --dark:   #0f172a;
+      --gray:   #64748b;
+      --light:  #f8fafc;
+      --border: #e2e8f0;
+      --radius: 12px;
+    }
+    body { font-family: 'Inter', sans-serif; color: var(--dark); background: #fff; line-height: 1.7; overflow-x: clip; }
+    a { color: var(--blue); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 2rem; border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; background: rgba(255,255,255,.95);
+      backdrop-filter: blur(8px); z-index: 100;
+    }
+    .nav-brand {
+      display: flex; align-items: center; gap: .6rem;
+      font-weight: 700; font-size: 1.1rem; color: var(--dark); text-decoration: none;
+    }
+    .it-badge {
+      width: 32px; height: 32px; border-radius: 8px;
+      background: var(--blue); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: .85rem; letter-spacing: -.5px; flex-shrink: 0;
+    }
+    .nav-links { display: flex; gap: 1.5rem; align-items: center; }
+    .nav-links a { color: var(--gray); font-size: .9rem; font-weight: 500; }
+    .nav-links a:hover, .nav-links a.active { color: var(--dark); text-decoration: none; }
+    .btn-nav {
+      background: var(--blue); color: #fff !important;
+      padding: .45rem 1rem; border-radius: 8px; font-weight: 600;
+    }
+    .btn-nav:hover { background: var(--blue-d); }
+    .nav-toggle {
+      display: none; background: none; border: none; cursor: pointer;
+      padding: .35rem; color: var(--dark); font-size: 1.35rem; line-height: 1;
+    }
+    .nav-mobile {
+      display: none; position: absolute; top: 100%; left: 0; right: 0;
+      background: #fff; border-bottom: 1px solid var(--border);
+      padding: .75rem 1.5rem 1rem; flex-direction: column;
+      box-shadow: 0 6px 16px rgba(0,0,0,.08);
+    }
+    .nav-mobile.open { display: flex; }
+    .nav-mobile a {
+      color: var(--gray); font-size: .95rem; font-weight: 500;
+      padding: .65rem .25rem; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: .5rem;
+    }
+    .nav-mobile a:hover { color: var(--dark); text-decoration: none; }
+    .nav-mobile .btn-nav {
+      margin-top: .5rem; border-bottom: none; border-radius: 8px;
+      padding: .65rem 1rem; justify-content: center;
+    }
+
+    .wrap { max-width: 820px; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
+    .page-hero { padding-bottom: 1.5rem; border-bottom: 2px solid var(--border); margin-bottom: 2.5rem; }
+    .page-hero h1 { font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 800; margin-bottom: .5rem; }
+    .page-hero p { color: var(--gray); font-size: 1.05rem; }
+
+    .release { margin-bottom: 3.25rem; scroll-margin-top: 80px; }
+    .release-head {
+      display: flex; align-items: baseline; gap: .75rem; flex-wrap: wrap;
+      padding-bottom: .6rem; border-bottom: 2px solid var(--border); margin-bottom: 1.25rem;
+    }
+    .release-head h2 { font-size: 1.5rem; font-weight: 800; }
+    .release-head .release-date { color: var(--gray); font-size: .9rem; font-weight: 500; }
+    .release-head .release-latest {
+      background: #dcfce7; color: #166534; font-size: .7rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .05em; padding: .15rem .55rem; border-radius: 99px;
+    }
+    .release-group { margin: 1.25rem 0 1.5rem; }
+    .release-group-label {
+      display: inline-block; padding: .2rem .6rem; border-radius: 6px;
+      font-size: .78rem; font-weight: 700; margin-bottom: .65rem;
+    }
+    .label-new      { background: #dcfce7; color: #166534; }
+    .label-improved { background: #dbeafe; color: #1d4ed8; }
+    .label-fixed    { background: #fef9c3; color: #854d0e; }
+    .release ul { margin: 0 0 0 1.4rem; color: #334155; }
+    .release li { margin-bottom: .4rem; }
+    .release li strong { color: var(--dark); }
+
+    footer {
+      border-top: 1px solid var(--border); padding: 2rem;
+      display: flex; justify-content: space-between; align-items: center;
+      flex-wrap: wrap; gap: 1rem; color: var(--gray); font-size: .85rem;
+    }
+    footer a { color: var(--gray); }
+
+    @media (max-width: 768px) {
+      nav { padding: 1rem; }
+      .nav-links { display: none; }
+      .nav-toggle { display: block; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-brand" href="index.html">
+    <div class="it-badge">IS</div>
+    Inventory Store
+  </a>
+  <div class="nav-links">
+    <a href="index.html#features">Features</a>
+    <a href="index.html#how-it-works">How it works</a>
+    <a href="user-guide.html">User Guide</a>
+    <a href="release-notes.html" class="active">Release Notes</a>
+    <a href="https://github.com/JTCozart/inventory-store" target="_blank" rel="noopener noreferrer">GitHub</a>
+    <a href="https://github.com/JTCozart/inventory-store/releases/latest" class="btn-nav" target="_blank" rel="noopener noreferrer">
+      <i class="fa-solid fa-download"></i> Download
+    </a>
+  </div>
+  <button class="nav-toggle" aria-label="Open menu" aria-expanded="false">
+    <i class="fa-solid fa-bars"></i>
+  </button>
+  <div class="nav-mobile" role="menu">
+    <a href="index.html#features"><i class="fa-solid fa-star fa-fw"></i> Features</a>
+    <a href="index.html#how-it-works"><i class="fa-solid fa-list-check fa-fw"></i> How it works</a>
+    <a href="user-guide.html"><i class="fa-solid fa-book fa-fw"></i> User Guide</a>
+    <a href="release-notes.html"><i class="fa-solid fa-rocket fa-fw"></i> Release Notes</a>
+    <a href="https://github.com/JTCozart/inventory-store" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-github fa-fw"></i> GitHub</a>
+    <a href="https://github.com/JTCozart/inventory-store/releases/latest" class="btn-nav" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-download"></i> Download</a>
+  </div>
+</nav>
+
+<div class="wrap">
+  <div class="page-hero">
+    <h1>Release Notes</h1>
+    <p>What's new, improved, and fixed in each version of Inventory Store.</p>
+  </div>
+
+  <section class="release" id="v20260609-2315">
+    <div class="release-head">
+      <h2>v20260609.2315</h2>
+      <span class="release-date">June 9, 2026</span>
+      <span class="release-latest">Latest</span>
+    </div>
+
+    <div class="release-group">
+      <span class="release-group-label label-new">New</span>
+      <ul>
+        <li><strong>Richer product lookup.</strong> Scanning or looking up a barcode now fills in the product image, brand, category, size, and weight - not just the name - from Open Library, UPC Item DB, and Open Food Facts.</li>
+        <li><strong>Product metadata library.</strong> A new <strong>Metadata</strong> button on the Inventory page opens a table of every product record cached from lookups. Refresh a row to re-fetch it from its source, or delete a row to unlink it from any items and remove it from storage (with a confirm step).</li>
+        <li><strong>Link products while editing.</strong> The SKU field on the Edit form now has a lookup button - choose a match to attach the product's image and details to an existing item when you save.</li>
+      </ul>
+    </div>
+
+    <div class="release-group">
+      <span class="release-group-label label-improved">Improved</span>
+      <ul>
+        <li><strong>Redesigned item view.</strong> The detail screen now uses a two-column layout with the product image beside the stats, a restyled Product Details panel, and the item's expiry and category shown inline.</li>
+        <li><strong>Type-aware screens.</strong> Consumables show a single <em>In Stock</em> figure; Reusables show Total, Available, Checked Out, and Lost. Expiry only appears for Consumables, and the item type is chosen with clearer selectable cards.</li>
+        <li><strong>Simpler stock adjustments.</strong> Consume and Restock are now one <strong>Adjust Stock</strong> control with <strong>−</strong> and <strong>+</strong> buttons. The In Stock number flashes red or green to confirm the change instead of pushing the screen down with a banner.</li>
+        <li><strong>Clearer status.</strong> Low Stock and Out of Stock badges now appear right in the item title.</li>
+        <li><strong>Faster scanning.</strong> Scanning a consumable mirrors the item view (compact two-column layout, the −/+ stepper, and stock badges), and the search box now clears every time the scanner opens.</li>
+      </ul>
+    </div>
+
+    <div class="release-group">
+      <span class="release-group-label label-fixed">Fixed</span>
+      <ul>
+        <li>Product images no longer show a broken-image icon next to the real image.</li>
+        <li>Food product lookups now capture the package size (the quantity field was previously skipped).</li>
+      </ul>
+    </div>
+  </section>
+
+</div>
+
+<footer>
+  <div>
+    <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.25rem">
+      <div class="it-badge" style="width:24px;height:24px;font-size:.65rem;border-radius:5px">IS</div>
+      <strong style="color:#0f172a">Inventory Store</strong>
+    </div>
+    <span>MIT License &middot; &copy; 2026 Jake Cozart</span>
+  </div>
+  <div style="display:flex;gap:1.5rem">
+    <a href="index.html"><i class="fa-solid fa-house"></i> Home</a>
+    <a href="user-guide.html"><i class="fa-solid fa-book"></i> User Guide</a>
+    <a href="https://github.com/JTCozart/inventory-store/releases" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-tag"></i> Releases</a>
+    <a href="https://github.com/JTCozart/inventory-store" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-github"></i> GitHub</a>
+  </div>
+</footer>
+
+<script>
+  (function () {
+    var toggle = document.querySelector('.nav-toggle');
+    var menu   = document.querySelector('.nav-mobile');
+    toggle.addEventListener('click', function () {
+      var open = menu.classList.toggle('open');
+      toggle.setAttribute('aria-expanded', open);
+      toggle.querySelector('i').className = open ? 'fa-solid fa-xmark' : 'fa-solid fa-bars';
+    });
+    document.addEventListener('click', function (e) {
+      if (!e.target.closest('nav')) {
+        menu.classList.remove('open');
+        toggle.setAttribute('aria-expanded', 'false');
+        toggle.querySelector('i').className = 'fa-solid fa-bars';
+      }
+    });
+    menu.querySelectorAll('a').forEach(function (a) {
+      a.addEventListener('click', function () {
+        menu.classList.remove('open');
+        toggle.setAttribute('aria-expanded', 'false');
+        toggle.querySelector('i').className = 'fa-solid fa-bars';
+      });
+    });
+  })();
+</script>
+</body>
+</html>

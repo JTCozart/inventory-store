@@ -11,6 +11,9 @@
     @if (canWrite)
     {
         <div class="d-flex gap-2">
+            <button type="button" class="btn btn-outline-secondary" onclick="openMetadataExplorer()">
+                <i class="bi bi-database me-1"></i> Metadata
+            </button>
             <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#importModal">
                 <i class="bi bi-upload me-1"></i> Import
             </button>
@@ -358,6 +361,60 @@ else
     </div>
 </div>
 
+<!-- Metadata explorer modal -->
+<div class="modal fade" id="metadataExplorerModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-database me-2"></i>Product Metadata</h5>
+                <div class="ms-auto d-flex gap-2 align-items-center">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="loadMetadataExplorer()" title="Reload list">
+                        <i class="bi bi-arrow-clockwise"></i>
+                    </button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted small">
+                    Cached product info fetched from barcode lookups. <strong>Refresh</strong> re-fetches from the source API;
+                    <strong>delete</strong> unlinks it from any items and removes it from storage.
+                </p>
+                <div id="md-explorer-loading" class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status"></div>
+                </div>
+                <div id="md-explorer-empty" class="text-center py-5 text-muted d-none">
+                    <i class="bi bi-database display-6 d-block mb-2 opacity-50"></i>
+                    No stored metadata yet. It is created automatically when you look up a barcode.
+                </div>
+                <div id="md-explorer-error" class="alert alert-danger d-none"></div>
+                <div id="md-explorer-table-wrap" class="table-responsive d-none">
+                    <table class="table table-sm table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width:96px"></th>
+                                <th style="width:48px"></th>
+                                <th>Barcode</th>
+                                <th>Source</th>
+                                <th>Name</th>
+                                <th>Brand</th>
+                                <th>Category</th>
+                                <th>Size</th>
+                                <th>Weight</th>
+                                <th class="text-end">Linked</th>
+                                <th class="text-nowrap">Fetched</th>
+                            </tr>
+                        </thead>
+                        <tbody id="md-explorer-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Delete confirmation modal -->
 <div class="modal fade" id="deleteModal" tabindex="-1">
     <div class="modal-dialog modal-sm">
@@ -613,5 +670,135 @@ async function saveAddItem() {
         }, 120);
     };
 }());
+
+// ── Metadata explorer ─────────────────────────────────────────────────────────
+var _mdExplorerModal = null;
+var _mdSourceLabels = { 'openlibrary': 'Open Library', 'upcitemdb': 'UPC Item DB', 'openfoodfacts': 'Open Food Facts' };
+
+function openMetadataExplorer() {
+    if (!_mdExplorerModal) _mdExplorerModal = new bootstrap.Modal(document.getElementById('metadataExplorerModal'));
+    _mdExplorerModal.show();
+    loadMetadataExplorer();
+}
+
+async function loadMetadataExplorer() {
+    var loading = document.getElementById('md-explorer-loading');
+    var empty   = document.getElementById('md-explorer-empty');
+    var errEl   = document.getElementById('md-explorer-error');
+    var wrap    = document.getElementById('md-explorer-table-wrap');
+    loading.classList.remove('d-none');
+    empty.classList.add('d-none');
+    errEl.classList.add('d-none');
+    wrap.classList.add('d-none');
+    try {
+        var res = await fetch('/api/metadata');
+        if (!res.ok) throw new Error('Failed to load');
+        var rows = await res.json();
+        loading.classList.add('d-none');
+        if (!rows.length) { empty.classList.remove('d-none'); return; }
+        document.getElementById('md-explorer-tbody').innerHTML = rows.map(mdRowHtml).join('');
+        wrap.classList.remove('d-none');
+    } catch {
+        loading.classList.add('d-none');
+        errEl.textContent = 'Could not load metadata.';
+        errEl.classList.remove('d-none');
+    }
+}
+
+function mdRowHtml(r) {
+    var label = _mdSourceLabels[r.source] || r.source;
+    var img = r.imageUrl
+        ? `<img src="${escHtml(r.imageUrl)}" alt="" style="width:36px;height:36px;object-fit:contain;border-radius:4px" onerror="this.style.display='none'">`
+        : '<i class="bi bi-image text-muted opacity-50"></i>';
+    var fetched = r.fetchedAt ? new Date(r.fetchedAt).toLocaleDateString() : '-';
+    return `<tr id="md-row-${r.id}">
+        <td class="text-nowrap">
+            <button class="btn btn-sm btn-outline-primary" title="Refresh from source" onclick="mdRefresh(this)" data-id="${r.id}"><i class="bi bi-arrow-clockwise"></i></button>
+            <button class="btn btn-sm btn-outline-danger" title="Delete" onclick="mdDelete(this)" data-id="${r.id}" data-name="${escHtml(r.name || '')}"><i class="bi bi-trash"></i></button>
+        </td>
+        <td>${img}</td>
+        <td class="text-muted small text-nowrap">${escHtml(r.barcode || '-')}</td>
+        <td><span class="badge bg-secondary">${escHtml(label)}</span></td>
+        <td class="md-cell-name">${escHtml(r.name || '-')}</td>
+        <td class="md-cell-brand small">${escHtml(r.brand || '-')}</td>
+        <td class="md-cell-category small">${escHtml(r.category || '-')}</td>
+        <td class="md-cell-size small">${escHtml(r.size || '-')}</td>
+        <td class="md-cell-weight small">${escHtml(r.weight || '-')}</td>
+        <td class="text-end">${r.linkedCount > 0 ? `<span class="badge bg-info text-dark">${r.linkedCount}</span>` : '<span class="text-muted">0</span>'}</td>
+        <td class="text-muted small text-nowrap">${escHtml(fetched)}</td>
+    </tr>`;
+}
+
+async function mdRefresh(btn) {
+    var id = btn.dataset.id;
+    var icon = btn.querySelector('i');
+    btn.disabled = true;
+    icon.classList.add('spin');
+    try {
+        var res = await fetch(`/api/metadata/${id}/refresh`, { method: 'POST' });
+        var data = await res.json();
+        if (data.success && data.item) {
+            var tr = document.getElementById('md-row-' + id);
+            if (tr) tr.outerHTML = mdRowHtml(data.item);
+            showFlashToast('Metadata refreshed.');
+        } else {
+            showFlashToast(data.error || 'No data returned from the source.');
+            btn.disabled = false;
+            icon.classList.remove('spin');
+        }
+    } catch {
+        showFlashToast('Refresh failed.');
+        btn.disabled = false;
+        icon.classList.remove('spin');
+    }
+}
+
+// Two-step inline confirm so deletes never need a stacked modal.
+function mdDelete(btn) {
+    if (btn.dataset.armed !== '1') {
+        btn.dataset.armed = '1';
+        btn.classList.remove('btn-outline-danger');
+        btn.classList.add('btn-danger');
+        btn.innerHTML = '<i class="bi bi-exclamation-triangle me-1"></i>Confirm';
+        btn._resetTimer = setTimeout(function () { mdDeleteReset(btn); }, 4000);
+        return;
+    }
+    clearTimeout(btn._resetTimer);
+    mdDoDelete(btn);
+}
+
+function mdDeleteReset(btn) {
+    btn.dataset.armed = '';
+    btn.classList.add('btn-outline-danger');
+    btn.classList.remove('btn-danger');
+    btn.innerHTML = '<i class="bi bi-trash"></i>';
+}
+
+async function mdDoDelete(btn) {
+    var id = btn.dataset.id;
+    btn.disabled = true;
+    try {
+        var res = await fetch(`/api/metadata/${id}/delete`, { method: 'POST' });
+        var data = await res.json();
+        if (data.success) {
+            var tr = document.getElementById('md-row-' + id);
+            if (tr) tr.remove();
+            var msg = data.unlinked > 0 ? `Deleted. Unlinked from ${data.unlinked} item(s).` : 'Deleted.';
+            showFlashToast(msg);
+            if (!document.querySelectorAll('#md-explorer-tbody tr').length) {
+                document.getElementById('md-explorer-table-wrap').classList.add('d-none');
+                document.getElementById('md-explorer-empty').classList.remove('d-none');
+            }
+        } else {
+            showFlashToast(data.error || 'Delete failed.');
+            btn.disabled = false;
+            mdDeleteReset(btn);
+        }
+    } catch {
+        showFlashToast('Delete failed.');
+        btn.disabled = false;
+        mdDeleteReset(btn);
+    }
+}
 </script>
 }

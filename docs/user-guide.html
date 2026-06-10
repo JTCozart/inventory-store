@@ -191,6 +191,7 @@
     <a href="index.html#features">Features</a>
     <a href="index.html#how-it-works">How it works</a>
     <a href="user-guide.html">User Guide</a>
+    <a href="release-notes.html">Release Notes</a>
     <a href="https://github.com/JTCozart/inventory-store" target="_blank" rel="noopener noreferrer">GitHub</a>
     <a href="https://github.com/JTCozart/inventory-store/releases/latest" class="btn-nav" target="_blank" rel="noopener noreferrer">
       <i class="fa-solid fa-download"></i> Download
@@ -203,6 +204,7 @@
     <a href="index.html#features"><i class="fa-solid fa-star fa-fw"></i> Features</a>
     <a href="index.html#how-it-works"><i class="fa-solid fa-list-check fa-fw"></i> How it works</a>
     <a href="user-guide.html"><i class="fa-solid fa-book fa-fw"></i> User Guide</a>
+    <a href="release-notes.html"><i class="fa-solid fa-rocket fa-fw"></i> Release Notes</a>
     <a href="https://github.com/JTCozart/inventory-store" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-github fa-fw"></i> GitHub</a>
     <a href="https://github.com/JTCozart/inventory-store/releases/latest" class="btn-nav" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-download"></i> Download</a>
   </div>
@@ -232,6 +234,7 @@
       <li><a href="#checkout">Check Out &amp; Check In</a></li>
       <li><a href="#consumables">Consumables</a></li>
       <li><a href="#barcode-scanning">Barcode Scanning</a></li>
+      <li><a href="#product-lookup">Product Lookup &amp; Metadata</a></li>
       <li><a href="#csv">CSV Import &amp; Export</a></li>
 
       <li class="section-label">Reports</li>
@@ -400,8 +403,9 @@
 
     <section id="editing-items">
       <h2><i class="fa-solid fa-pencil"></i> Editing Items</h2>
-      <p>Click any item row to open its detail screen, then click the <strong>Edit</strong> button (pencil icon). An edit form opens over the current page - you never leave the inventory list. All fields except Item Type can be changed. Requires Admin or Manager role.</p>
-      <p>The edit form includes Name, Quantity, Minimum Quantity, SKU, Location, Category, Expiry Date, Scan Warning, and Description. After saving, the detail screen refreshes automatically to show the updated information.</p>
+      <p>Click any item row to open its detail screen, then click the <strong>Edit</strong> button (pencil icon). The detail screen closes and the edit form opens in its place - you never leave the inventory list. All fields except Item Type can be changed. Requires Admin or Manager role.</p>
+      <p>The form is grouped into <strong>Basics</strong> (name, quantity, minimum), <strong>Identification</strong> (SKU, location, category), and <strong>Details</strong> (expiry, scan warning, description). The labels adapt to the item type - Consumables show <em>In Stock</em>, while Reusables show <em>Total Quantity</em> with a reminder of how many units are currently checked out so you don't set the total below what is out. Expiry Date only appears for Consumables.</p>
+      <p>Click the <strong>magnifying glass</strong> button inside the SKU field to look up the product by its barcode (see <a href="#product-lookup">Product Lookup &amp; Metadata</a>). Choosing a match fills in the name and links the product's image, brand, category, size, and weight to the item when you save. After saving, the detail screen reopens automatically with the updated information.</p>
       <h3>Deleting items</h3>
       <p>Click the trash icon on the item row and confirm. Deletion is permanent. Requires Admin or Manager role.</p>
     </section>
@@ -486,20 +490,14 @@
 
     <section id="consumables">
       <h2><i class="fa-solid fa-box"></i> Consumables</h2>
-      <p>Consumable items track stock levels using Consume and Restock operations. Requires Admin or Manager role - Viewers can see quantities but the Consume and Restock buttons are not shown to them.</p>
-      <h3>Consuming stock</h3>
+      <p>Consumable items track stock levels using a single <strong>Adjust Stock</strong> control. Requires Admin or Manager role - Viewers can see quantities but the adjust buttons are not shown to them.</p>
+      <h3>Consuming and restocking</h3>
       <ol>
         <li>Click the item row to open its detail screen</li>
-        <li>Under <strong>Consume</strong>, enter the quantity used and optional notes</li>
-        <li>Click <strong>Consume</strong></li>
+        <li>In the <strong>Adjust Stock</strong> control, set the quantity and optional notes</li>
+        <li>Click the <strong>−</strong> button to consume (use) stock, or the <strong>+</strong> button to add stock</li>
       </ol>
-      <h3>Restocking</h3>
-      <ol>
-        <li>Click the item row to open its detail screen</li>
-        <li>Under <strong>Restock</strong>, enter the quantity added and optional notes</li>
-        <li>Click <strong>Restock</strong></li>
-      </ol>
-      <p>Both operations are recorded in the activity log.</p>
+      <p>The <strong>In Stock</strong> figure briefly flashes red when stock is consumed or green when stock is added, so you get instant confirmation without the screen jumping. Both operations are recorded in the activity log.</p>
     </section>
 
     <section id="barcode-scanning">
@@ -529,6 +527,41 @@
         <li>Go to <strong>Reports → Barcode Sheet</strong></li>
         <li>Click <strong>Print</strong> - the page formats itself with one barcode per item in a label-friendly grid</li>
       </ol>
+    </section>
+
+    <section id="product-lookup">
+      <h2><i class="fa-solid fa-magnifying-glass"></i> Product Lookup &amp; Metadata</h2>
+      <p>Instead of typing product details by hand, Inventory Store can look up a barcode against free public product databases and fill the information in for you.</p>
+
+      <h3>Sources</h3>
+      <table>
+        <tr><th>Source</th><th>Best for</th></tr>
+        <tr><td>Open Library</td><td>Books (ISBN barcodes beginning 978 / 979)</td></tr>
+        <tr><td>UPC Item DB</td><td>General retail products</td></tr>
+        <tr><td>Open Food Facts</td><td>Food &amp; beverages</td></tr>
+      </table>
+      <p>For each match the app stores the product <strong>name, image, brand, category, size, and weight</strong> where the source provides them.</p>
+
+      <h3>Looking up a product</h3>
+      <ol>
+        <li>On the <strong>Add Item</strong> or <strong>Edit Item</strong> form, type or scan a barcode into the <strong>SKU / Barcode</strong> field</li>
+        <li>Click the <strong>magnifying glass</strong> button in the SKU field (or <strong>Lookup Product</strong> on the Add form)</li>
+        <li>A results list shows every match with its image and details. Click <strong>Use This</strong> on the one you want</li>
+        <li>The product name is filled in and the metadata is linked to the item when you save</li>
+      </ol>
+      <p>Once linked, the item's detail screen shows the product image alongside its stats, and a <strong>Product Details</strong> button reveals the brand, category, and full description.</p>
+      <div class="callout">
+        <i class="fa-solid fa-circle-info"></i>
+        Lookups are cached, so the same barcode is only fetched from the internet once. Use the Metadata library below to force a fresh copy.
+      </div>
+
+      <h3>The metadata library</h3>
+      <p>Click the <strong>Metadata</strong> button at the top of the Inventory page (Admin or Manager) to open the metadata library - a table of every product record cached from lookups. Each row shows the image, barcode, source, name, brand, category, size, weight, how many items are linked to it, and when it was last fetched.</p>
+      <p>The two buttons on the left of each row let you:</p>
+      <ul>
+        <li><strong>Refresh</strong> (circular arrow) - re-fetch that product from its source and update the stored copy. Existing item links are preserved.</li>
+        <li><strong>Delete</strong> (trash) - remove the cached record. Click once to arm the button, then click <strong>Confirm</strong> to proceed. Deleting <em>unlinks</em> the product from every item that was using it, then removes it from storage.</li>
+      </ul>
     </section>
 
     <section id="csv">

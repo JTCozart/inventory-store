@@ -7,7 +7,7 @@
   <!-- Primary meta -->
   <title>Inventory Store | Self-Hosted Inventory Management for Small Teams</title>
   <meta name="description" content="Track equipment checkouts, consumable stock, and team activity with Inventory Store. Free, open-source, self-hosted Windows app. No cloud required." />
-  <meta name="keywords" content="inventory management, equipment checkout, asset tracking, self-hosted, windows service, barcode scanner, open source" />
+  <meta name="keywords" content="inventory management, equipment checkout, asset tracking, self-hosted, windows service, barcode scanner, barcode lookup, product database, consumable stock tracking, open source" />
   <meta name="author" content="Jake Cozart" />
   <meta name="robots" content="index, follow" />
   <meta name="theme-color" content="#2563eb" />
@@ -56,7 +56,8 @@
       "Expiry date tracking with alerts",
       "CSV import and export",
       "Barcode scanning (UPC, EAN, QR codes, ISBN) and label printing",
-      "Smart barcode lookup - automatically find product details from public databases",
+      "Smart barcode lookup - auto-fill name, image, brand, category, size, and weight from public product databases (Open Library, UPC Item DB, Open Food Facts)",
+      "Product metadata library - browse, refresh, and delete cached product lookups",
       "Activity log with date filtering",
       "Expiry report",
       "Remote access via Serveo or Cloudflare Tunnel",
@@ -300,6 +301,7 @@
     <a href="#features">Features</a>
     <a href="#how-it-works">How it works</a>
     <a href="user-guide.html">User Guide</a>
+    <a href="release-notes.html">Release Notes</a>
     <a href="https://github.com/JTCozart/inventory-store" target="_blank" rel="noopener noreferrer">GitHub</a>
     <a href="https://github.com/JTCozart/inventory-store/releases/latest" class="btn-nav" target="_blank" rel="noopener noreferrer">
       <i class="fa-solid fa-download"></i> Download
@@ -312,6 +314,7 @@
     <a href="#features"><i class="fa-solid fa-star fa-fw"></i> Features</a>
     <a href="#how-it-works"><i class="fa-solid fa-list-check fa-fw"></i> How it works</a>
     <a href="user-guide.html"><i class="fa-solid fa-book fa-fw"></i> User Guide</a>
+    <a href="release-notes.html"><i class="fa-solid fa-rocket fa-fw"></i> Release Notes</a>
     <a href="https://github.com/JTCozart/inventory-store" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-github fa-fw"></i> GitHub</a>
     <a href="https://github.com/JTCozart/inventory-store/releases/latest" class="btn-nav" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-download"></i> Download</a>
   </div>
@@ -424,7 +427,12 @@
       <div class="feature-card">
         <div class="feature-icon"><i class="fa-solid fa-magnifying-glass"></i></div>
         <h3>Smart barcode lookup</h3>
-        <p>Scan an unknown barcode and look up product details automatically. The app searches free public databases to find the product name and other details, then fills them in for you.</p>
+        <p>Scan an unknown barcode and auto-fill the product name, image, brand, category, size, and weight from free public databases - Open Library, UPC Item DB, and Open Food Facts. No more typing product details by hand.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon"><i class="fa-solid fa-database"></i></div>
+        <h3>Product metadata library</h3>
+        <p>Every barcode lookup is cached so it is only fetched once. Browse the library to refresh a product from its source or delete it - deleting cleanly unlinks it from any items first.</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon"><i class="fa-solid fa-chart-bar"></i></div>
