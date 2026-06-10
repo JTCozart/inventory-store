@@ -14,6 +14,9 @@ public abstract class InventoryItem
     public int? CategoryId { get; set; }
     public Category? Category { get; set; }
     public bool IsPublic { get; set; }
+    public bool IsMetadataMatched { get; set; }
+    public int? SelectedMetadataId { get; set; }
+    public ProductMetadata? SelectedMetadata { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public int CreatedByUserId { get; set; }

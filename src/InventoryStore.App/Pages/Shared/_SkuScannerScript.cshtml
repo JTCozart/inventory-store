@@ -29,7 +29,16 @@ function initSkuScanner(skuInputId, scanBtnId, cancelBtnId, areaId,
         if (hintEl) hintEl.textContent = 'Reading barcode…';
         scanBtn.disabled = true;
         var url = URL.createObjectURL(file);
-        new ZXing.BrowserMultiFormatReader(new Map([[ZXing.DecodeHintType.TRY_HARDER, true]]))
+        var hints = new Map();
+        hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
+            ZXing.BarcodeFormat.UPC_A,
+            ZXing.BarcodeFormat.UPC_E,
+            ZXing.BarcodeFormat.EAN_13,
+            ZXing.BarcodeFormat.EAN_8,
+            ZXing.BarcodeFormat.CODE_128,
+            ZXing.BarcodeFormat.QR_CODE
+        ]);
+        new ZXing.BrowserMultiFormatReader(hints)
             .decodeFromImageUrl(url)
             .then(function (result) {
                 skuInput.value = result.getText();
@@ -49,14 +58,11 @@ function initSkuScanner(skuInputId, scanBtnId, cancelBtnId, areaId,
     });
 
     // ── Live viewfinder (HTTPS) ──────────────────────────────────────────
-    // CSS centres via top:50%;left:50%;translate(-50%,-50%) rotate(-90deg).
-    // JS only sets width (=DISPLAY_H) and height (=container width).
-    // After rotate(-90deg): visually fills container width × DISPLAY_H.
 
     function positionVideo() {
         var W = viewport.offsetWidth || 300;
-        videoEl.style.width  = DISPLAY_H + 'px';
-        videoEl.style.height = W + 'px';
+        videoEl.style.width  = W + 'px';
+        videoEl.style.height = DISPLAY_H + 'px';
         viewport.style.height = DISPLAY_H + 'px';
     }
 
@@ -66,7 +72,13 @@ function initSkuScanner(skuInputId, scanBtnId, cancelBtnId, areaId,
         scanBtn.innerHTML = '<i class="bi bi-stop-circle"></i>';
 
         var hints = new Map();
-        hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+        hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
+            ZXing.BarcodeFormat.UPC_A,
+            ZXing.BarcodeFormat.UPC_E,
+            ZXing.BarcodeFormat.EAN_13,
+            ZXing.BarcodeFormat.EAN_8,
+            ZXing.BarcodeFormat.CODE_128
+        ]);
         zxingReader = new ZXing.BrowserMultiFormatReader(hints);
 
         navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } } })

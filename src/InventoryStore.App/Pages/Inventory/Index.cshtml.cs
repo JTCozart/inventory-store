@@ -114,7 +114,7 @@ public class IndexModel : PageModel
     public async Task<IActionResult> OnPostEditItemAsync(
         int id, string name, int quantity, int minimumQuantity,
         string? sku, string? location, int? categoryId, string? expiryDate,
-        string? scanWarning, string? description)
+        string? scanWarning, string? description, int? selectedMetadataId = null)
     {
         if (!CanWrite()) return new JsonResult(new { success = false, error = "Insufficient permissions." }) { StatusCode = 403 };
         var (uid, uname) = GetUser();
@@ -124,7 +124,7 @@ public class IndexModel : PageModel
         try
         {
             await _inventoryService.UpdateItemAsync(id, new UpdateInventoryItemDto(
-                name, quantity, description, location, sku, minimumQuantity, scanWarning, categoryId, expiry
+                name, quantity, description, location, sku, minimumQuantity, scanWarning, categoryId, expiry, selectedMetadataId
             ), uid, uname);
             return new JsonResult(new { success = true });
         }

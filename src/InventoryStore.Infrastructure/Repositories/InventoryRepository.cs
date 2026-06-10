@@ -17,12 +17,14 @@ public class InventoryRepository : IInventoryRepository
     public async Task<IEnumerable<InventoryItem>> GetAllAsync() =>
         await _context.InventoryItems
             .Include(i => i.Category)
+            .Include(i => i.SelectedMetadata)
             .OrderBy(i => i.Name)
             .ToListAsync();
 
     public async Task<InventoryItem?> GetByIdAsync(int id) =>
         await _context.InventoryItems
             .Include(i => i.Category)
+            .Include(i => i.SelectedMetadata)
             .FirstOrDefaultAsync(i => i.Id == id);
 
     public async Task<IEnumerable<InventoryItem>> SearchAsync(string query)
@@ -30,6 +32,7 @@ public class InventoryRepository : IInventoryRepository
         var lower = query.ToLower();
         return await _context.InventoryItems
             .Include(i => i.Category)
+            .Include(i => i.SelectedMetadata)
             .Where(i => i.Name.ToLower().Contains(lower)
                      || (i.SKU != null && i.SKU.ToLower().Contains(lower))
                      || (i.Location != null && i.Location.ToLower().Contains(lower))
@@ -41,7 +44,7 @@ public class InventoryRepository : IInventoryRepository
 
     public async Task<IEnumerable<InventoryItem>> GetLowStockAsync()
     {
-        var all = await _context.InventoryItems.Include(i => i.Category).ToListAsync();
+        var all = await _context.InventoryItems.Include(i => i.Category).Include(i => i.SelectedMetadata).ToListAsync();
         return all
             .Where(i => i.IsLowStock)
             .OrderBy(i => i.AvailableQuantity);
@@ -50,6 +53,7 @@ public class InventoryRepository : IInventoryRepository
     public async Task<IEnumerable<InventoryItem>> GetPublicAsync() =>
         await _context.InventoryItems
             .Include(i => i.Category)
+            .Include(i => i.SelectedMetadata)
             .Where(i => i.IsPublic)
             .OrderBy(i => i.Name)
             .ToListAsync();

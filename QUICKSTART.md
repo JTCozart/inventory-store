@@ -34,6 +34,7 @@ Categories let you group and filter items (e.g. Tools, Electronics, Safety).
    - **Quantity** - total units you have
    - **Minimum Quantity** - triggers a Low Stock warning when available stock reaches this level
    - **SKU / Barcode** - scan with camera or type manually; used for barcode labels and scanning
+     - Optional: Click the **Lookup** button next to SKU to find the product name and details automatically (works with retail barcodes, ISBN, and QR codes)
    - **Location** - shelf, bin, or room
    - **Category** - optional group (created in Settings)
    - **Expiry Date** - optional; items show Expired / Expiring Soon badges when due
@@ -43,7 +44,22 @@ Categories let you group and filter items (e.g. Tools, Electronics, Safety).
 
 ---
 
-## 4. Check out a reusable item
+## 4. Quick-add an item while scanning
+
+When you scan a barcode and it is not in your inventory:
+
+1. Click the **Scan** button in the navigation bar
+2. Scan the barcode with your camera
+3. If the item is not found, click **Add Item**
+4. The SKU is pre-filled. Enter a name or click **Lookup** next to the SKU to search for the product details
+5. Fill in quantity, type, and location
+6. Click **Add & Continue**
+
+The item is added and the scanner resets for the next barcode.
+
+---
+
+## 5. Check out a reusable item
 
 **From the inventory list:**
 1. Click an item row to open its detail panel
@@ -52,12 +68,12 @@ Categories let you group and filter items (e.g. Tools, Electronics, Safety).
 
 **By scanning a barcode:**
 1. Navigate to the Inventory page
-2. Use the Import/scan button or navigate directly to the item by scanning
+2. Use the Scan button or navigate directly to the item by scanning
 3. The item detail loads - click **Check Out**
 
 ---
 
-## 5. Check an item back in
+## 6. Check an item back in
 
 1. Open the item detail panel
 2. Under **Active Checkouts**, find the person's record
@@ -65,7 +81,7 @@ Categories let you group and filter items (e.g. Tools, Electronics, Safety).
 
 ---
 
-## 6. Consume or restock a consumable item
+## 7. Consume or restock a consumable item
 
 1. Open the item detail panel
 2. Enter the quantity and optional notes
@@ -73,7 +89,7 @@ Categories let you group and filter items (e.g. Tools, Electronics, Safety).
 
 ---
 
-## 7. Import items from a CSV
+## 8. Import items from a CSV
 
 To bulk-load your inventory from a spreadsheet:
 
@@ -91,7 +107,7 @@ To export your current inventory to CSV, go to **Reports** and click **Export CS
 
 ---
 
-## 8. Track expiry dates
+## 9. Track expiry dates
 
 Items with expiry dates show colored badges in the inventory list:
 - **Expired** (red) - expiry date has passed
@@ -103,7 +119,7 @@ For a full expiry overview go to **Reports → Expiry**:
 
 ---
 
-## 9. Print barcode labels
+## 10. Print barcode labels
 
 1. Go to **Reports → Barcode Sheet**
 2. Items with a SKU appear automatically
@@ -113,7 +129,7 @@ To assign a SKU, edit the item and type or scan into the **SKU / Barcode** field
 
 ---
 
-## 10. Run a report
+## 11. Run a report
 
 | Report | Location |
 |---|---|
@@ -129,7 +145,7 @@ Click **Export CSV** (top of Reports page) to download all items as a spreadshee
 
 ---
 
-## 11. Add users
+## 12. Add users
 
 1. Go to **Settings → User Management** (Admin only)
 2. Click **Add User**
@@ -140,7 +156,7 @@ Click **Export CSV** (top of Reports page) to download all items as a spreadshee
 
 ---
 
-## 12. Remote access (Serveo - recommended)
+## 13. Remote access (Serveo - recommended)
 
 To let staff access Inventory Store from outside the office:
 
@@ -156,7 +172,7 @@ To let staff access Inventory Store from outside the office:
 
 ---
 
-## 13. Reset the admin password
+## 14. Reset the admin password
 
 If locked out, right-click the tray icon and choose **Reset Admin Password**.
 

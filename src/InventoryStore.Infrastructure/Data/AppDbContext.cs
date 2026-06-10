@@ -14,6 +14,7 @@ public class AppDbContext : DbContext
     public DbSet<AppSetting> AppSettings => Set<AppSetting>();
     public DbSet<CheckoutRecord> CheckoutRecords => Set<CheckoutRecord>();
     public DbSet<Client> Clients => Set<Client>();
+    public DbSet<ProductMetadata> ProductMetadata => Set<ProductMetadata>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -37,6 +38,11 @@ public class AppDbContext : DbContext
             e.HasOne(i => i.Category)
              .WithMany()
              .HasForeignKey(i => i.CategoryId)
+             .OnDelete(DeleteBehavior.SetNull);
+
+            e.HasOne(i => i.SelectedMetadata)
+             .WithMany()
+             .HasForeignKey(i => i.SelectedMetadataId)
              .OnDelete(DeleteBehavior.SetNull);
 
             // Use the existing ItemType int column as the TPH discriminator.
@@ -75,6 +81,20 @@ public class AppDbContext : DbContext
             e.Property(c => c.CheckedOutBy).IsRequired().HasMaxLength(200);
             e.Ignore(c => c.IsCheckedIn);
             e.Ignore(c => c.IsOut);
+        });
+
+        modelBuilder.Entity<ProductMetadata>(e =>
+        {
+            e.HasKey(p => p.Id);
+            e.Property(p => p.Barcode).IsRequired().HasMaxLength(100);
+            e.HasIndex(p => p.Barcode);
+            e.Property(p => p.Source).IsRequired().HasMaxLength(50);
+            e.Property(p => p.Name).IsRequired().HasMaxLength(500);
+            e.Property(p => p.ImageUrl).HasMaxLength(2000);
+            e.Property(p => p.Brand).HasMaxLength(200);
+            e.Property(p => p.Category).HasMaxLength(200);
+            e.Property(p => p.Size).HasMaxLength(100);
+            e.Property(p => p.Weight).HasMaxLength(100);
         });
 
         modelBuilder.Entity<Client>(e =>

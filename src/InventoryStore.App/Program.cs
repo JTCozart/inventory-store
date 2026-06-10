@@ -8,12 +8,15 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Hosting.WindowsServices;
 using InventoryStore.App.Middleware;
+using InventoryStore.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 using WinForms = System.Windows.Forms;
 
 namespace InventoryStore.App;
 
 internal record CheckOutRequest(int ItemId, string CheckedOutBy, int Quantity, string? Notes, int? ClientId = null);
-internal record QuickAddRequest(string Name, int Quantity, int ItemType, string? Location, string? Sku);
+internal record QuickAddRequest(string Name, int Quantity, int ItemType, string? Location, string? Sku, int? MetadataId = null);
 internal record QuickCreateClientRequest(string Name);
 internal record CheckInRequest(int RecordId, string? Notes);
 internal record MarkLostRequest(int RecordId, string? Notes);
@@ -110,10 +113,12 @@ internal class Program
 
     static void ConfigureServices(IServiceCollection services)
     {
+        var isDev = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
+        var dbFileName = isDev ? "inventory-dev.db" : "inventory.db";
         var dbPath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
             "InventoryStore",
-            "inventory.db");
+            dbFileName);
 
         Directory.CreateDirectory(Path.GetDirectoryName(dbPath)!);
 
@@ -121,6 +126,11 @@ internal class Program
         services.AddRazorPages();
         services.AddHttpContextAccessor();
         services.AddHttpClient("ntfy");
+        services.AddHttpClient("barcode", c =>
+        {
+            c.DefaultRequestHeaders.UserAgent.ParseAdd("InventoryStore/1.0 (barcode-lookup)");
+            c.Timeout = TimeSpan.FromSeconds(10);
+        });
         services.AddScoped<InventoryStore.Application.Interfaces.Services.INtfyService,
                            InventoryStore.App.Services.NtfyService>();
 
@@ -279,6 +289,113 @@ internal class Program
                 return Results.Ok();
             });
 
+            // ── Barcode Product Lookup ────────────────────────────────────
+            endpoints.MapGet("/api/barcode-lookup", [Authorize] async (string barcode, IServiceScopeFactory scopeFactory, IHttpClientFactory httpFactory) =>
+            {
+                barcode = barcode.Trim();
+                if (string.IsNullOrWhiteSpace(barcode)) return Results.BadRequest("barcode required");
+
+                // Return cached results if available
+                await using var scope = scopeFactory.CreateAsyncScope();
+                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+                var cached = await db.ProductMetadata
+                    .Where(p => p.Barcode == barcode)
+                    .OrderBy(p => p.Source)
+                    .ToListAsync();
+
+                if (cached.Count > 0)
+                    return Results.Ok(cached.Select(p => new { p.Id, p.Source, p.Name, p.Description, p.ImageUrl, p.Brand, p.Category, p.Size, p.Weight }));
+
+                var http = httpFactory.CreateClient("barcode");
+                var results = new List<ProductMetadata>();
+
+                // 1. Open Library (ISBN-13 prefix 978/979)
+                if (barcode.StartsWith("978") || barcode.StartsWith("979"))
+                {
+                    try
+                    {
+                        var json = await http.GetStringAsync($"https://openlibrary.org/api/books?bibkeys=ISBN:{barcode}&format=json&jscmd=data");
+                        var doc = JsonDocument.Parse(json);
+                        if (doc.RootElement.TryGetProperty($"ISBN:{barcode}", out var book))
+                        {
+                            var name = book.TryGetProperty("title", out var t) ? t.GetString() : null;
+                            string? desc = null;
+                            if (book.TryGetProperty("description", out var d))
+                                desc = d.ValueKind == JsonValueKind.String ? d.GetString()
+                                    : d.TryGetProperty("value", out var dv) ? dv.GetString() : null;
+                            string? img = null;
+                            if (book.TryGetProperty("cover", out var cover))
+                                img = cover.TryGetProperty("large", out var cl) ? cl.GetString()
+                                    : cover.TryGetProperty("medium", out var cm) ? cm.GetString() : null;
+                            var publisher = book.TryGetProperty("publishers", out var pubs) && pubs.GetArrayLength() > 0
+                                && pubs[0].TryGetProperty("name", out var pn) ? pn.GetString() : null;
+                            var subject = book.TryGetProperty("subjects", out var subs) && subs.GetArrayLength() > 0
+                                && subs[0].TryGetProperty("name", out var sn) ? sn.GetString() : null;
+                            string? pages = book.TryGetProperty("number_of_pages", out var np) && np.ValueKind == JsonValueKind.Number
+                                ? np.GetInt32() + " pages" : null;
+                            string? weight = book.TryGetProperty("weight", out var wt) ? wt.GetString() : null;
+                            if (!string.IsNullOrWhiteSpace(name))
+                                results.Add(new ProductMetadata { Barcode = barcode, Source = "openlibrary", Name = name!, Description = desc, ImageUrl = img, Brand = publisher, Category = subject, Size = pages, Weight = weight, FetchedAt = DateTime.UtcNow });
+                        }
+                    }
+                    catch { }
+                }
+
+                // 2. UPC Item DB (free trial — general retail)
+                try
+                {
+                    var json = await http.GetStringAsync($"https://api.upcitemdb.com/prod/trial/lookup?upc={barcode}");
+                    var doc = JsonDocument.Parse(json);
+                    if (doc.RootElement.TryGetProperty("items", out var items) && items.GetArrayLength() > 0)
+                    {
+                        var item = items[0];
+                        var name  = item.TryGetProperty("title",       out var t) ? t.GetString() : null;
+                        var desc  = item.TryGetProperty("description", out var d) ? d.GetString() : null;
+                        var brand = item.TryGetProperty("brand",       out var b) ? b.GetString() : null;
+                        var cat   = item.TryGetProperty("category",    out var c) ? c.GetString() : null;
+                        var size  = item.TryGetProperty("size",        out var sz) ? sz.GetString() : null;
+                        var weight = item.TryGetProperty("weight",     out var wt) ? wt.GetString() : null;
+                        string? img = null;
+                        if (item.TryGetProperty("images", out var imgs) && imgs.GetArrayLength() > 0)
+                            img = imgs[0].GetString();
+                        if (!string.IsNullOrWhiteSpace(name))
+                            results.Add(new ProductMetadata { Barcode = barcode, Source = "upcitemdb", Name = name!, Description = desc, ImageUrl = img, Brand = brand, Category = cat, Size = size, Weight = weight, FetchedAt = DateTime.UtcNow });
+                    }
+                }
+                catch { }
+
+                // 3. Open Food Facts (food & beverages)
+                try
+                {
+                    var json = await http.GetStringAsync($"https://world.openfoodfacts.org/api/v2/product/{barcode}?fields=product_name,brands,categories_tags,image_url,ingredients_text");
+                    var doc = JsonDocument.Parse(json);
+                    if (doc.RootElement.TryGetProperty("status", out var s) && s.GetInt32() == 1
+                        && doc.RootElement.TryGetProperty("product", out var prod))
+                    {
+                        var name  = prod.TryGetProperty("product_name", out var n)  ? n.GetString() : null;
+                        var brand = prod.TryGetProperty("brands",        out var b)  ? b.GetString() : null;
+                        var img   = prod.TryGetProperty("image_url",     out var i)  ? i.GetString() : null;
+                        var ing   = prod.TryGetProperty("ingredients_text", out var ig) ? ig.GetString() : null;
+                        var qty   = prod.TryGetProperty("quantity",        out var q)  ? q.GetString() : null;
+                        string? cat = null;
+                        if (prod.TryGetProperty("categories_tags", out var cats) && cats.GetArrayLength() > 0)
+                            cat = cats[0].GetString()?.Replace("en:", "", StringComparison.OrdinalIgnoreCase);
+                        if (!string.IsNullOrWhiteSpace(name))
+                            results.Add(new ProductMetadata { Barcode = barcode, Source = "openfoodfacts", Name = name!, Description = ing, ImageUrl = img, Brand = brand, Category = cat, Size = qty, FetchedAt = DateTime.UtcNow });
+                    }
+                }
+                catch { }
+
+                if (results.Count > 0)
+                {
+                    db.ProductMetadata.AddRange(results);
+                    await db.SaveChangesAsync();
+                }
+
+                return Results.Ok(results.Select(p => new { p.Id, p.Source, p.Name, p.Description, p.ImageUrl, p.Brand, p.Category, p.Size, p.Weight }));
+            });
+
             // ── Inventory API ─────────────────────────────────────────────
             endpoints.MapGet("/api/inventory/status", [Authorize] async (string sku, ICheckoutService svc) =>
             {
@@ -315,7 +432,7 @@ internal class Program
                 var (uid, uname) = HttpContextExtensions.GetUser(ctx);
                 var itemType = dto.ItemType == 0 ? InventoryStore.Domain.Enums.ItemType.Consumable : InventoryStore.Domain.Enums.ItemType.Reusable;
                 var created = await inv.CreateItemAsync(
-                    new Application.DTOs.CreateInventoryItemDto(dto.Name, dto.Quantity, null, dto.Location, dto.Sku, 0, itemType, null, null, null),
+                    new Application.DTOs.CreateInventoryItemDto(dto.Name, dto.Quantity, null, dto.Location, dto.Sku, 0, itemType, null, null, null, dto.MetadataId),
                     uid, uname);
                 var status = await checkout.GetItemStatusAsync(created.Id);
                 return Results.Ok(status);

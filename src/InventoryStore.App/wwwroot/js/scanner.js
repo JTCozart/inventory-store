@@ -12,7 +12,7 @@
     var zxingReader       = null;
     var scanning          = false;
     var currentItem       = null;
-    var currentScannedSku = null;
+    window.currentScannedSku = null;
     var pendingAddQuery   = '';
     var DISPLAY_H         = window.innerWidth <= 576 ? Math.round(window.innerHeight * 0.42) : 220;
     var _scannerDidAction = false;
@@ -66,7 +66,16 @@
         scannerIdle.classList.add('d-none');
         scannerProc.classList.remove('d-none');
         var url = URL.createObjectURL(file);
-        new ZXing.BrowserMultiFormatReader(new Map([[ZXing.DecodeHintType.TRY_HARDER, true]]))
+        var hints = new Map();
+        hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
+            ZXing.BarcodeFormat.UPC_A,
+            ZXing.BarcodeFormat.UPC_E,
+            ZXing.BarcodeFormat.EAN_13,
+            ZXing.BarcodeFormat.EAN_8,
+            ZXing.BarcodeFormat.CODE_128,
+            ZXing.BarcodeFormat.QR_CODE
+        ]);
+        new ZXing.BrowserMultiFormatReader(hints)
             .decodeFromImageUrl(url)
             .then(function (result) {
                 scannerProc.classList.add('d-none');
@@ -85,8 +94,8 @@
     function positionVideo() {
         var vp = document.getElementById('scanner-viewport');
         var W  = vp.offsetWidth || 300;
-        videoEl.style.width  = DISPLAY_H + 'px';
-        videoEl.style.height = W + 'px';
+        videoEl.style.width  = W + 'px';
+        videoEl.style.height = DISPLAY_H + 'px';
         vp.style.height = DISPLAY_H + 'px';
     }
 
@@ -96,7 +105,13 @@
         scannerActive.classList.remove('d-none');
         positionVideo();
         var hints = new Map();
-        hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+        hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
+            ZXing.BarcodeFormat.UPC_A,
+            ZXing.BarcodeFormat.UPC_E,
+            ZXing.BarcodeFormat.EAN_13,
+            ZXing.BarcodeFormat.EAN_8,
+            ZXing.BarcodeFormat.CODE_128
+        ]);
         zxingReader = new ZXing.BrowserMultiFormatReader(hints);
         navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } } })
             .then(function (tmpStream) {
@@ -137,6 +152,8 @@
         scannerError.classList.add('d-none');
         scannerIdle.classList.remove('d-none');
         document.getElementById('scanner-action-alert').classList.add('d-none');
+        var manualSku = document.getElementById('modal-manual-sku');
+        if (manualSku) manualSku.value = '';
         document.getElementById('checkout-client-input').value = '';
         document.getElementById('checkout-client-id').value = '';
         document.getElementById('checkout-client-dd').classList.add('d-none');
@@ -202,6 +219,7 @@
         document.getElementById('item-meta').textContent =
             (item.location || '') + (item.sku ? ' · ' + item.sku : '');
         document.getElementById('item-edit-link').href = '/Inventory/Edit?id=' + item.id;
+        updateItemImage(item);
         document.getElementById('scan-warning').classList.add('d-none');
         document.getElementById('reusable-actions').classList.add('d-none');
         document.getElementById('consumable-actions').classList.add('d-none');
@@ -216,23 +234,44 @@
             document.getElementById('scan-warning').classList.remove('d-none');
         }
 
-        var statsHtml = '';
+        var stats = document.getElementById('item-stats');
         if (item.itemType === 1) {
-            statsHtml =
+            stats.className = 'row g-2 text-center small';
+            var statsHtml =
                 '<div class="col-4"><div class="border rounded p-1"><div class="fw-bold">' + item.quantity + '</div><div class="text-muted">Total</div></div></div>' +
                 '<div class="col-4"><div class="border rounded p-1 border-success"><div class="fw-bold text-success">' + item.availableQuantity + '</div><div class="text-muted">Available</div></div></div>' +
                 '<div class="col-4"><div class="border rounded p-1 border-warning"><div class="fw-bold text-warning">' + item.checkedOutCount + '</div><div class="text-muted">Out</div></div></div>';
             if (item.lostCount > 0) {
                 statsHtml += '<div class="col-4"><div class="border rounded p-1 border-danger"><div class="fw-bold text-danger">' + item.lostCount + '</div><div class="text-muted">Lost</div></div></div>';
             }
-            document.getElementById('item-stats').innerHTML = statsHtml;
+            stats.innerHTML = statsHtml;
+            updateScanStockBadge(item);
             renderReusableActions(item);
         } else {
-            statsHtml =
-                '<div class="col-6"><div class="border rounded p-1"><div class="fw-bold">' + item.quantity + '</div><div class="text-muted">In Stock</div></div></div>' +
-                '<div class="col-6"><div class="border rounded p-1 ' + (item.isLowStock ? 'border-danger' : '') + '"><div class="fw-bold ' + (item.isLowStock ? 'text-danger' : '') + '">' + item.minimumQuantity + '</div><div class="text-muted">Min</div></div></div>';
-            document.getElementById('item-stats').innerHTML = statsHtml;
+            // Mimic the consumable detail view: stat cells + a single − / + stepper.
+            var healthCls = item.quantity <= 0 ? 'text-danger' : (item.isLowStock ? 'text-warning' : '');
+            stats.className = 'd-flex flex-wrap gap-2';
+            stats.innerHTML =
+                '<div class="stat-cell text-center"><div class="stat-cell-value ' + healthCls + '">' + item.quantity + '</div><div class="stat-cell-label">In Stock</div></div>' +
+                '<div class="stat-cell text-center"><div class="stat-cell-value text-muted">' + item.minimumQuantity + '</div><div class="stat-cell-label">Min Qty</div></div>';
+            updateScanStockBadge(item);
             document.getElementById('consumable-actions').classList.remove('d-none');
+        }
+    }
+
+    function updateScanStockBadge(item) {
+        var badge = document.getElementById('item-stock-badge');
+        if (!badge) return;
+        var avail = item.itemType === 1 ? item.availableQuantity : item.quantity;
+        if (avail <= 0) {
+            badge.className = 'badge bg-danger';
+            badge.textContent = 'Out of Stock';
+        } else if (item.isLowStock) {
+            badge.className = 'badge bg-warning text-dark';
+            badge.textContent = 'Low Stock';
+        } else {
+            badge.className = 'badge d-none';
+            badge.textContent = '';
         }
     }
 
@@ -240,7 +279,13 @@
         pendingAddQuery = query || '';
         document.getElementById('item-name').textContent = 'Item not found';
         document.getElementById('item-meta').textContent = '';
+        document.getElementById('item-stats').innerHTML = '';
+        document.getElementById('scan-warning').classList.add('d-none');
+        document.getElementById('reusable-actions').classList.add('d-none');
+        document.getElementById('consumable-actions').classList.add('d-none');
         document.getElementById('not-found').classList.remove('d-none');
+        var picker = document.getElementById('search-results-picker');
+        if (picker) picker.classList.add('d-none');
         var qaForm = document.getElementById('quick-add-form');
         if (qaForm) qaForm.classList.add('d-none');
     }
@@ -272,14 +317,58 @@
         if (picker) picker.classList.add('d-none');
         var qaForm = document.getElementById('quick-add-form');
         if (!qaForm) return;
-        document.getElementById('qa-name').value = pendingAddQuery;
+        document.getElementById('qa-name').value = '';
+        document.getElementById('qa-sku').value = window.currentScannedSku || '';
         document.getElementById('qa-location').value = '';
         document.getElementById('qa-qty').value = '1';
         document.getElementById('qa-type').value = '1';
+        document.getElementById('qa-metadata-id').value = '';
         var nameErr = document.getElementById('qa-name-error');
         if (nameErr) nameErr.classList.add('d-none');
         qaForm.classList.remove('d-none');
         document.getElementById('qa-name').focus();
+    };
+
+    window.lookupScannedBarcode = function () {
+        if (!window.currentScannedSku) {
+            alert('No barcode to lookup');
+            return;
+        }
+        // Create/update hidden input with the scanned barcode
+        var tempInput = document.getElementById('scanner-lookup-sku-temp');
+        if (!tempInput) {
+            tempInput = document.createElement('input');
+            tempInput.type = 'hidden';
+            tempInput.id = 'scanner-lookup-sku-temp';
+            document.body.appendChild(tempInput);
+        }
+        tempInput.value = window.currentScannedSku;
+        // Call the UPC lookup function from _Layout.cshtml
+        if (typeof openUpcLookup === 'function') {
+            openUpcLookup('scanner-lookup-sku-temp', 'scanner-lookup-name');
+        } else {
+            alert('Lookup function not available');
+        }
+    };
+
+    window.lookupQaBarcode = function () {
+        if (!window.currentScannedSku) {
+            alert('No barcode to lookup');
+            return;
+        }
+        var tempInput = document.getElementById('scanner-lookup-sku-temp');
+        if (!tempInput) {
+            tempInput = document.createElement('input');
+            tempInput.type = 'hidden';
+            tempInput.id = 'scanner-lookup-sku-temp';
+            document.body.appendChild(tempInput);
+        }
+        tempInput.value = window.currentScannedSku;
+        if (typeof openUpcLookup === 'function') {
+            openUpcLookup('scanner-lookup-sku-temp', 'scanner-lookup-name');
+        } else {
+            alert('Lookup function not available');
+        }
     };
 
     window.lookupById = function (id) {
@@ -344,7 +433,7 @@
                 }
                 loadItemStatus(item);
             })
-            .catch(function () { document.getElementById('item-name').textContent = 'Error looking up item'; });
+            .catch(function () { showNotFound(query); });
     };
 
     function refreshCurrentItem() {
@@ -361,8 +450,10 @@
         var qty      = parseInt(document.getElementById('qa-qty').value) || 1;
         var type     = parseInt(document.getElementById('qa-type').value);
         var location = document.getElementById('qa-location').value.trim() || null;
+        var sku      = document.getElementById('qa-sku').value.trim() || null;
+        var metadataId = parseInt(document.getElementById('qa-metadata-id').value) || null;
         setBtn('btn-quick-add', true);
-        apiPost('/api/inventory/quick-add', { name: name, quantity: qty, itemType: type, location: location, sku: currentScannedSku || null })
+        apiPost('/api/inventory/quick-add', { name: name, quantity: qty, itemType: type, location: location, sku: sku, metadataId: metadataId })
             .then(function (r) { return r.json(); })
             .then(function (status) {
                 loadItemStatus(status);
@@ -483,8 +574,9 @@
 
     window.doRestock = function () {
         if (!currentItem) return;
-        var qty   = parseInt(document.getElementById('restock-qty').value) || 1;
-        var notes = document.getElementById('restock-notes').value.trim() || null;
+        // Shares the stepper's quantity/notes inputs with consume.
+        var qty   = parseInt(document.getElementById('consume-qty').value) || 1;
+        var notes = document.getElementById('consume-notes').value.trim() || null;
         setBtn('btn-restock', true);
         apiPost('/api/inventory/restock', { itemId: currentItem.id, quantity: qty, notes: notes })
             .then(function () {
@@ -554,6 +646,43 @@
 
     function escHtml(s) {
         return s == null ? '' : String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    window.showMetadataInfo = function () {
+        var item = currentItem || (typeof _currentItemData !== 'undefined' ? _currentItemData : null);
+        if (!item) return;
+        var img = document.getElementById('metadata-info-image');
+        var placeholder = document.getElementById('metadata-info-placeholder');
+        var brand = document.getElementById('metadata-info-brand');
+        var category = document.getElementById('metadata-info-category');
+        var desc = document.getElementById('metadata-info-description');
+
+        if (item.metadataImageUrl) {
+            img.src = item.metadataImageUrl;
+            img.style.display = 'block';
+            if (placeholder) placeholder.style.display = 'none';
+        } else {
+            img.style.display = 'none';
+            if (placeholder) placeholder.style.display = 'block';
+        }
+
+        brand.textContent = item.metadataBrand || 'Not available';
+        category.textContent = item.metadataCategory || 'Not available';
+        desc.textContent = item.metadataDescription || 'Not available';
+
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('metadataInfoModal')).show();
+    };
+
+    function updateItemImage(item) {
+        var container = document.getElementById('item-image-container');
+        var img = document.getElementById('item-image');
+
+        if (item.metadataImageUrl) {
+            img.src = item.metadataImageUrl;
+            container.classList.remove('d-none');
+        } else {
+            container.classList.add('d-none');
+        }
     }
 
     function apiPost(url, body) {

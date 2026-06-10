@@ -22,33 +22,39 @@
                 </div>
                 <div class="col-12">
                     <label class="form-label">Item Type <span class="text-danger">*</span></label>
-                    <div class="d-flex gap-3">
-                        <div class="form-check">
-                            <input asp-for="Input.ItemType" class="form-check-input" type="radio"
-                                   value="@ItemType.Consumable" id="typeConsumable" />
-                            <label class="form-check-label" for="typeConsumable">
-                                <i class="bi bi-box me-1"></i>Consumable
-                                <div class="text-muted small">Stock is depleted when used</div>
+                    <div class="row g-2">
+                        <div class="col-sm-6">
+                            <input asp-for="Input.ItemType" class="btn-check" type="radio"
+                                   value="@ItemType.Consumable" id="typeConsumable" autocomplete="off" />
+                            <label class="type-option" for="typeConsumable">
+                                <i class="bi bi-box"></i>
+                                <div>
+                                    <div class="fw-semibold">Consumable</div>
+                                    <div class="text-muted small">Stock is depleted when used</div>
+                                </div>
                             </label>
                         </div>
-                        <div class="form-check">
-                            <input asp-for="Input.ItemType" class="form-check-input" type="radio"
-                                   value="@ItemType.Reusable" id="typeReusable" />
-                            <label class="form-check-label" for="typeReusable">
-                                <i class="bi bi-arrow-repeat me-1"></i>Reusable
-                                <div class="text-muted small">Checked out and returned</div>
+                        <div class="col-sm-6">
+                            <input asp-for="Input.ItemType" class="btn-check" type="radio"
+                                   value="@ItemType.Reusable" id="typeReusable" autocomplete="off" />
+                            <label class="type-option" for="typeReusable">
+                                <i class="bi bi-arrow-repeat"></i>
+                                <div>
+                                    <div class="fw-semibold">Reusable</div>
+                                    <div class="text-muted small">Checked out and returned</div>
+                                </div>
                             </label>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-6">
-                    <label asp-for="Input.Quantity" class="form-label">Quantity <span class="text-danger">*</span></label>
+                    <label asp-for="Input.Quantity" class="form-label" id="c-quantity-label">In Stock <span class="text-danger">*</span></label>
                     <input asp-for="Input.Quantity" class="form-control" type="number" min="0" />
                     <span asp-validation-for="Input.Quantity" class="text-danger small"></span>
                 </div>
                 <div class="col-md-6">
                     <label asp-for="Input.MinimumQuantity" class="form-label">
-                        Minimum Quantity <span class="text-muted small">(alert threshold)</span>
+                        Minimum Quantity <span class="text-muted small">(low-stock alert)</span>
                     </label>
                     <input asp-for="Input.MinimumQuantity" class="form-control" type="number" min="0" />
                 </div>
@@ -59,6 +65,14 @@
                         <button type="button" class="btn btn-outline-secondary" id="sku-scan-btn" title="Scan barcode">
                             <i class="bi bi-upc-scan"></i>
                         </button>
+                        <button type="button" class="btn btn-outline-secondary"
+                                onclick="openUpcLookup('sku-input','Input_Name')"
+                                title="Lookup product metadata">
+                            <i class="bi bi-search"></i>
+                        </button>
+                    </div>
+                    <div class="mt-1 d-flex align-items-center gap-2">
+                        <span id="upc-match-badge" class="badge d-none"></span>
                     </div>
                     <div id="sku-scanner-area" class="mt-2 d-none">
                         <div id="sku-scanner-viewport" class="scanner-viewport">
@@ -122,7 +136,7 @@
                         <div id="new-cat-error" class="text-danger small mt-1 d-none"></div>
                     </div>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-6" id="c-expiry-col">
                     <label asp-for="Input.ExpiryDate" class="form-label">Expiry Date <span class="text-muted small">(optional)</span></label>
                     <input asp-for="Input.ExpiryDate" class="form-control" type="date" />
                 </div>
@@ -154,6 +168,23 @@
 initSkuScanner('sku-input', 'sku-scan-btn', 'sku-scan-cancel', 'sku-scanner-area',
                'sku-scanner-viewport', 'sku-scanner-video',
                'sku-capture-input', 'sku-scan-hint');
+</script>
+<script>
+(function () {
+    var consumable = document.getElementById('typeConsumable');
+    var reusable   = document.getElementById('typeReusable');
+    var qtyLabel   = document.getElementById('c-quantity-label');
+    var expiryCol  = document.getElementById('c-expiry-col');
+
+    function applyType() {
+        var isReusable = reusable.checked;
+        qtyLabel.innerHTML = (isReusable ? 'Total Quantity' : 'In Stock') + ' <span class="text-danger">*</span>';
+        expiryCol.classList.toggle('d-none', isReusable);
+    }
+    consumable.addEventListener('change', applyType);
+    reusable.addEventListener('change', applyType);
+    applyType();
+}());
 </script>
 <script>
 (function () {

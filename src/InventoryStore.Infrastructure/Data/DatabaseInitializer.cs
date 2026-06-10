@@ -54,8 +54,14 @@ public class DatabaseInitializer
         await AddColumnIfMissingAsync(conn, "InventoryItems", "ExpiryDate",   "TEXT NULL");
         await AddColumnIfMissingAsync(conn, "InventoryItems", "IsPublic",     "INTEGER NOT NULL DEFAULT 0");
         await EnsureClientsTableAsync(conn);
-        await AddColumnIfMissingAsync(conn, "CheckoutRecords", "ClientId",    "INTEGER NULL");
-        await AddColumnIfMissingAsync(conn, "Clients",         "Email",       "TEXT NULL");
+        await AddColumnIfMissingAsync(conn, "CheckoutRecords", "ClientId",           "INTEGER NULL");
+        await AddColumnIfMissingAsync(conn, "Clients",         "Email",              "TEXT NULL");
+        await AddColumnIfMissingAsync(conn, "InventoryItems",  "IsMetadataMatched",  "INTEGER NOT NULL DEFAULT 0");
+        await AddColumnIfMissingAsync(conn, "InventoryItems",  "MetadataSource",     "TEXT NULL");
+        await AddColumnIfMissingAsync(conn, "InventoryItems",  "SelectedMetadataId", "INTEGER NULL");
+        await EnsureProductMetadataTableAsync(conn);
+        await AddColumnIfMissingAsync(conn, "ProductMetadata", "Size",   "TEXT NULL");
+        await AddColumnIfMissingAsync(conn, "ProductMetadata", "Weight", "TEXT NULL");
     }
 
     private static async Task MakeUsersEmailNullableAsync(SqliteConnection conn)
@@ -117,10 +123,10 @@ public class DatabaseInitializer
     }
 
     private static readonly HashSet<string> _allowedTables = new(StringComparer.OrdinalIgnoreCase)
-        { "Users", "InventoryItems", "CheckoutRecords", "Clients" };
+        { "Users", "InventoryItems", "CheckoutRecords", "Clients", "ProductMetadata" };
 
     private static readonly HashSet<string> _allowedColumns = new(StringComparer.OrdinalIgnoreCase)
-        { "FirstName", "LastName", "ItemType", "CheckedOutCount", "LostCount", "ScanWarning", "CategoryId", "ExpiryDate", "IsPublic", "ClientId", "Email" };
+        { "FirstName", "LastName", "ItemType", "CheckedOutCount", "LostCount", "ScanWarning", "CategoryId", "ExpiryDate", "IsPublic", "ClientId", "Email", "IsMetadataMatched", "MetadataSource", "SelectedMetadataId", "Size", "Weight" };
 
     private static async Task AddColumnIfMissingAsync(
         SqliteConnection conn, string table, string column, string definition)
@@ -187,6 +193,27 @@ public class DatabaseInitializer
                 CreatedAt   TEXT    NOT NULL,
                 UpdatedAt   TEXT    NOT NULL
             );";
+        await cmd.ExecuteNonQueryAsync();
+    }
+
+    private static async Task EnsureProductMetadataTableAsync(SqliteConnection conn)
+    {
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+            CREATE TABLE IF NOT EXISTS ProductMetadata (
+                Id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                Barcode     TEXT    NOT NULL,
+                Source      TEXT    NOT NULL,
+                Name        TEXT    NOT NULL,
+                Description TEXT    NULL,
+                ImageUrl    TEXT    NULL,
+                Brand       TEXT    NULL,
+                Category    TEXT    NULL,
+                Size        TEXT    NULL,
+                Weight      TEXT    NULL,
+                FetchedAt   TEXT    NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS IX_ProductMetadata_Barcode ON ProductMetadata (Barcode);";
         await cmd.ExecuteNonQueryAsync();
     }
 

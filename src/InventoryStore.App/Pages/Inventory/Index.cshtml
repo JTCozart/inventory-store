@@ -244,34 +244,65 @@ else
                         </div>
                         <div class="col-12">
                             <label class="form-label">Item Type <span class="text-danger">*</span></label>
-                            <div class="d-flex gap-3">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="add-item-type" id="add-type-consumable" value="Consumable" checked />
-                                    <label class="form-check-label" for="add-type-consumable">
-                                        <i class="bi bi-box me-1"></i>Consumable
-                                        <div class="text-muted small">Stock is depleted when used</div>
+                            <div class="row g-2">
+                                <div class="col-sm-6">
+                                    <input class="btn-check" type="radio" name="add-item-type" id="add-type-consumable" value="Consumable" checked autocomplete="off" onchange="applyAddItemType()" />
+                                    <label class="type-option" for="add-type-consumable">
+                                        <i class="bi bi-box"></i>
+                                        <div>
+                                            <div class="fw-semibold">Consumable</div>
+                                            <div class="text-muted small">Stock is depleted when used</div>
+                                        </div>
                                     </label>
                                 </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="add-item-type" id="add-type-reusable" value="Reusable" />
-                                    <label class="form-check-label" for="add-type-reusable">
-                                        <i class="bi bi-arrow-repeat me-1"></i>Reusable
-                                        <div class="text-muted small">Checked out and returned</div>
+                                <div class="col-sm-6">
+                                    <input class="btn-check" type="radio" name="add-item-type" id="add-type-reusable" value="Reusable" autocomplete="off" onchange="applyAddItemType()" />
+                                    <label class="type-option" for="add-type-reusable">
+                                        <i class="bi bi-arrow-repeat"></i>
+                                        <div>
+                                            <div class="fw-semibold">Reusable</div>
+                                            <div class="text-muted small">Checked out and returned</div>
+                                        </div>
                                     </label>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Quantity <span class="text-danger">*</span></label>
+                            <label class="form-label" id="add-quantity-label">In Stock <span class="text-danger">*</span></label>
                             <input type="number" id="add-quantity" class="form-control" value="0" min="0" />
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Minimum Quantity <span class="text-muted small">(alert threshold)</span></label>
+                            <label class="form-label">Minimum Quantity <span class="text-muted small">(low-stock alert)</span></label>
                             <input type="number" id="add-min-quantity" class="form-control" value="0" min="0" />
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">SKU / Barcode</label>
-                            <input type="text" id="add-sku" class="form-control" placeholder="Scan or type" />
+                            <div class="input-group">
+                                <input type="text" id="add-sku" class="form-control" placeholder="Scan or type" />
+                                <button type="button" class="btn btn-outline-secondary" id="add-sku-scan-btn" title="Scan barcode">
+                                    <i class="bi bi-upc-scan"></i>
+                                </button>
+                            </div>
+                            <div id="add-sku-scanner-area" class="mt-2 d-none">
+                                <div id="add-sku-scanner-viewport" class="scanner-viewport">
+                                    <video id="add-sku-scanner-video" autoplay muted playsinline></video>
+                                    <div class="scanner-aim"></div>
+                                </div>
+                                <div class="d-flex gap-2 mt-1">
+                                    <small class="text-muted flex-grow-1" id="add-sku-scan-hint">Align barcode with the red line</small>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" id="add-sku-scan-cancel">Cancel</button>
+                                </div>
+                            </div>
+                            <input type="file" id="add-sku-capture-input" accept="image/*" capture="environment" class="d-none" />
+                            <div class="mt-1 d-flex align-items-center gap-2">
+                                <button type="button" class="btn btn-sm btn-outline-primary"
+                                        onclick="openUpcLookup('add-sku','add-name','add-is-matched','add-metadata-source','add-match-badge')">
+                                    <i class="bi bi-search me-1"></i>Lookup Product
+                                </button>
+                                <span id="add-match-badge" class="badge d-none"></span>
+                            </div>
+                            <input type="hidden" id="add-is-matched" value="false" />
+                            <input type="hidden" id="add-metadata-source" value="" />
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Location</label>
@@ -304,7 +335,7 @@ else
                                 <div id="add-new-cat-error" class="text-danger small mt-1 d-none"></div>
                             </div>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-6" id="add-expiry-col">
                             <label class="form-label">Expiry Date <span class="text-muted small">(optional)</span></label>
                             <input type="date" id="add-expiry" class="form-control" />
                         </div>
@@ -350,7 +381,14 @@ else
 </div>
 } @* end canWrite *@
 
+@await Html.PartialAsync("_SkuScannerScript")
+
 @section Scripts {
+<script>
+initSkuScanner('add-sku', 'add-sku-scan-btn', 'add-sku-scan-cancel', 'add-sku-scanner-area',
+               'add-sku-scanner-viewport', 'add-sku-scanner-video',
+               'add-sku-capture-input', 'add-sku-scan-hint');
+</script>
 <script>
 (function () {
     var table = document.querySelector('.table');
@@ -405,6 +443,7 @@ async function openAddItemModal() {
     document.getElementById('add-scan-warning').value = '';
     document.getElementById('add-description').value = '';
     document.getElementById('add-type-consumable').checked = true;
+    applyAddItemType();
     document.getElementById('add-alert').classList.add('d-none');
 
     // Load categories and locations
@@ -433,6 +472,14 @@ async function openAddItemModal() {
 
     _addItemModal.show();
     setTimeout(() => document.getElementById('add-name').focus(), 300);
+}
+
+// Show only the fields relevant to the chosen item type.
+function applyAddItemType() {
+    var isReusable = document.getElementById('add-type-reusable').checked;
+    document.getElementById('add-quantity-label').innerHTML =
+        (isReusable ? 'Total Quantity' : 'In Stock') + ' <span class="text-danger">*</span>';
+    document.getElementById('add-expiry-col').classList.toggle('d-none', isReusable);
 }
 
 function initAddCatSwatches() {

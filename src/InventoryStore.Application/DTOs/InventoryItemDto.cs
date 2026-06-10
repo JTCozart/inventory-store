@@ -22,7 +22,11 @@ public record InventoryItemDto(
     string? CategoryName,
     DateOnly? ExpiryDate,
     bool IsPublic,
-    string? CategoryColor
+    string? CategoryColor,
+    string? MetadataImageUrl = null,
+    string? MetadataBrand = null,
+    string? MetadataCategory = null,
+    string? MetadataDescription = null
 );
 
 public record CreateInventoryItemDto(
@@ -35,7 +39,8 @@ public record CreateInventoryItemDto(
     ItemType ItemType,
     string? ScanWarning,
     int? CategoryId,
-    DateOnly? ExpiryDate
+    DateOnly? ExpiryDate,
+    int? SelectedMetadataId = null
 );
 
 public record LocationSummaryDto(string Name, int Count);
@@ -50,5 +55,6 @@ public record UpdateInventoryItemDto(
     int MinimumQuantity,
     string? ScanWarning,
     int? CategoryId,
-    DateOnly? ExpiryDate
+    DateOnly? ExpiryDate,
+    int? SelectedMetadataId = null
 );

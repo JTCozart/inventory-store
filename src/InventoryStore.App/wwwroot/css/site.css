@@ -257,13 +257,8 @@ html, body {
 
 .scanner-viewport video {
     position: absolute;
-    /* top:50% + left:50% + translate(-50%,-50%) centres the element,
-       then rotate(-90deg) corrects portrait→landscape orientation.
-       JS only sets width and height. */
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%) rotate(-90deg);
-    transform-origin: center center;
+    top: 0;
+    left: 0;
     object-fit: cover;
 }
 
@@ -330,6 +325,161 @@ html, body {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+/* ── Detail-modal stat cells ─────────────────── */
+
+.stat-cell {
+    flex: 0 0 auto;
+    width: 104px;
+    border: 1px solid var(--bs-border-color);
+    border-radius: 8px;
+    padding: .6rem .4rem;
+    background: var(--bs-body-bg);
+}
+
+.stat-cell-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1.1;
+}
+
+.stat-cell-label {
+    font-size: .7rem;
+    color: var(--bs-secondary-color);
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* "More info" affordance under the product image */
+.more-info-btn {
+    width: 100%;
+    border: 1px dashed var(--bs-border-color);
+    background: var(--bs-tertiary-bg);
+    color: var(--bs-secondary-color);
+    font-size: .8rem;
+    font-weight: 500;
+    border-radius: 6px;
+    padding: .35rem .5rem;
+    transition: border-color .12s ease, color .12s ease, background-color .12s ease;
+}
+
+.more-info-btn:hover {
+    border-color: var(--bs-primary);
+    border-style: solid;
+    color: var(--bs-primary);
+    background: rgba(13, 110, 253, .06);
+}
+
+/* Consume / restock stepper in the detail modal */
+.stock-stepper .form-control {
+    font-weight: 600;
+}
+.stock-stepper .btn { font-weight: 700; }
+
+/* Pulse the stock number on consume (red) / restock (green) */
+.stat-flash-up   { animation: stat-flash-up   .9s ease-out; }
+.stat-flash-down { animation: stat-flash-down .9s ease-out; }
+
+@keyframes stat-flash-up {
+    0%   { color: var(--bs-success); text-shadow: 0 0 16px rgba(25, 135, 84, .85); transform: scale(1.28); }
+    50%  { color: var(--bs-success); text-shadow: 0 0 10px rgba(25, 135, 84, .55); }
+    100% { transform: scale(1); }
+}
+
+@keyframes stat-flash-down {
+    0%   { color: var(--bs-danger); text-shadow: 0 0 16px rgba(220, 53, 69, .85); transform: scale(1.28); }
+    50%  { color: var(--bs-danger); text-shadow: 0 0 10px rgba(220, 53, 69, .55); }
+    100% { transform: scale(1); }
+}
+
+/* ── Product details (metadata) modal ────────── */
+
+.metadata-hero {
+    background: var(--bs-tertiary-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 10px;
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 140px;
+}
+
+.metadata-hero-img {
+    max-width: 100%;
+    max-height: 200px;
+    object-fit: contain;
+    border-radius: 6px;
+}
+
+.metadata-hero-placeholder {
+    font-size: 3rem;
+    color: var(--bs-secondary-color);
+    opacity: .35;
+}
+
+.metadata-field {
+    background: var(--bs-body-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 8px;
+    padding: .55rem .75rem;
+    height: 100%;
+}
+
+.metadata-field-label {
+    font-size: .68rem;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: var(--bs-secondary-color);
+    margin-bottom: .15rem;
+}
+
+.metadata-field-value {
+    font-size: .9rem;
+    color: var(--bs-body-color);
+    word-break: break-word;
+}
+
+/* ── Item-type selection cards ───────────────── */
+
+.type-option {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: .75rem 1rem;
+    border: 1px solid var(--bs-border-color);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: border-color .12s ease, background-color .12s ease, box-shadow .12s ease;
+}
+
+.type-option > i {
+    font-size: 1.4rem;
+    line-height: 1;
+    color: var(--bs-secondary-color);
+    flex-shrink: 0;
+}
+
+.type-option:hover { border-color: var(--bs-primary); }
+
+.btn-check:checked + .type-option {
+    border-color: var(--bs-primary);
+    background-color: rgba(13, 110, 253, .08);
+    box-shadow: inset 0 0 0 1px var(--bs-primary);
+}
+
+.btn-check:checked + .type-option > i { color: var(--bs-primary); }
+
+.btn-check:focus-visible + .type-option {
+    outline: 2px solid var(--bs-primary);
+    outline-offset: 2px;
 }
 
 /* ── Cards ───────────────────────────────────── */
@@ -647,4 +797,27 @@ th.sort-desc::after { content: ' ↓'; color: #0d6efd; }
     --bs-table-color:        #fff;
     --bs-table-bg:           rgba(255, 193, 7, 0.28);
     --bs-table-border-color: rgba(255, 193, 7, 0.38);
+}
+
+/* UPC product lookup modal */
+.upc-result-img {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+    flex-shrink: 0;
+    border-radius: 4px;
+    border: 1px solid var(--bs-border-color);
+    padding: 4px;
+    background: #fff;
+}
+.upc-result-img-placeholder {
+    width: 80px;
+    height: 80px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    border: 1px solid var(--bs-border-color);
+    background: var(--bs-tertiary-bg);
 }

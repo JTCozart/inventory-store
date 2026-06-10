@@ -6,6 +6,7 @@ let _detailModal = null;
 let _editModal = null;
 let _editItemId = null;
 let _canWrite = false;
+let _currentItemData = null;
 
 const _SWATCH_COLORS = ['#0d6efd','#198754','#dc3545','#ffc107','#fd7e14','#6f42c1','#d63384','#0dcaf0','#20c997','#6c757d','#212529'];
 
@@ -51,6 +52,7 @@ async function refreshModal() {
 }
 
 function populateView(s) {
+    _currentItemData = s;
     const isReusable = s.itemType === 'Reusable';
 
     // Header
@@ -58,16 +60,39 @@ function populateView(s) {
     const typeBadge = document.getElementById('modal-type-badge');
     typeBadge.textContent = s.itemType;
     typeBadge.className = `badge ms-2 ${isReusable ? 'bg-info' : 'bg-secondary'}`;
+    // Title stock badge: red when nothing is available, yellow when low.
     const stockBadge = document.getElementById('modal-stock-badge');
-    stockBadge.classList.toggle('d-none', !s.isLowStock);
+    const availForBadge = isReusable ? s.availableQuantity : s.quantity;
+    if (availForBadge <= 0) {
+        stockBadge.className = 'badge bg-danger ms-1';
+        stockBadge.textContent = 'Out of Stock';
+        stockBadge.classList.remove('d-none');
+    } else if (s.isLowStock) {
+        stockBadge.className = 'badge bg-warning text-dark ms-1';
+        stockBadge.textContent = 'Low Stock';
+        stockBadge.classList.remove('d-none');
+    } else {
+        stockBadge.classList.add('d-none');
+    }
     if (_canWrite) {
         var editBtn = document.getElementById('btn-switch-edit');
-        editBtn.onclick = function(e) { e.preventDefault(); openEditModal(s.id); };
+        editBtn.onclick = function(e) {
+            e.preventDefault();
+            // Close the view modal first so the two never stack, then open edit.
+            const detailEl = document.getElementById('itemDetailModal');
+            detailEl.addEventListener('hidden.bs.modal', function onHidden() {
+                detailEl.removeEventListener('hidden.bs.modal', onHidden);
+                openEditModal(s.id);
+            });
+            _detailModal.hide();
+        };
         editBtn.classList.remove('d-none');
     }
 
-    // Stats
+    // Stats — labelled differently per type. For consumables the single
+    // quantity is "In Stock"; reusables break it into Total/Available/Out/Lost.
     document.getElementById('modal-stat-qty').textContent = s.quantity;
+    document.getElementById('modal-stat-qty-label').textContent = isReusable ? 'Total' : 'In Stock';
     document.getElementById('modal-stat-min').textContent = s.minimumQuantity;
 
     const availCol = document.getElementById('stat-available-col');
@@ -82,30 +107,79 @@ function populateView(s) {
         document.getElementById('modal-stat-lost').textContent = s.lostCount;
     }
 
+    // Colour the headline stock number by health (Available for reusables, In Stock for consumables).
+    const available = isReusable ? s.availableQuantity : s.quantity;
+    const headlineEl = isReusable
+        ? document.getElementById('modal-stat-available')
+        : document.getElementById('modal-stat-qty');
+    headlineEl.classList.remove('text-success', 'text-warning', 'text-danger');
+    let healthClass;
+    if (available <= 0)    healthClass = 'text-danger';
+    else if (s.isLowStock) healthClass = 'text-warning';
+    else                   healthClass = 'text-success';
+    // Reusables always tint the headline; consumables stay neutral when healthy.
+    if (isReusable || available <= 0 || s.isLowStock) headlineEl.classList.add(healthClass);
+
+    // Product image drives the two-column top layout: when present the image takes
+    // the left column and info fills the remaining 8 cols; otherwise info is full width.
+    const imageCol  = document.getElementById('modal-image-col');
+    const infoCol   = document.getElementById('modal-info-col');
+    const itemImage = document.getElementById('modal-item-image');
+    if (s.metadataImageUrl) {
+        itemImage.src = s.metadataImageUrl;
+        imageCol.classList.remove('d-none');
+        infoCol.classList.add('col-md-8');
+    } else {
+        imageCol.classList.add('d-none');
+        infoCol.classList.remove('col-md-8');
+    }
+
     // Details
     document.getElementById('modal-detail-location').textContent = s.location || '-';
     document.getElementById('modal-detail-sku').textContent = s.sku || '-';
 
-    const descDt = document.getElementById('lbl-desc');
-    const descDd = document.getElementById('modal-detail-desc');
-    const warnDt = document.getElementById('lbl-warn');
-    const warnDd = document.getElementById('modal-detail-warn');
+    // Category — show as a coloured pill when set
+    const catDt = document.getElementById('lbl-category');
+    const catDd = document.getElementById('modal-detail-category');
+    if (s.categoryName) {
+        const color = s.categoryColor || '#6c757d';
+        catDd.innerHTML = `<span class="badge rounded-pill" style="background:${esc(color)}">${esc(s.categoryName)}</span>`;
+        catDt.classList.remove('d-none');
+        catDd.classList.remove('d-none');
+    } else {
+        catDt.classList.add('d-none');
+        catDd.classList.add('d-none');
+    }
 
+    // Expiry — a consumable concern; colour-code expired / expiring soon
+    const expDt = document.getElementById('lbl-expiry');
+    const expDd = document.getElementById('modal-detail-expiry');
+    if (!isReusable && s.expiryDate) {
+        expDd.innerHTML = formatExpiry(s.expiryDate);
+        expDt.classList.remove('d-none');
+        expDd.classList.remove('d-none');
+    } else {
+        expDt.classList.add('d-none');
+        expDd.classList.add('d-none');
+    }
+
+    const descBlock = document.getElementById('modal-desc-block');
+    const descDd    = document.getElementById('modal-detail-desc');
     if (s.description) {
         descDd.textContent = s.description;
-        descDt.classList.remove('d-none');
-        descDd.classList.remove('d-none');
+        descBlock.classList.remove('d-none');
     } else {
-        descDt.classList.add('d-none');
-        descDd.classList.add('d-none');
+        descBlock.classList.add('d-none');
     }
+
+    // Scan warning is safety-relevant: surface it as a banner at the top, not a quiet row.
+    const warnBanner = document.getElementById('modal-warning-banner');
+    const warnText   = document.getElementById('modal-warning-text');
     if (s.scanWarning) {
-        warnDd.textContent = s.scanWarning;
-        warnDt.classList.remove('d-none');
-        warnDd.classList.remove('d-none');
+        warnText.textContent = s.scanWarning;
+        warnBanner.classList.remove('d-none');
     } else {
-        warnDt.classList.add('d-none');
-        warnDd.classList.add('d-none');
+        warnBanner.classList.add('d-none');
     }
 
     // Actions
@@ -261,31 +335,34 @@ async function handleMarkFound(recordId) {
     }
 }
 
+// Consume (−) and restock (+) share one quantity/notes control in the detail modal.
 async function handleConsume() {
-    const qty   = parseInt(document.getElementById('consume-qty').value) || 1;
-    const notes = document.getElementById('consume-notes').value.trim();
+    const qty   = parseInt(document.getElementById('adjust-qty').value) || 1;
+    const notes = document.getElementById('adjust-notes').value.trim();
     const res = await apiPost('ConsumeItem', { itemId: _currentItemId, quantity: qty, notes });
     if (res.success) {
-        document.getElementById('consume-notes').value = '';
-        document.getElementById('consume-qty').value = '1';
-        showAlert('modal-alert', `Consumed ${qty}.`, 'success');
+        document.getElementById('adjust-notes').value = '';
+        document.getElementById('adjust-qty').value = '1';
         _needsReload = true;
         await refreshModal();
+        // Glow the stock number red instead of a banner that shifts the buttons.
+        flashStat('modal-stat-qty', 'down');
     } else {
         showAlert('modal-alert', res.error || 'Consume failed.', 'danger');
     }
 }
 
-async function handleRestock(suffix) {
-    const qty   = parseInt(document.getElementById(`restock-qty-${suffix}`).value) || 1;
-    const notes = document.getElementById(`restock-notes-${suffix}`).value.trim();
+async function handleRestock() {
+    const qty   = parseInt(document.getElementById('adjust-qty').value) || 1;
+    const notes = document.getElementById('adjust-notes').value.trim();
     const res = await apiPost('RestockItem', { itemId: _currentItemId, quantity: qty, notes });
     if (res.success) {
-        document.getElementById(`restock-notes-${suffix}`).value = '';
-        document.getElementById(`restock-qty-${suffix}`).value = '1';
-        showAlert('modal-alert', `Restocked ${qty}.`, 'success');
+        document.getElementById('adjust-notes').value = '';
+        document.getElementById('adjust-qty').value = '1';
         _needsReload = true;
         await refreshModal();
+        // Glow the stock number green instead of a banner that shifts the buttons.
+        flashStat('modal-stat-qty', 'up');
     } else {
         showAlert('modal-alert', res.error || 'Restock failed.', 'danger');
     }
@@ -325,12 +402,40 @@ function clearAlert(elId) {
     if (el) el.className = 'alert d-none mb-3';
 }
 
+// Briefly pulse a stat number to signal a change: green for an increase, red for a decrease.
+function flashStat(elId, direction) {
+    const el = document.getElementById(elId);
+    if (!el) return;
+    const cls = direction === 'up' ? 'stat-flash-up' : 'stat-flash-down';
+    el.classList.remove('stat-flash-up', 'stat-flash-down');
+    void el.offsetWidth; // force reflow so the animation restarts on repeat clicks
+    el.classList.add(cls);
+    setTimeout(() => el.classList.remove(cls), 1000);
+}
+
 function esc(str) {
     return String(str)
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;');
+}
+
+// Render an expiry date (yyyy-MM-dd) with a colour-coded badge when it is
+// expired or expiring within 30 days, otherwise plain text.
+function formatExpiry(dateStr) {
+    const d = new Date(dateStr + 'T00:00:00');
+    if (isNaN(d)) return esc(dateStr);
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const daysLeft = Math.round((d - today) / 86400000);
+    const pretty = d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    if (daysLeft < 0) {
+        return `<span class="badge bg-danger">Expired</span> <span class="text-muted small">${esc(pretty)}</span>`;
+    }
+    if (daysLeft <= 30) {
+        return `<span class="badge bg-warning text-dark">Expires in ${daysLeft} day${daysLeft === 1 ? '' : 's'}</span> <span class="text-muted small">${esc(pretty)}</span>`;
+    }
+    return esc(pretty);
 }
 
 // ── Client typeahead for checkout ─────────────────────────────────────────────
@@ -429,6 +534,29 @@ function populateEditForm(data) {
         ? '<span class="badge bg-info fs-6"><i class="bi bi-arrow-repeat me-1"></i>Reusable</span>'
         : '<span class="badge bg-secondary fs-6"><i class="bi bi-box me-1"></i>Consumable</span>';
     typeDisplay.innerHTML += '<p class="text-muted small mt-1 mb-0">Item type cannot be changed after creation.</p>';
+
+    // Type-aware fields: reusables track a total pool; expiry only applies to consumables.
+    document.getElementById('edit-quantity-label').textContent = isReusable ? 'Total Quantity' : 'In Stock';
+    document.getElementById('edit-expiry-col').classList.toggle('d-none', isReusable);
+
+    // Safety context: for reusables, show what's currently out so the total isn't set
+    // below outstanding checkouts by accident.
+    const qtyHelp = document.getElementById('edit-quantity-help');
+    if (isReusable) {
+        const out  = item.checkedOutCount || 0;
+        const lost = item.lostCount || 0;
+        qtyHelp.textContent = `${out} checked out · ${lost} lost · ${item.availableQuantity} available`;
+        qtyHelp.classList.remove('d-none');
+    } else {
+        qtyHelp.textContent = '';
+        qtyHelp.classList.add('d-none');
+    }
+
+    // Reset product-match state; a fresh lookup during this edit will set it.
+    const editMetaId = document.getElementById('edit-metadata-id');
+    if (editMetaId) editMetaId.value = '';
+    const editMatchBadge = document.getElementById('edit-match-badge');
+    if (editMatchBadge) editMatchBadge.classList.add('d-none');
 
     document.getElementById('edit-name').value          = item.name || '';
     document.getElementById('edit-quantity').value      = item.quantity;
@@ -555,24 +683,31 @@ async function saveEditItem() {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: new URLSearchParams({
-                id:              _editItemId,
+                id:                _editItemId,
                 name,
-                quantity:        document.getElementById('edit-quantity').value,
-                minimumQuantity: document.getElementById('edit-min-quantity').value,
-                sku:             document.getElementById('edit-sku').value.trim(),
-                location:        document.getElementById('edit-location').value.trim(),
-                categoryId:      document.getElementById('edit-category').value,
-                expiryDate:      document.getElementById('edit-expiry').value,
-                scanWarning:     document.getElementById('edit-scan-warning').value.trim(),
-                description:     document.getElementById('edit-description').value.trim(),
+                quantity:          document.getElementById('edit-quantity').value,
+                minimumQuantity:   document.getElementById('edit-min-quantity').value,
+                sku:               document.getElementById('edit-sku').value.trim(),
+                location:          document.getElementById('edit-location').value.trim(),
+                categoryId:        document.getElementById('edit-category').value,
+                expiryDate:        document.getElementById('edit-expiry').value,
+                scanWarning:       document.getElementById('edit-scan-warning').value.trim(),
+                description:       document.getElementById('edit-description').value.trim(),
+                selectedMetadataId: document.getElementById('edit-metadata-id').value,
                 __RequestVerificationToken: token
             }).toString()
         });
         const data = await res.json();
         if (data.success) {
-            _needsReload = true;
+            // Wait for the edit modal to fully close, then reopen the refreshed
+            // view so the two never stack. Flag a list reload for when it closes.
+            const editEl = document.getElementById('editItemModal');
+            editEl.addEventListener('hidden.bs.modal', function onHidden() {
+                editEl.removeEventListener('hidden.bs.modal', onHidden);
+                openItemModal(_editItemId);
+                _needsReload = true;
+            });
             _editModal.hide();
-            openItemModal(_editItemId);
         } else {
             showEditAlert(data.error || 'Save failed.', 'danger');
             saveBtn.disabled = false;

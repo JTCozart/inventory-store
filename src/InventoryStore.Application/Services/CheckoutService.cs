@@ -317,7 +317,9 @@ public class CheckoutService : ICheckoutService
             checkedOut, lost, item.IsLowStock,
             item.MinimumQuantity, item.ScanWarning,
             active.Select(r => MapRecord(r, item.Name)),
-            lostRecords.Select(r => MapRecord(r, item.Name))
+            lostRecords.Select(r => MapRecord(r, item.Name)),
+            item.ExpiryDate, item.Category?.Name, item.Category?.Color,
+            item.SelectedMetadata?.ImageUrl, item.SelectedMetadata?.Brand, item.SelectedMetadata?.Category, item.SelectedMetadata?.Description
         );
     }
 

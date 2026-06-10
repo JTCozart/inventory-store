@@ -59,13 +59,19 @@
                 <i class="bi bi-upc-scan"></i>
             </button>
             <div class="topnav-divider"></div>
-            <span class="topnav-username">@User.Identity.Name</span>
-            <form method="post" asp-page="/Auth/Logout" class="d-inline">
-                <button type="submit" class="topnav-logout" title="Logout">
-                    <i class="bi bi-box-arrow-left"></i>
-                    <span class="d-none d-lg-inline">Logout</span>
+            <div class="dropdown">
+                <button class="topnav-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="User menu">
+                    <i class="bi bi-person-circle"></i>
                 </button>
-            </form>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><span class="dropdown-header">@System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase((User.Identity?.Name ?? "").ToLower())</span></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item" href="/Settings?tab=account"><i class="bi bi-person me-2"></i>My Account</a></li>
+                    <li><form method="post" asp-page="/Auth/Logout" class="d-inline w-100">
+                        <button type="submit" class="dropdown-item w-100 text-start"><i class="bi bi-box-arrow-left me-2"></i>Logout</button>
+                    </form></li>
+                </ul>
+            </div>
             <button id="topnav-toggle" aria-label="Open menu" onclick="toggleMobileNav()">
                 <i class="bi bi-list"></i>
             </button>
@@ -158,20 +164,38 @@ else
               <div class="skeleton-block" style="height:56px"></div>
             </div>
             <div id="modal-content" class="d-none">
-              <div class="row g-2 mb-4 text-center">
-                <div class="col"><div class="border rounded p-2"><div class="fw-bold fs-4" id="modal-stat-qty">-</div><div class="text-muted small">Total Qty</div></div></div>
-                <div class="col" id="stat-available-col"><div class="border rounded p-2"><div class="fw-bold fs-4 text-success" id="modal-stat-available">-</div><div class="text-muted small">Available</div></div></div>
-                <div class="col" id="stat-out-col"><div class="border rounded p-2"><div class="fw-bold fs-4 text-warning" id="modal-stat-out">-</div><div class="text-muted small">Checked Out</div></div></div>
-                <div class="col" id="stat-lost-col"><div class="border rounded p-2"><div class="fw-bold fs-4 text-danger" id="modal-stat-lost">-</div><div class="text-muted small">Lost</div></div></div>
-                <div class="col"><div class="border rounded p-2"><div class="fw-bold fs-4 text-muted" id="modal-stat-min">-</div><div class="text-muted small">Min Qty</div></div></div>
+              <div id="modal-warning-banner" class="alert alert-warning d-none d-flex align-items-start gap-2 mb-3" role="alert">
+                <i class="bi bi-exclamation-triangle-fill mt-1"></i>
+                <div><strong>Warning:</strong> <span id="modal-warning-text"></span></div>
               </div>
-              <dl class="row mb-3">
-                <dt class="col-sm-3">Location</dt><dd class="col-sm-9" id="modal-detail-location">-</dd>
-                <dt class="col-sm-3">SKU</dt><dd class="col-sm-9" id="modal-detail-sku">-</dd>
-                <dt class="col-sm-3 d-none" id="lbl-desc">Description</dt><dd class="col-sm-9 d-none" id="modal-detail-desc"></dd>
-                <dt class="col-sm-3 d-none text-warning" id="lbl-warn"><i class="bi bi-exclamation-triangle me-1"></i>Scan Warning</dt>
-                <dd class="col-sm-9 d-none" id="modal-detail-warn"></dd>
-              </dl>
+              <div class="row g-3 mb-3 align-items-start">
+                <div class="col-12 col-md-4 d-none" id="modal-image-col">
+                  <img id="modal-item-image" src="" alt="Product image" class="img-fluid rounded border w-100"
+                       style="max-height:200px;object-fit:contain;background:var(--bs-tertiary-bg)">
+                  <button type="button" class="more-info-btn mt-2" onclick="showMetadataInfo()">
+                    <i class="bi bi-info-circle me-1"></i>Product Details
+                  </button>
+                </div>
+                <div class="col-12" id="modal-info-col">
+                  <div id="modal-stats" class="d-flex flex-wrap gap-2 mb-3">
+                    <div class="stat-cell text-center" id="stat-qty-col"><div class="stat-cell-value" id="modal-stat-qty">-</div><div class="stat-cell-label" id="modal-stat-qty-label">In Stock</div></div>
+                    <div class="stat-cell text-center d-none" id="stat-available-col"><div class="stat-cell-value text-success" id="modal-stat-available">-</div><div class="stat-cell-label">Available</div></div>
+                    <div class="stat-cell text-center d-none" id="stat-out-col"><div class="stat-cell-value text-warning" id="modal-stat-out">-</div><div class="stat-cell-label">Checked Out</div></div>
+                    <div class="stat-cell text-center d-none" id="stat-lost-col"><div class="stat-cell-value text-danger" id="modal-stat-lost">-</div><div class="stat-cell-label">Lost</div></div>
+                    <div class="stat-cell text-center" id="stat-min-col"><div class="stat-cell-value text-muted" id="modal-stat-min">-</div><div class="stat-cell-label">Min Qty</div></div>
+                  </div>
+                  <dl class="row mb-0 small">
+                    <dt class="col-4 col-sm-3 text-muted fw-normal">Location</dt><dd class="col-8 col-sm-9 mb-1" id="modal-detail-location">-</dd>
+                    <dt class="col-4 col-sm-3 text-muted fw-normal">SKU</dt><dd class="col-8 col-sm-9 mb-1" id="modal-detail-sku">-</dd>
+                    <dt class="col-4 col-sm-3 text-muted fw-normal d-none" id="lbl-category">Category</dt><dd class="col-8 col-sm-9 mb-1 d-none" id="modal-detail-category"></dd>
+                    <dt class="col-4 col-sm-3 text-muted fw-normal d-none" id="lbl-expiry">Expiry</dt><dd class="col-8 col-sm-9 mb-1 d-none" id="modal-detail-expiry"></dd>
+                  </dl>
+                </div>
+              </div>
+              <div id="modal-desc-block" class="mb-3 d-none">
+                <div class="text-muted text-uppercase small fw-semibold mb-1">Description</div>
+                <div id="modal-detail-desc"></div>
+              </div>
               <hr>
               <div id="actions-reusable" class="d-none">
                 <h6 class="fw-semibold mb-2">Active Checkouts</h6>
@@ -203,24 +227,16 @@ else
               <div id="actions-consumable" class="d-none">
                 @if (_canWrite)
                 {
-                  <div class="row g-4">
-                    <div class="col-md-6">
-                      <h6 class="fw-semibold mb-2">Consume</h6>
-                      <div class="d-flex gap-2 align-items-center">
-                        <input type="number" id="consume-qty" class="form-control form-control-sm" style="width:90px" value="1" min="1">
-                        <input type="text" id="consume-notes" class="form-control form-control-sm" placeholder="Notes (optional)">
-                        <button class="btn btn-sm btn-warning flex-shrink-0" onclick="handleConsume()" title="Consume"><i class="bi bi-dash-circle"></i></button>
-                      </div>
+                  <h6 class="fw-semibold mb-2">Adjust Stock</h6>
+                  <div class="d-flex gap-2 align-items-center flex-wrap">
+                    <div class="input-group stock-stepper" style="width:150px">
+                      <button class="btn btn-outline-danger" type="button" onclick="handleConsume()" title="Consume (use stock)"><i class="bi bi-dash-lg"></i></button>
+                      <input type="number" id="adjust-qty" class="form-control text-center" value="1" min="1">
+                      <button class="btn btn-outline-success" type="button" onclick="handleRestock()" title="Restock (add stock)"><i class="bi bi-plus-lg"></i></button>
                     </div>
-                    <div class="col-md-6">
-                      <h6 class="fw-semibold mb-2">Restock</h6>
-                      <div class="d-flex gap-2 align-items-center">
-                        <input type="number" id="restock-qty-c" class="form-control form-control-sm" style="width:90px" value="1" min="1">
-                        <input type="text" id="restock-notes-c" class="form-control form-control-sm" placeholder="Notes (optional)">
-                        <button class="btn btn-sm btn-success flex-shrink-0" onclick="handleRestock('c')" title="Restock"><i class="bi bi-plus-circle"></i></button>
-                      </div>
-                    </div>
+                    <input type="text" id="adjust-notes" class="form-control" style="max-width:240px" placeholder="Notes (optional)">
                   </div>
+                  <div class="form-text">Tap <span class="text-danger fw-semibold">−</span> to consume stock, <span class="text-success fw-semibold">+</span> to add stock.</div>
                 }
               </div>
             </div>
@@ -248,22 +264,35 @@ else
             </div>
             <div id="edit-form" class="d-none">
               <div class="mb-3" id="edit-type-display"></div>
-              <div class="row g-3">
+              <h6 class="text-uppercase text-muted small fw-semibold mb-2">Basics</h6>
+              <div class="row g-3 mb-2">
                 <div class="col-12">
                   <label class="form-label">Name <span class="text-danger">*</span></label>
                   <input type="text" id="edit-name" class="form-control" />
                 </div>
                 <div class="col-md-6">
-                  <label class="form-label">Total Quantity</label>
+                  <label class="form-label" id="edit-quantity-label">Total Quantity</label>
                   <input type="number" id="edit-quantity" class="form-control" min="0" />
+                  <div class="form-text d-none" id="edit-quantity-help"></div>
                 </div>
                 <div class="col-md-6">
-                  <label class="form-label">Minimum Quantity</label>
+                  <label class="form-label">Minimum Quantity <span class="text-muted small">(low-stock alert)</span></label>
                   <input type="number" id="edit-min-quantity" class="form-control" min="0" />
                 </div>
+              </div>
+
+              <h6 class="text-uppercase text-muted small fw-semibold mb-2 mt-3">Identification</h6>
+              <div class="row g-3 mb-2">
                 <div class="col-md-6">
                   <label class="form-label">SKU / Barcode</label>
-                  <input type="text" id="edit-sku" class="form-control" />
+                  <div class="input-group">
+                    <input type="text" id="edit-sku" class="form-control" />
+                    <button type="button" class="btn btn-outline-secondary" onclick="openUpcLookup('edit-sku','edit-name',null,null,'edit-match-badge','edit-metadata-id')" title="Look up product by barcode">
+                      <i class="bi bi-search"></i>
+                    </button>
+                  </div>
+                  <input type="hidden" id="edit-metadata-id" value="" />
+                  <span id="edit-match-badge" class="badge bg-success mt-1 d-none"><i class="bi bi-check-lg me-1"></i>Product matched</span>
                 </div>
                 <div class="col-md-6">
                   <label class="form-label">Location</label>
@@ -295,7 +324,11 @@ else
                     <div id="edit-new-cat-error" class="text-danger small mt-1 d-none"></div>
                   </div>
                 </div>
-                <div class="col-md-6">
+              </div>
+
+              <h6 class="text-uppercase text-muted small fw-semibold mb-2 mt-3">Details</h6>
+              <div class="row g-3">
+                <div class="col-md-6" id="edit-expiry-col">
                   <label class="form-label">Expiry Date <span class="text-muted small">(optional)</span></label>
                   <input type="date" id="edit-expiry" class="form-control" />
                 </div>
@@ -317,6 +350,139 @@ else
         </div>
       </div>
     </div>
+
+    <!-- UPC Product Lookup Modal -->
+    <div class="modal fade" id="upcLookupModal" tabindex="-1" style="z-index: 1070">
+      <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title"><i class="bi bi-search me-2"></i>Product Lookup</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div id="upc-lookup-spinner" class="text-center py-4 d-none">
+              <div class="spinner-border text-primary" role="status"></div>
+              <div class="mt-2 text-muted small">Searching product databases...</div>
+            </div>
+            <div id="upc-lookup-empty" class="text-center py-4 text-muted d-none">
+              <i class="bi bi-search fs-2 opacity-25 d-block mb-2"></i>
+              No products found for this barcode.
+            </div>
+            <div id="upc-lookup-results"></div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script>
+    var _upcLookupConfig = null;
+    var _upcResults = [];
+    var _upcSourceLabels = { 'openlibrary': 'Open Library', 'upcitemdb': 'UPC Item DB', 'openfoodfacts': 'Open Food Facts' };
+
+    function openUpcLookup(skuInputId, nameInputId, matchedInputId, sourceInputId, badgeId, metadataIdInputId) {
+        var sku = (document.getElementById(skuInputId)?.value || '').trim();
+        if (!sku) {
+            var t = document.createElement('div');
+            t.className = 'position-fixed bottom-0 end-0 p-3';
+            t.style.zIndex = '9999';
+            t.innerHTML = '<div class="toast show align-items-center text-bg-warning border-0"><div class="d-flex"><div class="toast-body">Please enter or scan a barcode first.</div><button type="button" class="btn-close btn-close-white me-2 m-auto" onclick="this.closest(\'.position-fixed\').remove()"></button></div></div>';
+            document.body.appendChild(t);
+            setTimeout(function() { t.remove(); }, 3000);
+            return;
+        }
+        _upcLookupConfig = { skuInputId: skuInputId, nameInputId: nameInputId, matchedInputId: matchedInputId || null, sourceInputId: sourceInputId || null, badgeId: badgeId || null, metadataIdInputId: metadataIdInputId || null };
+        _upcResults = [];
+
+        var spinner  = document.getElementById('upc-lookup-spinner');
+        var empty    = document.getElementById('upc-lookup-empty');
+        var resultsEl = document.getElementById('upc-lookup-results');
+        spinner.classList.remove('d-none');
+        empty.classList.add('d-none');
+        resultsEl.innerHTML = '';
+
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('upcLookupModal')).show();
+
+        fetch('/api/barcode-lookup?barcode=' + encodeURIComponent(sku))
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                spinner.classList.add('d-none');
+                _upcResults = data || [];
+                if (!_upcResults.length) { empty.classList.remove('d-none'); return; }
+                resultsEl.innerHTML = _upcResults.map(function(r, i) {
+                    var label = _upcSourceLabels[r.source] || r.source;
+                    var imgHtml = r.imageUrl
+                        ? '<img src="' + _upcEsc(r.imageUrl) + '" class="upc-result-img" alt="" onerror="this.style.display=\'none\'">'
+                        : '<div class="upc-result-img-placeholder"><i class="bi bi-image opacity-25" style="font-size:2rem"></i></div>';
+                    var desc = r.description ? r.description.substring(0, 200) + (r.description.length > 200 ? '...' : '') : '';
+                    return '<div class="card mb-2"><div class="card-body d-flex gap-3 align-items-start p-3">' +
+                        imgHtml +
+                        '<div class="flex-grow-1 min-w-0">' +
+                        '<div class="d-flex align-items-center gap-2 mb-1 flex-wrap">' +
+                        '<strong>' + _upcEsc(r.name) + '</strong>' +
+                        '<span class="badge bg-secondary">' + _upcEsc(label) + '</span>' +
+                        '</div>' +
+                        (r.brand ? '<div class="text-muted small">Brand: ' + _upcEsc(r.brand) + '</div>' : '') +
+                        (r.category ? '<div class="text-muted small">Category: ' + _upcEsc(r.category) + '</div>' : '') +
+                        (r.size ? '<div class="text-muted small">Size: ' + _upcEsc(r.size) + '</div>' : '') +
+                        (r.weight ? '<div class="text-muted small">Weight: ' + _upcEsc(r.weight) + '</div>' : '') +
+                        (desc ? '<div class="text-muted small mt-1" style="max-height:60px;overflow:hidden">' + _upcEsc(desc) + '</div>' : '') +
+                        '</div>' +
+                        '<button type="button" class="btn btn-sm btn-primary flex-shrink-0 align-self-center" onclick="applyUpcMatch(' + i + ')">Use This</button>' +
+                        '</div></div>';
+                }).join('');
+            })
+            .catch(function() {
+                spinner.classList.add('d-none');
+                resultsEl.innerHTML = '<div class="alert alert-danger">Lookup failed. Please try again.</div>';
+            });
+    }
+
+    function applyUpcMatch(idx) {
+        var r = _upcResults[idx];
+        if (!r || !_upcLookupConfig) return;
+        var c = _upcLookupConfig;
+
+        var nameEl = document.getElementById(c.nameInputId);
+        if (nameEl) nameEl.value = r.name;
+
+        // Record the chosen product so it can be linked to the item on save,
+        // and surface a confirmation badge.
+        if (c.metadataIdInputId) {
+            var midEl = document.getElementById(c.metadataIdInputId);
+            if (midEl) midEl.value = r.id || '';
+        }
+        if (c.badgeId) {
+            var badgeEl = document.getElementById(c.badgeId);
+            if (badgeEl) badgeEl.classList.remove('d-none');
+        }
+
+        bootstrap.Modal.getInstance(document.getElementById('upcLookupModal'))?.hide();
+
+        // If called from quick-add form lookup
+        if (c.nameInputId === 'scanner-lookup-name') {
+            var qaName = document.getElementById('qa-name');
+            var qaMetadataId = document.getElementById('qa-metadata-id');
+
+            if (qaName && qaName.value === '') {
+                // Quick-add form is open and name is empty - populate it
+                qaName.value = r.name;
+                if (qaMetadataId) qaMetadataId.value = r.id || '';
+            } else if (!qaName || qaName.value === '') {
+                // Scanner flow - show quick-add form
+                if (qaName) qaName.value = r.name;
+                if (qaMetadataId) qaMetadataId.value = r.id || '';
+                showQuickAddForm();
+            }
+        }
+    }
+
+    function _upcEsc(s) {
+        if (!s) return '';
+        return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+    </script>
 
     <!-- Global scanner modal -->
     <div class="modal fade" id="scannerModal" tabindex="-1" data-bs-backdrop="static">
@@ -377,7 +543,7 @@ else
                     <div id="scanner-result" class="d-none">
                         <div class="d-flex align-items-start justify-content-between mb-2">
                             <div>
-                                <div id="item-name" class="fw-bold"></div>
+                                <div><span id="item-name" class="fw-bold"></span> <span id="item-stock-badge" class="badge d-none"></span></div>
                                 <div id="item-meta" class="small text-muted"></div>
                             </div>
                             <a id="item-edit-link" href="#" class="btn btn-sm btn-outline-secondary ms-2">
@@ -392,7 +558,16 @@ else
                             <span id="scan-warning-text"></span>
                         </div>
 
-                        <div id="item-stats" class="row g-2 mb-3 text-center small"></div>
+                        <!-- Compact 2-column layout mirroring the item view modal: image left, stats right -->
+                        <div class="row g-2 mb-3 align-items-center">
+                            <div id="item-image-container" class="col-auto d-none text-center">
+                                <img id="item-image" src="" alt="Product image" class="rounded border" style="max-width:84px;max-height:84px;object-fit:contain;background:var(--bs-tertiary-bg)">
+                                <button type="button" class="more-info-btn mt-1" style="font-size:.7rem;padding:.15rem .4rem" onclick="showMetadataInfo()"><i class="bi bi-info-circle me-1"></i>Details</button>
+                            </div>
+                            <div class="col">
+                                <div id="item-stats"></div>
+                            </div>
+                        </div>
 
                         <div id="reusable-actions" class="d-none">
                             <div class="mb-2">
@@ -420,22 +595,16 @@ else
                         </div>
 
                         <div id="consumable-actions" class="d-none">
-                            <div class="mb-2">
-                                <label class="form-label small mb-1">Consume</label>
-                                <div class="d-flex gap-1">
-                                    <input id="consume-qty" type="number" class="form-control form-control-sm" style="width:75px" value="1" min="1" />
-                                    <input id="consume-notes" type="text" class="form-control form-control-sm" placeholder="Notes (optional)" />
-                                    <button id="btn-consume" class="btn btn-sm btn-warning flex-shrink-0" onclick="doConsume()" title="Consume"><i class="bi bi-dash-circle"></i></button>
+                            <h6 class="fw-semibold mb-2">Adjust Stock</h6>
+                            <div class="d-flex gap-2 align-items-center flex-wrap">
+                                <div class="input-group stock-stepper" style="width:140px">
+                                    <button id="btn-consume" class="btn btn-outline-danger" type="button" onclick="doConsume()" title="Consume (use stock)"><i class="bi bi-dash-lg"></i></button>
+                                    <input id="consume-qty" type="number" class="form-control text-center" value="1" min="1" />
+                                    <button id="btn-restock" class="btn btn-outline-success" type="button" onclick="doRestock()" title="Restock (add stock)"><i class="bi bi-plus-lg"></i></button>
                                 </div>
+                                <input id="consume-notes" type="text" class="form-control" style="max-width:180px" placeholder="Notes (optional)" />
                             </div>
-                            <div>
-                                <label class="form-label small mb-1">Restock</label>
-                                <div class="d-flex gap-1">
-                                    <input id="restock-qty" type="number" class="form-control form-control-sm" style="width:75px" value="1" min="1" />
-                                    <input id="restock-notes" type="text" class="form-control form-control-sm" placeholder="Notes (optional)" />
-                                    <button id="btn-restock" class="btn btn-sm btn-success flex-shrink-0" onclick="doRestock()" title="Restock"><i class="bi bi-plus-circle"></i></button>
-                                </div>
-                            </div>
+                            <div class="form-text">Tap <span class="text-danger fw-semibold">−</span> to consume, <span class="text-success fw-semibold">+</span> to add stock.</div>
                         </div>
 
                         <div id="search-results-picker" class="d-none mt-2">
@@ -446,16 +615,28 @@ else
 
                         <div id="not-found" class="d-none text-center py-2">
                             <div class="text-muted small mb-2">No item found.</div>
-                            <button class="btn btn-sm btn-outline-primary scanner-manage-only d-none" onclick="showQuickAddForm()"><i class="bi bi-plus-lg me-1"></i> Add Item</button>
+                            <button class="btn btn-sm btn-outline-primary mt-2" onclick="showQuickAddForm()"><i class="bi bi-plus-lg me-1"></i> Add Item</button>
                         </div>
+                        <div id="scanner-lookup-matched" style="display:none"></div>
+                        <input type="hidden" id="scanner-lookup-name" />
+                        <input type="hidden" id="scanner-lookup-source" />
 
-                        <div id="quick-add-form" class="d-none mt-2 scanner-manage-only">
+                        <div id="quick-add-form" class="d-none mt-2">
                             <div class="border rounded p-2 bg-body-secondary">
                                 <div class="small fw-semibold mb-2">New Item</div>
-                                <div class="mb-1">
+                                <div class="mb-2">
                                     <input id="qa-name" type="text" class="form-control form-control-sm" placeholder="Item name (required)" />
                                     <div id="qa-name-error" class="text-danger small d-none mt-1">Name is required.</div>
                                 </div>
+                                <div class="mb-2">
+                                    <div class="d-flex gap-1">
+                                        <input id="qa-sku" type="text" class="form-control form-control-sm" placeholder="SKU (optional)" />
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="lookupQaBarcode()" title="Lookup barcode"><i class="bi bi-search"></i></button>
+                                    </div>
+                                </div>
+                                <input type="hidden" id="qa-metadata-source" />
+                                <input type="hidden" id="qa-metadata-matched" />
+                                <input type="hidden" id="qa-metadata-id" />
                                 <div class="row g-1 mb-1">
                                     <div class="col-6">
                                         <select id="qa-type" class="form-select form-select-sm">
@@ -484,6 +665,50 @@ else
             </div>
         </div>
     </div>
+
+    <!-- Metadata Info Modal -->
+    <div class="modal fade" id="metadataInfoModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content overflow-hidden">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title"><i class="bi bi-box-seam me-2 text-primary"></i>Product Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="metadata-hero text-center mb-3">
+                        <i id="metadata-info-placeholder" class="bi bi-image metadata-hero-placeholder"></i>
+                        <img id="metadata-info-image" src="" alt="Product image" class="metadata-hero-img" style="display:none"
+                             onload="this.style.display='block';var p=document.getElementById('metadata-info-placeholder');if(p)p.style.display='none';"
+                             onerror="this.style.display='none';var p=document.getElementById('metadata-info-placeholder');if(p)p.style.display='block';">
+                    </div>
+                    <div class="row g-2 mb-2">
+                        <div class="col-6">
+                            <div class="metadata-field">
+                                <div class="metadata-field-label"><i class="bi bi-tag me-1"></i>Brand</div>
+                                <div class="metadata-field-value" id="metadata-info-brand"></div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="metadata-field">
+                                <div class="metadata-field-label"><i class="bi bi-collection me-1"></i>Category</div>
+                                <div class="metadata-field-value" id="metadata-info-category"></div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="metadata-field">
+                                <div class="metadata-field-label"><i class="bi bi-card-text me-1"></i>Description</div>
+                                <div class="metadata-field-value" id="metadata-info-description" style="max-height:200px;overflow-y:auto"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>window.canManage = @(_canWrite ? "true" : "false");</script>
     <script src="https://cdn.jsdelivr.net/npm/@@zxing/library@@0.21.3/umd/index.min.js"></script>
     <script src="~/js/scanner.js"></script>

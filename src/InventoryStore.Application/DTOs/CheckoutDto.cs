@@ -29,7 +29,14 @@ public record ItemStatusDto(
     int MinimumQuantity,
     string? ScanWarning,
     IEnumerable<CheckoutRecordDto> ActiveCheckouts,
-    IEnumerable<CheckoutRecordDto> LostCheckouts
+    IEnumerable<CheckoutRecordDto> LostCheckouts,
+    DateOnly? ExpiryDate = null,
+    string? CategoryName = null,
+    string? CategoryColor = null,
+    string? MetadataImageUrl = null,
+    string? MetadataBrand = null,
+    string? MetadataCategory = null,
+    string? MetadataDescription = null
 );
 
 public record CheckOutItemDto(

@@ -36,12 +36,14 @@
                     </div>
                 </div>
                 <div class="col-md-6">
-                    <label asp-for="Input.Quantity" class="form-label">Total Quantity <span class="text-danger">*</span></label>
+                    <label asp-for="Input.Quantity" class="form-label">
+                        @(Model.DisplayItemType == ItemType.Reusable ? "Total Quantity" : "In Stock") <span class="text-danger">*</span>
+                    </label>
                     <input asp-for="Input.Quantity" class="form-control" type="number" min="0" />
                     <span asp-validation-for="Input.Quantity" class="text-danger small"></span>
                 </div>
                 <div class="col-md-6">
-                    <label asp-for="Input.MinimumQuantity" class="form-label">Minimum Quantity</label>
+                    <label asp-for="Input.MinimumQuantity" class="form-label">Minimum Quantity <span class="text-muted small">(low-stock alert)</span></label>
                     <input asp-for="Input.MinimumQuantity" class="form-control" type="number" min="0" />
                 </div>
                 <div class="col-md-6">
@@ -50,6 +52,11 @@
                         <input asp-for="Input.SKU" id="sku-input" class="form-control" />
                         <button type="button" class="btn btn-outline-secondary" id="sku-scan-btn" title="Scan barcode">
                             <i class="bi bi-upc-scan"></i>
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary"
+                                onclick="openUpcLookup('sku-input','Input_Name')"
+                                title="Lookup product metadata">
+                            <i class="bi bi-search"></i>
                         </button>
                     </div>
                     <div id="sku-scanner-area" class="mt-2 d-none">
@@ -114,10 +121,15 @@
                         <div id="new-cat-error" class="text-danger small mt-1 d-none"></div>
                     </div>
                 </div>
-                <div class="col-md-6">
-                    <label asp-for="Input.ExpiryDate" class="form-label">Expiry Date <span class="text-muted small">(optional)</span></label>
-                    <input asp-for="Input.ExpiryDate" class="form-control" type="date" />
-                </div>
+                @* Expiry is a consumable concern; only show it for consumables (or a
+                   reusable that somehow already has one, so it can be cleared). *@
+                @if (Model.DisplayItemType != ItemType.Reusable || Model.Input.ExpiryDate.HasValue)
+                {
+                    <div class="col-md-6">
+                        <label asp-for="Input.ExpiryDate" class="form-label">Expiry Date <span class="text-muted small">(optional)</span></label>
+                        <input asp-for="Input.ExpiryDate" class="form-control" type="date" />
+                    </div>
+                }
                 <div class="col-12">
                     <label asp-for="Input.ScanWarning" class="form-label">
                         Scan Warning <span class="text-muted small">(shown when this item is scanned)</span>

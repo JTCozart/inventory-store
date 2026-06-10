@@ -47,10 +47,11 @@ public class InventoryService : IInventoryService
         item.Location        = string.IsNullOrWhiteSpace(dto.Location) ? null : dto.Location.Trim();
         item.SKU             = string.IsNullOrWhiteSpace(dto.SKU) ? null : dto.SKU.Trim();
         item.MinimumQuantity = dto.MinimumQuantity;
-        item.ScanWarning     = string.IsNullOrWhiteSpace(dto.ScanWarning) ? null : dto.ScanWarning.Trim();
-        item.CategoryId      = dto.CategoryId;
-        item.ExpiryDate      = dto.ExpiryDate;
-        item.CreatedByUserId = userId;
+        item.ScanWarning        = string.IsNullOrWhiteSpace(dto.ScanWarning) ? null : dto.ScanWarning.Trim();
+        item.CategoryId         = dto.CategoryId;
+        item.ExpiryDate         = dto.ExpiryDate;
+        item.SelectedMetadataId = dto.SelectedMetadataId;
+        item.CreatedByUserId    = userId;
         item.CreatedAt       = DateTime.UtcNow;
         item.UpdatedAt       = DateTime.UtcNow;
 
@@ -81,10 +82,18 @@ public class InventoryService : IInventoryService
         item.Location        = string.IsNullOrWhiteSpace(dto.Location) ? null : dto.Location.Trim();
         item.SKU             = string.IsNullOrWhiteSpace(dto.SKU) ? null : dto.SKU.Trim();
         item.MinimumQuantity = dto.MinimumQuantity;
-        item.ScanWarning     = string.IsNullOrWhiteSpace(dto.ScanWarning) ? null : dto.ScanWarning.Trim();
-        item.CategoryId      = dto.CategoryId;
-        item.ExpiryDate      = dto.ExpiryDate;
-        item.UpdatedAt       = DateTime.UtcNow;
+        item.ScanWarning        = string.IsNullOrWhiteSpace(dto.ScanWarning) ? null : dto.ScanWarning.Trim();
+        item.CategoryId         = dto.CategoryId;
+        item.ExpiryDate         = dto.ExpiryDate;
+        item.UpdatedAt          = DateTime.UtcNow;
+
+        // Only relink product metadata when a fresh lookup was applied; a normal
+        // edit sends null here so the existing match is preserved.
+        if (dto.SelectedMetadataId.HasValue)
+        {
+            item.SelectedMetadataId = dto.SelectedMetadataId;
+            item.IsMetadataMatched  = true;
+        }
 
         await _inventoryRepository.UpdateAsync(item);
 
@@ -141,7 +150,8 @@ public class InventoryService : IInventoryService
             itemType, checkedOut, lost, item.IsLowStock,
             item.ScanWarning, item.CreatedAt, item.UpdatedAt,
             item.CategoryId, item.Category?.Name, item.ExpiryDate,
-            item.IsPublic, item.Category?.Color
+            item.IsPublic, item.Category?.Color,
+            item.SelectedMetadata?.ImageUrl, item.SelectedMetadata?.Brand, item.SelectedMetadata?.Category, item.SelectedMetadata?.Description
         );
     }
 
