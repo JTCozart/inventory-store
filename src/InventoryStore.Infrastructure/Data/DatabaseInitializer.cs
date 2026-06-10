@@ -67,6 +67,38 @@ public class DatabaseInitializer
         await EnsureStockMovementsTableAsync(conn);
         await EnsureWebhookEndpointsTableAsync(conn);
         await BackfillActivityLogUsernamesAsync(conn);
+        await CleanupOrphanedCheckoutRecordsAsync(conn);
+    }
+
+    // One-time cleanup: older builds deleted an inventory item without removing its checkout records,
+    // leaving rows that point at an item that no longer exists. Those show as "Unknown" in the
+    // Checked Out / Lost reports and cannot be acted on, so remove them. Guarded by a flag.
+    private static async Task CleanupOrphanedCheckoutRecordsAsync(SqliteConnection conn)
+    {
+        const string flagKey = "migration.checkoutrecords.orphans";
+
+        await using (var check = conn.CreateCommand())
+        {
+            check.CommandText = "SELECT Value FROM AppSettings WHERE Key = $k";
+            check.Parameters.AddWithValue("$k", flagKey);
+            if (await check.ExecuteScalarAsync() is string v && v == "done") return;
+        }
+
+        await using (var delete = conn.CreateCommand())
+        {
+            delete.CommandText = @"
+                DELETE FROM CheckoutRecords
+                WHERE InventoryItemId NOT IN (SELECT Id FROM InventoryItems);";
+            await delete.ExecuteNonQueryAsync();
+        }
+
+        await using (var flag = conn.CreateCommand())
+        {
+            flag.CommandText = "INSERT INTO AppSettings (Key, Value, UpdatedAt) VALUES ($k, 'done', $t)";
+            flag.Parameters.AddWithValue("$k", flagKey);
+            flag.Parameters.AddWithValue("$t", DateTime.UtcNow.ToString("o"));
+            await flag.ExecuteNonQueryAsync();
+        }
     }
 
     // One-time correction: older activity-log rows stored a user's display name (first/last) instead

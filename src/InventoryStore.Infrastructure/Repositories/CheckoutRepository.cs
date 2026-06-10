@@ -65,4 +65,9 @@ public class CheckoutRepository : ICheckoutRepository
             .Where(r => r.ClientId == clientId)
             .OrderByDescending(r => r.CheckedOutAt)
             .ToListAsync();
+
+    public async Task DeleteByInventoryItemIdAsync(int inventoryItemId) =>
+        await _context.CheckoutRecords
+            .Where(r => r.InventoryItemId == inventoryItemId)
+            .ExecuteDeleteAsync();
 }

@@ -12,17 +12,20 @@ public class InventoryService : IInventoryService
     private readonly IInventoryRepository _inventoryRepository;
     private readonly IActivityLogRepository _activityLogRepository;
     private readonly ICategoryRepository _categoryRepository;
+    private readonly ICheckoutRepository _checkoutRepository;
     private readonly IWebhookService _webhooks;
 
     public InventoryService(
         IInventoryRepository inventoryRepository,
         IActivityLogRepository activityLogRepository,
         ICategoryRepository categoryRepository,
+        ICheckoutRepository checkoutRepository,
         IWebhookService webhooks)
     {
         _inventoryRepository  = inventoryRepository;
         _activityLogRepository = activityLogRepository;
         _categoryRepository   = categoryRepository;
+        _checkoutRepository   = checkoutRepository;
         _webhooks             = webhooks;
     }
 
@@ -119,6 +122,9 @@ public class InventoryService : IInventoryService
         var item = await _inventoryRepository.GetByIdAsync(id)
             ?? throw new KeyNotFoundException($"Inventory item {id} not found.");
 
+        // Remove the item's checkout history first; otherwise those records (active or lost) become
+        // orphaned and show up as "Unknown" in reports with no way to clear them.
+        await _checkoutRepository.DeleteByInventoryItemIdAsync(id);
         await _inventoryRepository.DeleteAsync(id);
 
         await _activityLogRepository.CreateAsync(new ActivityLog
