@@ -152,35 +152,47 @@
     <p>What's new, improved, and fixed in each version of Inventory Store.</p>
   </div>
 
-  <section class="release" id="v20260612-1815">
+  <section class="release" id="v20260612-1900">
     <div class="release-head">
-      <h2>v20260612.1815</h2>
+      <h2>v20260612.1900</h2>
       <span class="release-date">June 12, 2026</span>
       <span class="release-latest">Latest</span>
     </div>
 
     <div class="release-group">
+      <span class="release-group-label label-fixed">Fixed</span>
+      <ul>
+        <li><strong>Serveo tunnel access denied error is now fully resolved.</strong> The app was storing the SSH key in a folder that requires administrator rights to write to, causing an access denied error for standard user accounts. The key is now written to a temporary folder that the app always has permission to use, so the tunnel starts without any manual permission changes needed.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="release" id="v20260612-1815">
+    <div class="release-head">
+      <h2>v20260612.1815</h2>
+      <span class="release-date">June 12, 2026</span>
+    </div>
+
+    <div class="release-group">
       <span class="release-group-label label-new">New</span>
       <ul>
-        <li><strong>Pagination everywhere.</strong> Every table in the app now has 5 / 10 / 50 / 100 rows-per-page controls — including all dashboard panels, the Inventory list, the Users table, Categories, Locations, the Public View item selector, and every Reports tab. Controls match the existing style on the Available to Checkout panel.</li>
-        <li><strong>Smart print on Reports.</strong> The Print button now temporarily expands all paginated tables to show every matching row before sending to the printer, then silently restores your page view when the print dialog closes.</li>
+        <li><strong>Page controls on every table.</strong> You can now choose how many rows to show at a time (5, 10, 50, or 100) on every table in the app, including the dashboard panels, Inventory, Users, Categories, Locations, Public View, and all Reports tabs.</li>
+        <li><strong>Print shows everything.</strong> Clicking Print on a Reports page now automatically shows all rows before opening the print dialog, so nothing gets cut off. Your page view goes back to normal as soon as you are done.</li>
       </ul>
     </div>
 
     <div class="release-group">
       <span class="release-group-label label-improved">Improved</span>
       <ul>
-        <li><strong>Pagination defaults tuned by context.</strong> Dashboard panels default to 5 rows (quick at-a-glance view), Reports default to 50 rows (fewer page turns when reviewing data), and other full-page tables default to 10 rows.</li>
-        <li><strong>Inventory filter and sort work with pagination.</strong> The live search filter and column-sort on the Inventory page both cooperate with the pager — filtering resets to page 1 and shows only matching rows; sorting reorders within the current page view.</li>
-        <li><strong>Report filters and pagination cooperate.</strong> The existing search and filter controls on each Report tab (type, overdue, action, location, etc.) work alongside the new page controls — the filter count in the toolbar reflects total matching rows while the pager shows the current slice.</li>
+        <li><strong>Sensible page size defaults.</strong> Dashboard panels start at 5 rows per page for a quick overview. Reports start at 50 so you see more data with less clicking. Other tables start at 10.</li>
+        <li><strong>Search and sort still work as expected.</strong> Filtering or sorting the Inventory list and Report tables works naturally alongside the new page controls. Searching jumps back to page 1 and only counts matching rows.</li>
       </ul>
     </div>
 
     <div class="release-group">
       <span class="release-group-label label-fixed">Fixed</span>
       <ul>
-        <li><strong>Serveo tunnel no longer fails with "access denied" on the SSH key file.</strong> The previous approach used <code>icacls</code> subprocesses to lock down the private key file, which left stale inherited permissions that caused OpenSSH to reject the key as "too open." The app now sets file permissions directly through the .NET security API, giving only the current account exclusive access — which is what SSH requires.</li>
-        <li><strong>"Restore from Backup" card header is now readable in the light theme.</strong> The warning-yellow text and border on that card were nearly invisible on a white background; they are now rendered in a dark amber that meets contrast requirements.</li>
+        <li><strong>"Restore from Backup" heading is easier to read in the light theme.</strong> The yellow text on that card was hard to see on a white background. It is now a darker color that is easy to read.</li>
       </ul>
     </div>
   </section>

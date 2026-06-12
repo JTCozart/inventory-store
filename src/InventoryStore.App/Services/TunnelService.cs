@@ -29,6 +29,7 @@ public sealed partial class TunnelService : IAsyncDisposable
 
     private Process?                  _cfProcess;
     private Process?                  _sshProcess;
+    private string?                   _sshKeyPath;
     private CancellationTokenSource?  _ltCts;
     private readonly List<Task>       _ltWorkers = new();
     private readonly ILogger<TunnelService> _logger;
@@ -65,6 +66,9 @@ public sealed partial class TunnelService : IAsyncDisposable
         try { _sshProcess?.Kill(); } catch { }
         _sshProcess?.Dispose();
         _sshProcess = null;
+
+        // Delete the temporary key file
+        try { if (_sshKeyPath is not null) { File.Delete(_sshKeyPath); _sshKeyPath = null; } } catch { }
 
         // Cancel localtunnel workers
         _ltCts?.Cancel();
@@ -391,13 +395,14 @@ public sealed partial class TunnelService : IAsyncDisposable
             if (string.IsNullOrWhiteSpace(privateKey))
                 throw new Exception("SSH key not found. Complete the Serveo setup in Settings first.");
 
-            var keyFile = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
-                "InventoryStore", "serveo_key");
-            Directory.CreateDirectory(Path.GetDirectoryName(keyFile)!);
-            await File.WriteAllTextAsync(keyFile, privateKey);
+            // Clean up any leftover key file from a previous run.
+            try { if (_sshKeyPath is not null) File.Delete(_sshKeyPath); } catch { }
 
-            SetOwnerOnlyPermissions(keyFile);
+            // Write to the user temp directory — always writable by the current account
+            // and already has permissions that OpenSSH accepts (no Everyone/Users access).
+            var keyFile = Path.Combine(Path.GetTempPath(), $"serveo_{Guid.NewGuid():N}.key");
+            _sshKeyPath = keyFile;
+            await File.WriteAllTextAsync(keyFile, privateKey);
 
             string sshExe;
             try   { sshExe = FindOpenSshExe("ssh.exe"); }
@@ -530,32 +535,6 @@ public sealed partial class TunnelService : IAsyncDisposable
             return (null, result[7..]);
 
         return (result, outputLog.ToString());
-    }
-
-    private void SetOwnerOnlyPermissions(string keyFile)
-    {
-        // OpenSSH on Windows rejects private keys accessible to more than the owner/SYSTEM.
-        // Build a brand-new FileSecurity with inheritance broken and no pre-existing ACEs,
-        // then grant only the current principal. This is more reliable than icacls subprocesses,
-        // which leave behind explicit ACEs from previous runs or inherited from the directory.
-        try
-        {
-            var fileSec = new System.Security.AccessControl.FileSecurity();
-            fileSec.SetAccessRuleProtection(isProtected: true, preserveInheritance: false);
-
-            var owner = System.Security.Principal.WindowsIdentity.GetCurrent().User!;
-            fileSec.AddAccessRule(new System.Security.AccessControl.FileSystemAccessRule(
-                owner,
-                System.Security.AccessControl.FileSystemRights.FullControl,
-                System.Security.AccessControl.AccessControlType.Allow));
-
-            new FileInfo(keyFile).SetAccessControl(fileSec);
-            _logger.LogInformation("Serveo: key file permissions set to owner-only.");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Serveo: failed to set key file permissions (SSH may reject the key).");
-        }
     }
 
     private static string FindOpenSshExe(string exeName)
