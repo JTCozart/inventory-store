@@ -675,7 +675,7 @@
                             <th class="text-end">Actions</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="cats-tbody">
                         @foreach (var cat in Model.Categories)
                         {
                             <tr>
@@ -710,6 +710,20 @@
                         }
                     </tbody>
                 </table>
+            </div>
+            <div class="d-flex align-items-center justify-content-between px-3 py-2 border-top small text-muted" id="cats-pg-bar">
+                <span id="cats-pg-range"></span>
+                <div class="d-flex align-items-center gap-1">
+                    <select class="form-select form-select-sm py-0" style="width:auto" onchange="pgSz('cats-pg',this.value)">
+                        <option value="5">5 / page</option>
+                        <option value="10" selected>10 / page</option>
+                        <option value="50">50 / page</option>
+                        <option value="100">100 / page</option>
+                    </select>
+                    <button class="btn btn-sm btn-outline-secondary py-0 px-2" id="cats-pg-prev" onclick="pgGo('cats-pg',-1)">&#8249;</button>
+                    <span class="px-1" id="cats-pg-lbl"></span>
+                    <button class="btn btn-sm btn-outline-secondary py-0 px-2" id="cats-pg-next" onclick="pgGo('cats-pg',1)">&#8250;</button>
+                </div>
             </div>
         </div>
     }
@@ -845,7 +859,7 @@
                         </tr>
 
                     </thead>
-                    <tbody>
+                    <tbody id="locs-tbody">
                         @foreach (var loc in Model.Locations)
                         {
                             <tr>
@@ -874,6 +888,20 @@
                         }
                     </tbody>
                 </table>
+            </div>
+            <div class="d-flex align-items-center justify-content-between px-3 py-2 border-top small text-muted" id="locs-pg-bar">
+                <span id="locs-pg-range"></span>
+                <div class="d-flex align-items-center gap-1">
+                    <select class="form-select form-select-sm py-0" style="width:auto" onchange="pgSz('locs-pg',this.value)">
+                        <option value="5">5 / page</option>
+                        <option value="10" selected>10 / page</option>
+                        <option value="50">50 / page</option>
+                        <option value="100">100 / page</option>
+                    </select>
+                    <button class="btn btn-sm btn-outline-secondary py-0 px-2" id="locs-pg-prev" onclick="pgGo('locs-pg',-1)">&#8249;</button>
+                    <span class="px-1" id="locs-pg-lbl"></span>
+                    <button class="btn btn-sm btn-outline-secondary py-0 px-2" id="locs-pg-next" onclick="pgGo('locs-pg',1)">&#8250;</button>
+                </div>
             </div>
         </div>
     }
@@ -1148,7 +1176,7 @@
                                     <th>Qty</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody id="pubview-tbody">
                                 @foreach (var item in Model.AllItems.OrderBy(i => i.Name))
                                 {
                                     <tr>
@@ -1184,6 +1212,20 @@
                                 }
                             </tbody>
                         </table>
+                    </div>
+                    <div class="d-flex align-items-center justify-content-between px-3 py-2 border-top small text-muted" id="pubview-pg-bar">
+                        <span id="pubview-pg-range"></span>
+                        <div class="d-flex align-items-center gap-1">
+                            <select class="form-select form-select-sm py-0" style="width:auto" onchange="pgSz('pubview-pg',this.value)">
+                                <option value="5">5 / page</option>
+                                <option value="10">10 / page</option>
+                                <option value="50" selected>50 / page</option>
+                                <option value="100">100 / page</option>
+                            </select>
+                            <button class="btn btn-sm btn-outline-secondary py-0 px-2" id="pubview-pg-prev" onclick="pgGo('pubview-pg',-1)">&#8249;</button>
+                            <span class="px-1" id="pubview-pg-lbl"></span>
+                            <button class="btn btn-sm btn-outline-secondary py-0 px-2" id="pubview-pg-next" onclick="pgGo('pubview-pg',1)">&#8250;</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1625,6 +1667,13 @@
 }
 
 @section Scripts {
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    if (document.getElementById('cats-tbody'))    pgInit('cats-pg',    'cats-tbody',    10);
+    if (document.getElementById('locs-tbody'))    pgInit('locs-pg',    'locs-tbody',    10);
+    if (document.getElementById('pubview-tbody')) pgInit('pubview-pg', 'pubview-tbody', 50);
+});
+</script>
 @if (Model.Tab == "modules" && Model.ModuleSection == "sds" && Model.IsModuleEnabled("sds"))
 {
 <script>

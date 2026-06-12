@@ -1,0 +1,40 @@
+Type,Name,Quantity,MinimumQuantity,SKU,Location,Category,ExpiryDate,Description,ScanWarning
+Reusable,Pip-Boy 3000 Mark IV,5,2,FO-PIPBOY-3000,Vault 111,Gear,,Wrist-mounted personal information processor,
+Reusable,T-45 Power Armor,3,1,FO-PA-T45,Red Rocket Truck Stop,Power Armor,,"First mass-produced powered armor, standard infantry issue",Requires fusion core to operate
+Reusable,T-60 Power Armor,2,1,FO-PA-T60,The Castle,Power Armor,,Standard issue for Brotherhood of Steel knights,Requires fusion core to operate
+Reusable,X-01 Power Armor,1,1,FO-PA-X01,Sentinel Site Prescott,Power Armor,,Advanced post-war powered armor prototype,Requires fusion core to operate
+Reusable,Laser Musket,8,2,FO-WPN-LMUSKET,Museum of Freedom,Weapons,,Crank-powered laser weapon favored by the Minutemen,
+Reusable,10mm Pistol,15,4,FO-WPN-10MM,Vault 111 Armory,Weapons,,Reliable sidearm chambered for 10mm rounds,
+Reusable,Plasma Rifle,4,1,FO-WPN-PLASMA,The Institute,Weapons,,Fires superheated bolts of plasma,
+Reusable,Fat Man,1,1,FO-WPN-FATMAN,Fort Hagen,Weapons,,Shoulder-mounted tactical nuclear catapult,DANGER - launches Mini Nukes
+Reusable,Combat Knife,20,5,FO-WPN-KNIFE,Diamond City Security,Weapons,,Standard military-issue combat blade,Sharp - handle with care
+Reusable,Power Fist,3,1,FO-WPN-PFIST,Atom Cats Garage,Weapons,,Hydraulic-powered melee gauntlet,
+Reusable,Geiger Counter,6,2,FO-TOOL-GEIGER,Sanctuary Hills,Tools,,Measures ambient radiation levels,
+Reusable,Mr. Handy Unit,2,1,FO-BOT-MRHANDY,Sanctuary Hills,Robots,,General-purpose domestic service robot,
+Reusable,Protectron Unit,2,1,FO-BOT-PROTECTRON,Diamond City,Robots,,Bulky law-enforcement and labor robot,
+Reusable,Vault-Tec Lunchbox,12,3,FO-MISC-LUNCHBOX,Vault 111,Containers,,"Tin lunchbox, often hiding a pre-war surprise",
+Reusable,Tinker's Tool Kit,5,2,FO-TOOL-TINKER,Red Rocket Truck Stop,Tools,,Assorted tools for weapon and armor modding,
+Consumable,Stimpak,120,30,FO-AID-STIMPAK,Vault 111 Medbay,Aid,2027-12-31,Instantly heals a portion of bodily damage,
+Consumable,RadAway,60,15,FO-AID-RADAWAY,Vault 111 Medbay,Aid,2027-09-30,Flushes radiation from the body over time,Medical chem
+Consumable,Rad-X,75,20,FO-AID-RADX,Diamond City Surplus,Aid,2028-01-15,Temporarily boosts radiation resistance,
+Consumable,Mentats,40,10,FO-AID-MENTATS,Goodneighbor,Aid,2027-06-30,Boosts intelligence and perception,Addictive chem
+Consumable,Psycho,25,5,FO-AID-PSYCHO,Combat Zone,Aid,2027-03-31,Combat stimulant that boosts melee damage,Addictive chem
+Consumable,Jet,50,10,FO-AID-JET,Goodneighbor,Aid,2027-05-31,Inhaled stimulant that briefly slows time,Highly addictive chem
+Consumable,Med-X,30,8,FO-AID-MEDX,The Memory Den,Aid,2028-02-28,Painkiller that boosts damage resistance,Addictive chem
+Consumable,Nuka-Cola,200,40,NUK-COLA-001,Red Rocket Truck Stop,Food & Drink,2099-10-23,The taste of the Atomic Age in every bottle,
+Consumable,Nuka-Cola Quantum,18,5,NUK-COLA-QTM,Nuka-World,Food & Drink,2099-10-23,Glowing blue cola with a radioactive kick,Mildly radioactive - glows in the dark
+Consumable,Purified Water,150,40,FO-DRINK-PURE,Sanctuary Hills,Food & Drink,,Clean drinking water free of radiation,
+Consumable,Dirty Water,80,20,FO-DRINK-DIRTY,The Glowing Sea,Food & Drink,,Untreated water scooped from the wasteland,Irradiated - causes rads if consumed
+Consumable,Cram,90,20,FO-FOOD-CRAM,Super Duper Mart,Food & Drink,2077-10-23,Pre-war canned mystery meat,Long past its expiry date
+Consumable,Pork n' Beans,85,20,FO-FOOD-PNB,Super Duper Mart,Food & Drink,2077-10-23,Pre-war canned pork and beans,Long past its expiry date
+Consumable,Sugar Bombs,60,15,FO-FOOD-SUGAR,Drumlin Diner,Food & Drink,2077-10-23,Irradiated crunchy breakfast cereal,Pre-war - mildly irradiated
+Consumable,InstaMash,70,15,FO-FOOD-MASH,Drumlin Diner,Food & Drink,2077-10-23,Just add water for instant potato mash,
+Consumable,Fusion Core,24,6,FO-PWR-CORE,Corvega Assembly Plant,Power Armor,,Portable nuclear battery that powers Power Armor,Radioactive - handle with care
+Consumable,Fusion Cell,500,100,FO-AMMO-FUSION,The Institute,Ammunition,,Energy cell ammunition for laser weapons,
+Consumable,10mm Round,1000,200,FO-AMMO-10MM,Vault 111 Armory,Ammunition,,Standard ammunition for 10mm weapons,
+Consumable,.308 Round,400,80,FO-AMMO-308,The Castle,Ammunition,,Rifle ammunition for hunting and combat,
+Consumable,Mini Nuke,6,2,FO-AMMO-MININUKE,Fort Hagen,Ammunition,,Tactical nuclear ordnance for the Fat Man,DANGER - high-yield radioactive ordnance
+Consumable,Bottlecap,5000,1000,FO-CURR-CAP,Diamond City,Currency,,Standard currency of the Commonwealth wasteland,
+Consumable,Pre-War Money,300,50,FO-CURR-PREWAR,Vault 111,Currency,,"Worthless paper from before the bombs, useful as kindling",
+Consumable,Adhesive,250,60,FO-JUNK-ADHESIVE,Sanctuary Hills Workshop,Junk,,Crafting component rendered from duct tape and glue,
+Consumable,Steel Scrap,800,150,FO-JUNK-STEEL,Sanctuary Hills Workshop,Junk,,Salvaged metal for building and crafting,

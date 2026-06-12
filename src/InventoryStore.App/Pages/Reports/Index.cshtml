@@ -20,7 +20,7 @@
         <a href="/Reports?handler=ExportCsv" class="btn btn-sm btn-outline-success">
             <i class="bi bi-download me-1"></i> Export CSV
         </a>
-        <button class="btn btn-sm btn-outline-secondary" onclick="window.print()">
+        <button class="btn btn-sm btn-outline-secondary" onclick="printReport()">
             <i class="bi bi-printer me-1"></i> Print
         </button>
     </div>
@@ -113,7 +113,7 @@
                         <th>Status</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="stock-tbody">
                     @foreach (var item in Model.StockReport.AllItems)
                     {
                         <tr class="@(item.IsLowStock ? "table-warning" : string.Empty)"
@@ -146,6 +146,20 @@
                     }
                 </tbody>
             </table>
+        </div>
+        <div class="d-flex align-items-center justify-content-between px-3 py-2 border-top small text-muted no-print" id="stock-pg-bar">
+            <span id="stock-pg-range"></span>
+            <div class="d-flex align-items-center gap-1">
+                <select class="form-select form-select-sm py-0" style="width:auto" onchange="pgSz('stock-pg',this.value)">
+                    <option value="5">5 / page</option>
+                    <option value="10">10 / page</option>
+                    <option value="50" selected>50 / page</option>
+                    <option value="100">100 / page</option>
+                </select>
+                <button class="btn btn-sm btn-outline-secondary py-0 px-2" id="stock-pg-prev" onclick="pgGo('stock-pg',-1)">&#8249;</button>
+                <span class="px-1" id="stock-pg-lbl"></span>
+                <button class="btn btn-sm btn-outline-secondary py-0 px-2" id="stock-pg-next" onclick="pgGo('stock-pg',1)">&#8250;</button>
+            </div>
         </div>
     </div>
 }
@@ -195,7 +209,7 @@
                             <th class="text-end">Days Out</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="rco-tbody">
                         @foreach (var row in Model.CheckedOut.Items)
                         {
                             <tr class="@(row.DaysOut > 7 ? "table-warning" : string.Empty)"
@@ -213,6 +227,20 @@
                         }
                     </tbody>
                 </table>
+            </div>
+            <div class="d-flex align-items-center justify-content-between px-3 py-2 border-top small text-muted no-print" id="rco-pg-bar">
+                <span id="rco-pg-range"></span>
+                <div class="d-flex align-items-center gap-1">
+                    <select class="form-select form-select-sm py-0" style="width:auto" onchange="pgSz('rco-pg',this.value)">
+                        <option value="5">5 / page</option>
+                        <option value="10">10 / page</option>
+                        <option value="50" selected>50 / page</option>
+                        <option value="100">100 / page</option>
+                    </select>
+                    <button class="btn btn-sm btn-outline-secondary py-0 px-2" id="rco-pg-prev" onclick="pgGo('rco-pg',-1)">&#8249;</button>
+                    <span class="px-1" id="rco-pg-lbl"></span>
+                    <button class="btn btn-sm btn-outline-secondary py-0 px-2" id="rco-pg-next" onclick="pgGo('rco-pg',1)">&#8250;</button>
+                </div>
             </div>
         </div>
     }
@@ -248,7 +276,7 @@
                     <thead class="table-light">
                         <tr><th>Item</th><th>Location</th><th>Last With</th><th class="d-none d-md-table-cell">Client</th><th class="text-end">Qty</th><th>Date Lost</th></tr>
                     </thead>
-                    <tbody>
+                    <tbody id="rlost-tbody">
                         @foreach (var row in Model.LostItems.Items)
                         {
                             <tr data-search="@row.ItemName @row.LastCheckedOutBy @(row.ClientName ?? "") @(row.ItemLocation ?? "")">
@@ -262,6 +290,20 @@
                         }
                     </tbody>
                 </table>
+            </div>
+            <div class="d-flex align-items-center justify-content-between px-3 py-2 border-top small text-muted no-print" id="rlost-pg-bar">
+                <span id="rlost-pg-range"></span>
+                <div class="d-flex align-items-center gap-1">
+                    <select class="form-select form-select-sm py-0" style="width:auto" onchange="pgSz('rlost-pg',this.value)">
+                        <option value="5">5 / page</option>
+                        <option value="10">10 / page</option>
+                        <option value="50" selected>50 / page</option>
+                        <option value="100">100 / page</option>
+                    </select>
+                    <button class="btn btn-sm btn-outline-secondary py-0 px-2" id="rlost-pg-prev" onclick="pgGo('rlost-pg',-1)">&#8249;</button>
+                    <span class="px-1" id="rlost-pg-lbl"></span>
+                    <button class="btn btn-sm btn-outline-secondary py-0 px-2" id="rlost-pg-next" onclick="pgGo('rlost-pg',1)">&#8250;</button>
+                </div>
             </div>
         </div>
     }
@@ -322,7 +364,7 @@
                         <th class="d-none d-print-table-cell" style="width:160px">Notes</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="rinv-tbody">
                     @foreach (var row in Model.TakeInventory.Items)
                     {
                         <tr data-type="@row.ItemType"
@@ -343,6 +385,20 @@
                 </tbody>
             </table>
         </div>
+        <div class="d-flex align-items-center justify-content-between px-3 py-2 border-top small text-muted no-print" id="rinv-pg-bar">
+            <span id="rinv-pg-range"></span>
+            <div class="d-flex align-items-center gap-1">
+                <select class="form-select form-select-sm py-0" style="width:auto" onchange="pgSz('rinv-pg',this.value)">
+                    <option value="5">5 / page</option>
+                    <option value="10">10 / page</option>
+                    <option value="50" selected>50 / page</option>
+                    <option value="100">100 / page</option>
+                </select>
+                <button class="btn btn-sm btn-outline-secondary py-0 px-2" id="rinv-pg-prev" onclick="pgGo('rinv-pg',-1)">&#8249;</button>
+                <span class="px-1" id="rinv-pg-lbl"></span>
+                <button class="btn btn-sm btn-outline-secondary py-0 px-2" id="rinv-pg-next" onclick="pgGo('rinv-pg',1)">&#8250;</button>
+            </div>
+        </div>
     </div>
     <p class="text-muted small mt-3 no-print" id="f-inv-count-bottom">Total: @Model.TakeInventory.Items.Count() items</p>
 }
@@ -361,7 +417,7 @@
                     <thead class="table-light">
                         <tr><th>Name</th><th>Category</th><th>Location</th><th>SKU</th><th class="text-end">Qty</th><th>Expired</th></tr>
                     </thead>
-                    <tbody>
+                    <tbody id="rexp-tbody">
                         @foreach (var item in Model.ExpiredItems)
                         {
                             <tr class="table-danger">
@@ -375,6 +431,20 @@
                         }
                     </tbody>
                 </table>
+            </div>
+            <div class="d-flex align-items-center justify-content-between px-3 py-2 border-top small text-muted no-print" id="rexp-pg-bar">
+                <span id="rexp-pg-range"></span>
+                <div class="d-flex align-items-center gap-1">
+                    <select class="form-select form-select-sm py-0" style="width:auto" onchange="pgSz('rexp-pg',this.value)">
+                        <option value="5">5 / page</option>
+                        <option value="10">10 / page</option>
+                        <option value="50" selected>50 / page</option>
+                        <option value="100">100 / page</option>
+                    </select>
+                    <button class="btn btn-sm btn-outline-secondary py-0 px-2" id="rexp-pg-prev" onclick="pgGo('rexp-pg',-1)">&#8249;</button>
+                    <span class="px-1" id="rexp-pg-lbl"></span>
+                    <button class="btn btn-sm btn-outline-secondary py-0 px-2" id="rexp-pg-next" onclick="pgGo('rexp-pg',1)">&#8250;</button>
+                </div>
             </div>
         </div>
     }
@@ -392,7 +462,7 @@
                     <thead class="table-light">
                         <tr><th>Name</th><th>Category</th><th>Location</th><th>SKU</th><th class="text-end">Qty</th><th>Expires</th><th>Days Left</th></tr>
                     </thead>
-                    <tbody>
+                    <tbody id="rexpiring-tbody">
                         @foreach (var item in Model.ExpiringItems)
                         {
                             var days = item.ExpiryDate!.Value.DayNumber - expToday.DayNumber;
@@ -408,6 +478,20 @@
                         }
                     </tbody>
                 </table>
+            </div>
+            <div class="d-flex align-items-center justify-content-between px-3 py-2 border-top small text-muted no-print" id="rexpiring-pg-bar">
+                <span id="rexpiring-pg-range"></span>
+                <div class="d-flex align-items-center gap-1">
+                    <select class="form-select form-select-sm py-0" style="width:auto" onchange="pgSz('rexpiring-pg',this.value)">
+                        <option value="5">5 / page</option>
+                        <option value="10">10 / page</option>
+                        <option value="50" selected>50 / page</option>
+                        <option value="100">100 / page</option>
+                    </select>
+                    <button class="btn btn-sm btn-outline-secondary py-0 px-2" id="rexpiring-pg-prev" onclick="pgGo('rexpiring-pg',-1)">&#8249;</button>
+                    <span class="px-1" id="rexpiring-pg-lbl"></span>
+                    <button class="btn btn-sm btn-outline-secondary py-0 px-2" id="rexpiring-pg-next" onclick="pgGo('rexpiring-pg',1)">&#8250;</button>
+                </div>
             </div>
         </div>
     }
@@ -526,7 +610,7 @@
                 <thead class="table-light">
                     <tr><th>Time</th><th>User</th><th>Action</th><th>Details</th></tr>
                 </thead>
-                <tbody>
+                <tbody id="ract-tbody">
                     @foreach (var log in Model.ActivityLogs)
                     {
                         <tr data-action="@log.Action"
@@ -539,6 +623,20 @@
                     }
                 </tbody>
             </table>
+        </div>
+        <div class="d-flex align-items-center justify-content-between px-3 py-2 border-top small text-muted no-print" id="ract-pg-bar">
+            <span id="ract-pg-range"></span>
+            <div class="d-flex align-items-center gap-1">
+                <select class="form-select form-select-sm py-0" style="width:auto" onchange="pgSz('ract-pg',this.value)">
+                    <option value="5">5 / page</option>
+                    <option value="10">10 / page</option>
+                    <option value="50" selected>50 / page</option>
+                    <option value="100">100 / page</option>
+                </select>
+                <button class="btn btn-sm btn-outline-secondary py-0 px-2" id="ract-pg-prev" onclick="pgGo('ract-pg',-1)">&#8249;</button>
+                <span class="px-1" id="ract-pg-lbl"></span>
+                <button class="btn btn-sm btn-outline-secondary py-0 px-2" id="ract-pg-next" onclick="pgGo('ract-pg',1)">&#8250;</button>
+            </div>
         </div>
     </div>
 }
@@ -571,6 +669,16 @@
 }
 
 @section Scripts {
+<script>
+function printReport() {
+    if (typeof pgPrintAll === 'function') pgPrintAll();
+    window.addEventListener('afterprint', function _restore() {
+        window.removeEventListener('afterprint', _restore);
+        if (typeof pgRestoreAll === 'function') pgRestoreAll();
+    });
+    window.print();
+}
+</script>
 @if (Model.Tab == "valuation" && Model.CostEnabled)
 {
 <script>
@@ -651,16 +759,39 @@ function fcEsc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){ret
         } catch {}
     }
 
+    // Init pagers before filters so pgFilter finds them when filters apply on load.
+    [['stock-pg','stock-tbody'],['rco-pg','rco-tbody'],['rlost-pg','rlost-tbody'],
+     ['rinv-pg','rinv-tbody'],['rexp-pg','rexp-tbody'],['rexpiring-pg','rexpiring-tbody'],
+     ['ract-pg','ract-tbody']].forEach(function(pair){
+        if(document.getElementById(pair[1])) pgInit(pair[0],pair[1],50);
+    });
+
     restoreFilters();
 
+    // Map table element IDs → their pager IDs
+    var _tablePagerIds = {
+        'stock-table':    'stock-pg',
+        'checkout-table': 'rco-pg',
+        'lost-table':     'rlost-pg',
+        'inventory-table':'rinv-pg',
+        'activity-table': 'ract-pg'
+    };
+
     function filterTable(tableId, countId, getFilters) {
+        var pgId = _tablePagerIds[tableId];
+        var hasPager = pgId && typeof window.pgFilter === 'function' && document.getElementById(pgId + '-bar');
         var rows = document.querySelectorAll('#' + tableId + ' tbody tr');
         var visible = 0;
-        rows.forEach(function (row) {
-            var show = getFilters(row);
-            row.style.display = show ? '' : 'none';
-            if (show) visible++;
-        });
+        if (hasPager) {
+            window.pgFilter(pgId, getFilters);
+            visible = Array.from(rows).filter(getFilters).length;
+        } else {
+            rows.forEach(function (row) {
+                var show = getFilters(row);
+                row.style.display = show ? '' : 'none';
+                if (show) visible++;
+            });
+        }
         var countEl = document.getElementById(countId);
         if (countEl) {
             countEl.textContent = visible === rows.length
@@ -789,6 +920,7 @@ function fcEsc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){ret
         actAction?.addEventListener('change', applyActivityAndSave);
         applyActivity();
     }
+
 })();
 </script>
 }

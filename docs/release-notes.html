@@ -152,11 +152,42 @@
     <p>What's new, improved, and fixed in each version of Inventory Store.</p>
   </div>
 
+  <section class="release" id="v20260612-1815">
+    <div class="release-head">
+      <h2>v20260612.1815</h2>
+      <span class="release-date">June 12, 2026</span>
+      <span class="release-latest">Latest</span>
+    </div>
+
+    <div class="release-group">
+      <span class="release-group-label label-new">New</span>
+      <ul>
+        <li><strong>Pagination everywhere.</strong> Every table in the app now has 5 / 10 / 50 / 100 rows-per-page controls — including all dashboard panels, the Inventory list, the Users table, Categories, Locations, the Public View item selector, and every Reports tab. Controls match the existing style on the Available to Checkout panel.</li>
+        <li><strong>Smart print on Reports.</strong> The Print button now temporarily expands all paginated tables to show every matching row before sending to the printer, then silently restores your page view when the print dialog closes.</li>
+      </ul>
+    </div>
+
+    <div class="release-group">
+      <span class="release-group-label label-improved">Improved</span>
+      <ul>
+        <li><strong>Pagination defaults tuned by context.</strong> Dashboard panels default to 5 rows (quick at-a-glance view), Reports default to 50 rows (fewer page turns when reviewing data), and other full-page tables default to 10 rows.</li>
+        <li><strong>Inventory filter and sort work with pagination.</strong> The live search filter and column-sort on the Inventory page both cooperate with the pager — filtering resets to page 1 and shows only matching rows; sorting reorders within the current page view.</li>
+        <li><strong>Report filters and pagination cooperate.</strong> The existing search and filter controls on each Report tab (type, overdue, action, location, etc.) work alongside the new page controls — the filter count in the toolbar reflects total matching rows while the pager shows the current slice.</li>
+      </ul>
+    </div>
+
+    <div class="release-group">
+      <span class="release-group-label label-fixed">Fixed</span>
+      <ul>
+        <li><strong>"Restore from Backup" card header is now readable in the light theme.</strong> The warning-yellow text and border on that card were nearly invisible on a white background; they are now rendered in a dark amber that meets contrast requirements.</li>
+      </ul>
+    </div>
+  </section>
+
   <section class="release" id="v20260610-1903">
     <div class="release-head">
       <h2>v20260610.1903</h2>
       <span class="release-date">June 10, 2026</span>
-      <span class="release-latest">Latest</span>
     </div>
 
     <div class="release-group">

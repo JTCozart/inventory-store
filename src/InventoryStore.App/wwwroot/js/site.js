@@ -138,3 +138,73 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 });
+
+// ── Generic client-side row pager ────────────────────────────────────────────
+// pgInit(id, containerId, defaultSize?) — register and draw initial page
+// pgSz(id, size)   — called by page-size <select>
+// pgGo(id, delta)  — called by prev/next buttons
+// pgFilter(id, fn) — update filter function (fn(row)->bool, null=show all) and reset to page 1
+// pgRedraw(id)     — re-render current page without changing filter or page (e.g. after sort)
+(function () {
+    var _pg = {};
+
+    window.pgInit = function (id, containerId, defaultSize) {
+        _pg[id] = { c: containerId, page: 1, size: defaultSize || 10, fn: null };
+        _pgDraw(id);
+    };
+
+    window.pgSz = function (id, v) {
+        var p = _pg[id]; if (!p) return;
+        p.size = parseInt(v) || 10; p.page = 1; _pgDraw(id);
+    };
+
+    window.pgGo = function (id, d) {
+        var p = _pg[id]; if (!p) return;
+        p.page += d; _pgDraw(id);
+    };
+
+    window.pgFilter = function (id, fn) {
+        var p = _pg[id]; if (!p) return;
+        p.fn = fn || null; p.page = 1; _pgDraw(id);
+    };
+
+    window.pgRedraw = function (id) { _pgDraw(id); };
+
+    // Show all filter-matching rows across every pager (for printing), then restore.
+    window.pgPrintAll = function () {
+        Object.keys(_pg).forEach(function (id) {
+            var p = _pg[id];
+            var container = document.getElementById(p.c); if (!container) return;
+            var all = Array.from(container.children);
+            var shown = p.fn ? all.filter(p.fn) : all;
+            all.forEach(function (r) { r.style.display = 'none'; });
+            shown.forEach(function (r) { r.style.display = ''; });
+        });
+    };
+    window.pgRestoreAll = function () {
+        Object.keys(_pg).forEach(function (id) { _pgDraw(id); });
+    };
+
+    function _pgDraw(id) {
+        var p = _pg[id]; if (!p) return;
+        var container = document.getElementById(p.c); if (!container) return;
+        var all   = Array.from(container.children);
+        var shown = p.fn ? all.filter(p.fn) : all;
+        var total = shown.length;
+        var pages = Math.max(1, Math.ceil(total / p.size));
+        p.page = Math.min(Math.max(1, p.page), pages);
+        var s = (p.page - 1) * p.size, e = Math.min(s + p.size, total);
+        all.forEach(function (r) { r.style.display = 'none'; });
+        shown.slice(s, e).forEach(function (r) { r.style.display = ''; });
+        var $range = document.getElementById(id + '-range');
+        var $lbl   = document.getElementById(id + '-lbl');
+        var $prev  = document.getElementById(id + '-prev');
+        var $next  = document.getElementById(id + '-next');
+        var $bar   = document.getElementById(id + '-bar');
+        if ($range) $range.textContent = total > 0 ? ('Showing ' + (s + 1) + '–' + e + ' of ' + total) : '';
+        if ($lbl)   $lbl.textContent   = pages > 1 ? (p.page + ' / ' + pages) : '';
+        if ($prev)  $prev.disabled     = p.page <= 1;
+        if ($next)  $next.disabled     = p.page >= pages;
+        if ($bar)   $bar.style.display = total === 0 ? 'none' : '';
+    }
+}());

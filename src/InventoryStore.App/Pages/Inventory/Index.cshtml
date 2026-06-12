@@ -90,7 +90,7 @@ else
                         <th></th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="inv-tbody">
                     @foreach (var item in Model.Items)
                     {
                         <tr class="inventory-row" data-item-id="@item.Id" style="cursor:pointer"
@@ -193,6 +193,20 @@ else
                     }
                 </tbody>
             </table>
+        </div>
+        <div class="d-flex align-items-center justify-content-between px-3 py-2 border-top small text-muted" id="inv-pg-bar">
+            <span id="inv-pg-range"></span>
+            <div class="d-flex align-items-center gap-1">
+                <select class="form-select form-select-sm py-0" style="width:auto" onchange="pgSz('inv-pg',this.value)">
+                    <option value="5">5 / page</option>
+                    <option value="10" selected>10 / page</option>
+                    <option value="50">50 / page</option>
+                    <option value="100">100 / page</option>
+                </select>
+                <button class="btn btn-sm btn-outline-secondary py-0 px-2" id="inv-pg-prev" onclick="pgGo('inv-pg',-1)">&#8249;</button>
+                <span class="px-1" id="inv-pg-lbl"></span>
+                <button class="btn btn-sm btn-outline-secondary py-0 px-2" id="inv-pg-next" onclick="pgGo('inv-pg',1)">&#8250;</button>
+            </div>
         </div>
     </div>
     <div class="text-muted small mt-2 d-flex align-items-center gap-2">
@@ -498,9 +512,11 @@ initSkuScanner('add-sku', 'add-sku-scan-btn', 'add-sku-scan-cancel', 'add-sku-sc
                 return sortState.asc ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
             });
             rows.forEach(function (row) { tbody.appendChild(row); });
+            if (typeof pgRedraw === 'function') pgRedraw('inv-pg');
         });
     });
 })();
+document.addEventListener('DOMContentLoaded', function() { pgInit('inv-pg', 'inv-tbody', 10); });
 
 function confirmDelete(btn) {
     document.getElementById('deleteItemId').value = btn.dataset.itemId;
@@ -752,10 +768,10 @@ async function saveAddItem() {
         clearTimeout(_filterTimer);
         _filterTimer = setTimeout(function() {
             var q = (val || '').toLowerCase().trim();
-            document.querySelectorAll('.inventory-row').forEach(function(row) {
+            pgFilter('inv-pg', q ? function(row) {
                 var search = (row.dataset.search || row.textContent).toLowerCase();
-                row.style.display = (!q || search.includes(q)) ? '' : 'none';
-            });
+                return search.includes(q);
+            } : null);
         }, 120);
     };
 }());

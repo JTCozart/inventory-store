@@ -117,7 +117,7 @@
                 {
                     <table class="table table-sm mb-0">
                         <thead class="table-light"><tr><th>Item</th><th class="text-end">Avail</th><th class="text-end">Min</th></tr></thead>
-                        <tbody>
+                        <tbody id="ls-tbody">
                             @foreach (var item in Model.Summary.LowStockItems)
                             {
                                 <tr>
@@ -134,6 +134,20 @@
                             }
                         </tbody>
                     </table>
+                    <div class="d-flex align-items-center justify-content-between px-3 py-2 border-top small text-muted" id="ls-pg-bar">
+                        <span id="ls-pg-range"></span>
+                        <div class="d-flex align-items-center gap-1">
+                            <select class="form-select form-select-sm py-0" style="width:auto" onchange="pgSz('ls-pg',this.value)">
+                                <option value="5" selected>5 / page</option>
+                                <option value="10">10 / page</option>
+                                <option value="50">50 / page</option>
+                                <option value="100">100 / page</option>
+                            </select>
+                            <button class="btn btn-sm btn-outline-secondary py-0 px-2" id="ls-pg-prev" onclick="pgGo('ls-pg',-1)">&#8249;</button>
+                            <span class="px-1" id="ls-pg-lbl"></span>
+                            <button class="btn btn-sm btn-outline-secondary py-0 px-2" id="ls-pg-next" onclick="pgGo('ls-pg',1)">&#8250;</button>
+                        </div>
+                    </div>
                 }
             </div>
         </div>
@@ -159,7 +173,7 @@
                 {
                     <table class="table table-sm mb-0">
                         <thead class="table-light"><tr><th>Item</th><th>With</th><th class="d-none d-md-table-cell">Client</th><th class="text-end">Qty</th><th class="text-end">Days <span class="text-muted fw-normal" title="Rows highlighted yellow are overdue (>7 days)" style="font-size:.75rem">ⓘ</span></th></tr></thead>
-                        <tbody>
+                        <tbody id="co-tbody">
                             @foreach (var row in Model.Summary.CheckedOutItems)
                             {
                                 <tr class="@(row.DaysOut > 7 ? "table-warning" : string.Empty)"
@@ -179,6 +193,20 @@
                             }
                         </tbody>
                     </table>
+                    <div class="d-flex align-items-center justify-content-between px-3 py-2 border-top small text-muted" id="co-pg-bar">
+                        <span id="co-pg-range"></span>
+                        <div class="d-flex align-items-center gap-1">
+                            <select class="form-select form-select-sm py-0" style="width:auto" onchange="pgSz('co-pg',this.value)">
+                                <option value="5" selected>5 / page</option>
+                                <option value="10">10 / page</option>
+                                <option value="50">50 / page</option>
+                                <option value="100">100 / page</option>
+                            </select>
+                            <button class="btn btn-sm btn-outline-secondary py-0 px-2" id="co-pg-prev" onclick="pgGo('co-pg',-1)">&#8249;</button>
+                            <span class="px-1" id="co-pg-lbl"></span>
+                            <button class="btn btn-sm btn-outline-secondary py-0 px-2" id="co-pg-next" onclick="pgGo('co-pg',1)">&#8250;</button>
+                        </div>
+                    </div>
                 }
             </div>
         </div>
@@ -204,7 +232,7 @@
                 {
                     <table class="table table-sm mb-0">
                         <thead class="table-light"><tr><th>Item</th><th>Last With</th><th class="text-end">Qty</th><th>Date</th></tr></thead>
-                        <tbody>
+                        <tbody id="lost-tbody">
                             @foreach (var row in Model.Summary.LostItems)
                             {
                                 <tr>
@@ -222,6 +250,20 @@
                             }
                         </tbody>
                     </table>
+                    <div class="d-flex align-items-center justify-content-between px-3 py-2 border-top small text-muted" id="lost-pg-bar">
+                        <span id="lost-pg-range"></span>
+                        <div class="d-flex align-items-center gap-1">
+                            <select class="form-select form-select-sm py-0" style="width:auto" onchange="pgSz('lost-pg',this.value)">
+                                <option value="5" selected>5 / page</option>
+                                <option value="10">10 / page</option>
+                                <option value="50">50 / page</option>
+                                <option value="100">100 / page</option>
+                            </select>
+                            <button class="btn btn-sm btn-outline-secondary py-0 px-2" id="lost-pg-prev" onclick="pgGo('lost-pg',-1)">&#8249;</button>
+                            <span class="px-1" id="lost-pg-lbl"></span>
+                            <button class="btn btn-sm btn-outline-secondary py-0 px-2" id="lost-pg-next" onclick="pgGo('lost-pg',1)">&#8250;</button>
+                        </div>
+                    </div>
                 }
             </div>
         </div>
@@ -241,7 +283,7 @@
                 }
                 else
                 {
-                    <div class="activity-list">
+                    <div class="activity-list" id="act-list">
                         @foreach (var log in Model.Summary.RecentActivity)
                         {
                             <div class="activity-item d-flex align-items-start px-3 py-2 border-bottom">
@@ -253,6 +295,20 @@
                                 </div>
                             </div>
                         }
+                    </div>
+                    <div class="d-flex align-items-center justify-content-between px-3 py-2 border-top small text-muted" id="act-pg-bar">
+                        <span id="act-pg-range"></span>
+                        <div class="d-flex align-items-center gap-1">
+                            <select class="form-select form-select-sm py-0" style="width:auto" onchange="pgSz('act-pg',this.value)">
+                                <option value="5" selected>5 / page</option>
+                                <option value="10">10 / page</option>
+                                <option value="50">50 / page</option>
+                                <option value="100">100 / page</option>
+                            </select>
+                            <button class="btn btn-sm btn-outline-secondary py-0 px-2" id="act-pg-prev" onclick="pgGo('act-pg',-1)">&#8249;</button>
+                            <span class="px-1" id="act-pg-lbl"></span>
+                            <button class="btn btn-sm btn-outline-secondary py-0 px-2" id="act-pg-next" onclick="pgGo('act-pg',1)">&#8250;</button>
+                        </div>
                     </div>
                 }
             </div>
@@ -344,7 +400,13 @@ function showAvailState(state) {
     });
 }
 
-document.addEventListener('DOMContentLoaded', function () { loadAvailableItems(); });
+document.addEventListener('DOMContentLoaded', function () {
+    loadAvailableItems();
+    if (document.getElementById('ls-tbody'))   pgInit('ls-pg',   'ls-tbody',   5);
+    if (document.getElementById('co-tbody'))   pgInit('co-pg',   'co-tbody',   5);
+    if (document.getElementById('lost-tbody')) pgInit('lost-pg', 'lost-tbody', 5);
+    if (document.getElementById('act-list'))   pgInit('act-pg',  'act-list',   5);
+});
 
 function escHtml(s) {
     return s == null ? '' : String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');

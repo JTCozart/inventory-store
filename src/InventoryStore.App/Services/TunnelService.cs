@@ -397,7 +397,7 @@ public sealed partial class TunnelService : IAsyncDisposable
             Directory.CreateDirectory(Path.GetDirectoryName(keyFile)!);
             await File.WriteAllTextAsync(keyFile, privateKey);
 
-            await FixKeyFilePermissionsAsync(keyFile);
+            SetOwnerOnlyPermissions(keyFile);
 
             string sshExe;
             try   { sshExe = FindOpenSshExe("ssh.exe"); }
@@ -532,40 +532,25 @@ public sealed partial class TunnelService : IAsyncDisposable
         return (result, outputLog.ToString());
     }
 
-    private async Task FixKeyFilePermissionsAsync(string keyFile)
+    private void SetOwnerOnlyPermissions(string keyFile)
     {
-        // OpenSSH on Windows requires the private key to be accessible only by the owner.
-        // Use icacls to remove inherited permissions and grant full control to current user only.
+        // OpenSSH on Windows rejects private keys accessible to more than the owner/SYSTEM.
+        // Build a brand-new FileSecurity with inheritance broken and no pre-existing ACEs,
+        // then grant only the current principal. This is more reliable than icacls subprocesses,
+        // which leave behind explicit ACEs from previous runs or inherited from the directory.
         try
         {
-            var icacls = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.System), "icacls.exe");
-            if (!File.Exists(icacls))
-            {
-                _logger.LogWarning("Serveo: icacls.exe not found, skipping key permission fix.");
-                return;
-            }
+            var fileSec = new System.Security.AccessControl.FileSecurity();
+            fileSec.SetAccessRuleProtection(isProtected: true, preserveInheritance: false);
 
-            var username = $"{Environment.UserDomainName}\\{Environment.UserName}";
+            var owner = System.Security.Principal.WindowsIdentity.GetCurrent().User!;
+            fileSec.AddAccessRule(new System.Security.AccessControl.FileSystemAccessRule(
+                owner,
+                System.Security.AccessControl.FileSystemRights.FullControl,
+                System.Security.AccessControl.AccessControlType.Allow));
 
-            // Remove inherited ACEs, then grant current user full control only
-            foreach (var args in new[]
-            {
-                $"\"{keyFile}\" /inheritance:r",
-                $"\"{keyFile}\" /grant:r \"{username}:F\""
-            })
-            {
-                var psi = new ProcessStartInfo(icacls, args)
-                {
-                    UseShellExecute        = false,
-                    CreateNoWindow         = true,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError  = true
-                };
-                using var proc = Process.Start(psi)!;
-                await proc.WaitForExitAsync();
-                _logger.LogInformation("Serveo: icacls {Args} => exit {Code}", args, proc.ExitCode);
-            }
+            new FileInfo(keyFile).SetAccessControl(fileSec);
+            _logger.LogInformation("Serveo: key file permissions set to owner-only.");
         }
         catch (Exception ex)
         {

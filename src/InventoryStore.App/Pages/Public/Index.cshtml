@@ -128,6 +128,21 @@ else
     </div>
   }
 
+  <div id="pub-pager-bar" style="display:flex;align-items:center;justify-content:space-between;padding:.5rem .75rem;font-size:.75rem;color:#64748b;border-top:1px solid #e2e8f0;margin:.75rem;background:#fff;border-radius:6px;">
+    <span id="pub-range"></span>
+    <div style="display:flex;align-items:center;gap:.35rem;">
+      <select id="pub-size" style="font-size:.75rem;padding:.15rem .3rem;border:1px solid #cbd5e1;border-radius:4px;background:#fff;" onchange="pubPgSz(this.value)">
+        <option value="5">5 / page</option>
+        <option value="10">10 / page</option>
+        <option value="50" selected>50 / page</option>
+        <option value="100">100 / page</option>
+      </select>
+      <button id="pub-prev" onclick="pubPgGo(-1)" style="border:1px solid #cbd5e1;background:#fff;border-radius:4px;padding:.1rem .45rem;cursor:pointer;font-size:.9rem;">&#8249;</button>
+      <span id="pub-lbl" style="min-width:40px;text-align:center;"></span>
+      <button id="pub-next" onclick="pubPgGo(1)"  style="border:1px solid #cbd5e1;background:#fff;border-radius:4px;padding:.1rem .45rem;cursor:pointer;font-size:.9rem;">&#8250;</button>
+    </div>
+  </div>
+
   <div class="pub-footer">
     <span class="me-1">@Model.Items.Count() item@(Model.Items.Count() == 1 ? "" : "s")</span>
     &middot;
@@ -139,6 +154,37 @@ else
     </span>
   </div>
 }
+
+<script>
+(function(){
+  var _rows = Array.from(document.querySelectorAll('.item-row'));
+  var _page = 1, _size = 50;
+  if (!_rows.length) {
+    var bar = document.getElementById('pub-pager-bar');
+    if (bar) bar.style.display = 'none';
+    return;
+  }
+  function draw() {
+    var total = _rows.length;
+    var pages = Math.max(1, Math.ceil(total / _size));
+    _page = Math.min(Math.max(1, _page), pages);
+    var s = (_page - 1) * _size, e = Math.min(s + _size, total);
+    _rows.forEach(function(r,i){ r.style.display = (i >= s && i < e) ? '' : 'none'; });
+    // Hide category cards that have no visible items
+    document.querySelectorAll('.section-card').forEach(function(card){
+      var any = Array.from(card.querySelectorAll('.item-row')).some(function(r){ return r.style.display !== 'none'; });
+      card.style.display = any ? '' : 'none';
+    });
+    document.getElementById('pub-range').textContent = 'Showing ' + (s+1) + '–' + e + ' of ' + total;
+    document.getElementById('pub-lbl').textContent = pages > 1 ? (_page + ' / ' + pages) : '';
+    document.getElementById('pub-prev').disabled = _page <= 1;
+    document.getElementById('pub-next').disabled = _page >= pages;
+  }
+  window.pubPgSz = function(v){ _size = parseInt(v)||10; _page = 1; draw(); };
+  window.pubPgGo = function(d){ _page += d; draw(); };
+  draw();
+}());
+</script>
 
 </body>
 </html>

@@ -817,10 +817,17 @@ th.sort-desc::after { content: ' ↓'; color: #0d6efd; }
     --bs-table-border-color: rgba(255, 193, 7, 0.38);
 }
 
-/* ── Light theme: legible warning (amber) buttons ──── */
-/* Bootstrap's default btn-outline-warning is yellow text/border on white, which is very hard to
-   read in light mode (e.g. the SDS "Look up" / "View SDS Info" buttons). Darken the resting state
-   to a readable amber and give it a faint tint, keeping the filled yellow hover. */
+/* ── Light theme: legible warning (amber) ──── */
+/* Bootstrap's warning yellow (#ffc107) is nearly invisible on white backgrounds.
+   Darken text, borders, and outline-buttons to a readable amber in light mode. */
+html:not([data-bs-theme="dark"]) .text-warning {
+    color: var(--bs-warning-text-emphasis) !important;
+}
+
+html:not([data-bs-theme="dark"]) .border-warning {
+    border-color: #c79100 !important;
+}
+
 html:not([data-bs-theme="dark"]) .btn-outline-warning {
     --bs-btn-color:               #8a6116;
     --bs-btn-border-color:        #c79100;
