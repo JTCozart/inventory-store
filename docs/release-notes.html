@@ -179,6 +179,7 @@
     <div class="release-group">
       <span class="release-group-label label-fixed">Fixed</span>
       <ul>
+        <li><strong>Serveo tunnel no longer fails with "access denied" on the SSH key file.</strong> The previous approach used <code>icacls</code> subprocesses to lock down the private key file, which left stale inherited permissions that caused OpenSSH to reject the key as "too open." The app now sets file permissions directly through the .NET security API, giving only the current account exclusive access — which is what SSH requires.</li>
         <li><strong>"Restore from Backup" card header is now readable in the light theme.</strong> The warning-yellow text and border on that card were nearly invisible on a white background; they are now rendered in a dark amber that meets contrast requirements.</li>
       </ul>
     </div>
