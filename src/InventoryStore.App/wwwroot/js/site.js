@@ -177,7 +177,7 @@ document.addEventListener('DOMContentLoaded', function () {
             var container = document.getElementById(p.c); if (!container) return;
             var all = Array.from(container.children);
             var shown = p.fn ? all.filter(p.fn) : all;
-            all.forEach(function (r) { r.style.display = 'none'; });
+            all.forEach(function (r) { r.style.setProperty('display', 'none', 'important'); });
             shown.forEach(function (r) { r.style.display = ''; });
         });
     };
@@ -194,7 +194,10 @@ document.addEventListener('DOMContentLoaded', function () {
         var pages = Math.max(1, Math.ceil(total / p.size));
         p.page = Math.min(Math.max(1, p.page), pages);
         var s = (p.page - 1) * p.size, e = Math.min(s + p.size, total);
-        all.forEach(function (r) { r.style.display = 'none'; });
+        // Use !important when hiding so rows that carry a `display: … !important`
+        // utility class (e.g. Bootstrap's .d-flex) are actually hidden; clear the
+        // inline value when showing so the class/default display takes over again.
+        all.forEach(function (r) { r.style.setProperty('display', 'none', 'important'); });
         shown.slice(s, e).forEach(function (r) { r.style.display = ''; });
         var $range = document.getElementById(id + '-range');
         var $lbl   = document.getElementById(id + '-lbl');
