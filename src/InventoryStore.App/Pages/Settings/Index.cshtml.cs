@@ -20,6 +20,7 @@ public class IndexModel : PageModel
     private readonly ISettingsService _settingsService;
     private readonly TunnelService _tunnel;
     private readonly ICategoryService _categoryService;
+    private readonly ITagService _tagService;
     private readonly IInventoryService _inventoryService;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly InventoryStore.App.Modules.IModuleRegistry _modules;
@@ -30,6 +31,7 @@ public class IndexModel : PageModel
     public string? ErrorMessage { get; private set; }
     public IEnumerable<UserDto> Users { get; private set; } = [];
     public IEnumerable<CategoryDto> Categories { get; private set; } = [];
+    public IEnumerable<TagDto> Tags { get; private set; } = [];
     public IEnumerable<LocationSummaryDto> Locations { get; private set; } = [];
     public string LocalIpAddress { get; private set; } = "localhost";
 
@@ -79,7 +81,7 @@ public class IndexModel : PageModel
     public bool    NtfyOnLogin     { get; private set; }
 
     public IndexModel(IUserAuthService authService, ISettingsService settingsService, TunnelService tunnel,
-        ICategoryService categoryService, IInventoryService inventoryService,
+        ICategoryService categoryService, ITagService tagService, IInventoryService inventoryService,
         IHttpContextAccessor httpContextAccessor, InventoryStore.App.Modules.IModuleRegistry modules,
         ILogger<IndexModel> logger)
     {
@@ -87,6 +89,7 @@ public class IndexModel : PageModel
         _settingsService      = settingsService;
         _tunnel               = tunnel;
         _categoryService      = categoryService;
+        _tagService           = tagService;
         _inventoryService     = inventoryService;
         _httpContextAccessor  = httpContextAccessor;
         _modules              = modules;
@@ -106,6 +109,9 @@ public class IndexModel : PageModel
 
         if (tab == "categories")
             Categories = await _categoryService.GetAllAsync();
+
+        if (tab == "tags")
+            Tags = await _tagService.GetAllAsync();
 
         if (tab == "locations")
             Locations = await _inventoryService.GetAllLocationsAsync();
@@ -433,6 +439,71 @@ public class IndexModel : PageModel
             return RedirectWithMessage("categories", success: "Category deleted.");
         }
         catch (Exception ex) { return RedirectWithMessage("categories", error: ex.Message); }
+    }
+
+    public async Task<IActionResult> OnPostAddTagAsync(string name)
+    {
+        if (!User.IsInRole("Admin") && !User.IsInRole("Manager")) return Forbid();
+        try
+        {
+            await _tagService.CreateAsync(new Application.DTOs.CreateTagDto(name));
+            return RedirectWithMessage("tags", success: $"Tag '{name}' created.");
+        }
+        catch (Exception ex) { return RedirectWithMessage("tags", error: ex.Message); }
+    }
+
+    public async Task<IActionResult> OnPostEditTagAsync(int tagId, string name)
+    {
+        if (!User.IsInRole("Admin") && !User.IsInRole("Manager")) return Forbid();
+        try
+        {
+            await _tagService.UpdateAsync(tagId, new Application.DTOs.UpdateTagDto(name));
+            return RedirectWithMessage("tags", success: "Tag updated.");
+        }
+        catch (Exception ex) { return RedirectWithMessage("tags", error: ex.Message); }
+    }
+
+    public async Task<IActionResult> OnPostDeleteTagAsync(int tagId)
+    {
+        if (!User.IsInRole("Admin") && !User.IsInRole("Manager")) return Forbid();
+        try
+        {
+            await _tagService.DeleteAsync(tagId);
+            return RedirectWithMessage("tags", success: "Tag deleted.");
+        }
+        catch (Exception ex) { return RedirectWithMessage("tags", error: ex.Message); }
+    }
+
+    public async Task<IActionResult> OnGetTagItemsJsonAsync(int tagId)
+    {
+        if (!User.IsInRole("Admin") && !User.IsInRole("Manager")) return Forbid();
+        var all = await _inventoryService.GetAllItemsAsync();
+        var tagged = all
+            .Where(i => i.Tags.Any(t => t.Id == tagId))
+            .Select(i => new { i.Id, i.Name, i.SKU })
+            .ToList();
+        var others = all
+            .Where(i => i.Tags.All(t => t.Id != tagId))
+            .OrderBy(i => i.Name)
+            .Select(i => new { i.Id, i.Name, i.SKU })
+            .ToList();
+        return new JsonResult(new { tagged, others }, InventoryStore.App.Infrastructure.AppJsonOptions.Web);
+    }
+
+    public async Task<IActionResult> OnPostSetItemTagAsync(int itemId, int tagId, bool assigned)
+    {
+        if (!User.IsInRole("Admin") && !User.IsInRole("Manager"))
+            return new JsonResult(new { success = false, error = "Insufficient permissions." }) { StatusCode = 403 };
+        try
+        {
+            var (uid, uname) = User.GetIdentity();
+            await _inventoryService.SetItemTagAsync(itemId, tagId, assigned, uid, uname);
+            return new JsonResult(new { success = true });
+        }
+        catch (Exception ex)
+        {
+            return new JsonResult(new { success = false, error = ex.Message });
+        }
     }
 
     public async Task<IActionResult> OnGetDownloadBackupAsync()

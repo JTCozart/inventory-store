@@ -12,6 +12,7 @@ public class InventoryService : IInventoryService
     private readonly IInventoryRepository _inventoryRepository;
     private readonly IActivityLogRepository _activityLogRepository;
     private readonly ICategoryRepository _categoryRepository;
+    private readonly ITagRepository _tagRepository;
     private readonly ICheckoutRepository _checkoutRepository;
     private readonly IWebhookService _webhooks;
 
@@ -19,12 +20,14 @@ public class InventoryService : IInventoryService
         IInventoryRepository inventoryRepository,
         IActivityLogRepository activityLogRepository,
         ICategoryRepository categoryRepository,
+        ITagRepository tagRepository,
         ICheckoutRepository checkoutRepository,
         IWebhookService webhooks)
     {
         _inventoryRepository  = inventoryRepository;
         _activityLogRepository = activityLogRepository;
         _categoryRepository   = categoryRepository;
+        _tagRepository        = tagRepository;
         _checkoutRepository   = checkoutRepository;
         _webhooks             = webhooks;
     }
@@ -63,6 +66,9 @@ public class InventoryService : IInventoryService
         item.CreatedByUserId    = userId;
         item.CreatedAt       = DateTime.UtcNow;
         item.UpdatedAt       = DateTime.UtcNow;
+
+        if (dto.Tags is { Count: > 0 })
+            item.Tags = await _tagRepository.GetOrCreateByNamesAsync(dto.Tags);
 
         var created = await _inventoryRepository.CreateAsync(item);
 
@@ -106,6 +112,13 @@ public class InventoryService : IInventoryService
         }
 
         await _inventoryRepository.UpdateAsync(item);
+
+        // A null Tags list means "leave tags untouched"; any list (incl. empty) replaces them.
+        if (dto.Tags is not null)
+        {
+            var tags = await _tagRepository.GetOrCreateByNamesAsync(dto.Tags);
+            await _inventoryRepository.SetTagsAsync(id, tags.Select(t => t.Id));
+        }
 
         await _activityLogRepository.CreateAsync(new ActivityLog
         {
@@ -168,6 +181,7 @@ public class InventoryService : IInventoryService
             item.ScanWarning, item.CreatedAt, item.UpdatedAt,
             item.CategoryId, item.Category?.Name, item.ExpiryDate,
             item.IsPublic, item.Category?.Color,
+            item.Tags.OrderBy(t => t.Name).Select(t => new TagDto(t.Id, t.Name)).ToList(),
             item.SelectedMetadata?.ImageUrl, item.SelectedMetadata?.Brand, item.SelectedMetadata?.Category, item.SelectedMetadata?.Description
         );
     }
@@ -236,6 +250,26 @@ public class InventoryService : IInventoryService
         });
     }
 
+    public async Task SetItemTagAsync(int itemId, int tagId, bool assigned, int userId, string username)
+    {
+        var item = await _inventoryRepository.GetByIdAsync(itemId)
+            ?? throw new KeyNotFoundException($"Item {itemId} not found.");
+
+        var ids = item.Tags.Select(t => t.Id).ToHashSet();
+        if (assigned) ids.Add(tagId);
+        else ids.Remove(tagId);
+
+        await _inventoryRepository.SetTagsAsync(itemId, ids);
+
+        var tagName = (await _tagRepository.GetByIdAsync(tagId))?.Name ?? tagId.ToString();
+        await _activityLogRepository.CreateAsync(new ActivityLog
+        {
+            UserId = userId, Username = username,
+            Action = assigned ? "TagAdded" : "TagRemoved", EntityType = "InventoryItem", EntityId = itemId,
+            Details = $"'{item.Name}' tag '{tagName}' {(assigned ? "added" : "removed")}"
+        });
+    }
+
     public async Task ClearLocationAsync(string location, int userId, string username)
     {
         location = location.Trim();
@@ -253,7 +287,7 @@ public class InventoryService : IInventoryService
     {
         var items = await _inventoryRepository.GetAllAsync();
         var sb = new StringBuilder();
-        sb.AppendLine("Type,Name,Quantity,MinimumQuantity,SKU,Location,Category,ExpiryDate,Description,ScanWarning");
+        sb.AppendLine("Type,Name,Quantity,MinimumQuantity,SKU,Location,Category,ExpiryDate,Description,ScanWarning,Tags");
         foreach (var item in items)
         {
             var type = item is ReusableItem ? "Reusable" : "Consumable";
@@ -267,7 +301,8 @@ public class InventoryService : IInventoryService
                 CsvEscape(item.Category?.Name),
                 CsvEscape(item.ExpiryDate?.ToString("yyyy-MM-dd")),
                 CsvEscape(item.Description),
-                CsvEscape(item.ScanWarning)));
+                CsvEscape(item.ScanWarning),
+                CsvEscape(string.Join("; ", item.Tags.Select(t => t.Name)))));
         }
         return sb.ToString();
     }
@@ -309,6 +344,11 @@ public class InventoryService : IInventoryService
             var expiryStr  = cols.Length > 7 ? cols[7].Trim() : null;
             var desc       = cols.Length > 8 ? cols[8].Trim() : null;
             var warning    = cols.Length > 9 ? cols[9].Trim() : null;
+            var tagsStr    = cols.Length > 10 ? cols[10].Trim() : null;
+
+            var tagNames = string.IsNullOrWhiteSpace(tagsStr)
+                ? new List<string>()
+                : tagsStr.Split(new[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
 
             DateOnly? expiryDate = null;
             if (!string.IsNullOrWhiteSpace(expiryStr) && DateOnly.TryParse(expiryStr, out var parsedExpiry))
@@ -364,7 +404,7 @@ public class InventoryService : IInventoryService
                     string.IsNullOrWhiteSpace(sku) ? null : sku,
                     minQty, itemType,
                     string.IsNullOrWhiteSpace(warning) ? null : warning,
-                    categoryId, expiryDate), userId, username);
+                    categoryId, expiryDate, null, tagNames), userId, username);
                 imported++;
             }
             catch (Exception ex)

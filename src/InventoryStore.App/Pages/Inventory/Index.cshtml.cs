@@ -15,6 +15,7 @@ public class IndexModel : PageModel
     private readonly IInventoryService _inventoryService;
     private readonly ICheckoutService _checkoutService;
     private readonly ICategoryService _categoryService;
+    private readonly ITagService _tagService;
     private readonly InventoryStore.App.Modules.IModuleRegistry _modules;
     private readonly InventoryStore.Domain.Interfaces.Repositories.ISafetyDataSheetRepository _sdsRepo;
 
@@ -33,12 +34,14 @@ public class IndexModel : PageModel
     public bool IsFiltered => !string.IsNullOrWhiteSpace(Query) || CategoryFilter.HasValue;
 
     public IndexModel(IInventoryService inventoryService, ICheckoutService checkoutService,
-        ICategoryService categoryService, InventoryStore.App.Modules.IModuleRegistry modules,
+        ICategoryService categoryService, ITagService tagService,
+        InventoryStore.App.Modules.IModuleRegistry modules,
         InventoryStore.Domain.Interfaces.Repositories.ISafetyDataSheetRepository sdsRepo)
     {
         _inventoryService = inventoryService;
         _checkoutService  = checkoutService;
         _categoryService  = categoryService;
+        _tagService       = tagService;
         _modules          = modules;
         _sdsRepo          = sdsRepo;
     }
@@ -90,13 +93,14 @@ public class IndexModel : PageModel
     {
         var categories = (await _categoryService.GetAllAsync()).Select(c => new { c.Id, c.Name, c.Color });
         var locations  = (await _inventoryService.GetAllLocationsAsync()).Select(l => l.Name);
-        return new JsonResult(new { categories, locations }, AppJsonOptions.Web);
+        var tags       = (await _tagService.GetAllAsync()).Select(t => t.Name);
+        return new JsonResult(new { categories, locations, tags }, AppJsonOptions.Web);
     }
 
     public async Task<IActionResult> OnPostCreateItemAsync(
         string name, int quantity, int minimumQuantity, string itemType,
         string? sku, string? location, int? categoryId, string? expiryDate,
-        string? scanWarning, string? description)
+        string? scanWarning, string? description, string? tags = null)
     {
         if (!CanWrite()) return new JsonResult(new { success = false, error = "Insufficient permissions." }) { StatusCode = 403 };
         if (string.IsNullOrWhiteSpace(name))
@@ -111,7 +115,8 @@ public class IndexModel : PageModel
         try
         {
             var created = await _inventoryService.CreateItemAsync(new CreateInventoryItemDto(
-                name, quantity, description, location, sku, minimumQuantity, type, scanWarning, categoryId, expiry
+                name, quantity, description, location, sku, minimumQuantity, type, scanWarning, categoryId, expiry,
+                null, SplitTags(tags)
             ), uid, uname);
             return new JsonResult(new { success = true, id = created.Id });
         }
@@ -137,13 +142,14 @@ public class IndexModel : PageModel
             .Select(c => new { c.Id, c.Name, c.Color });
         var locations = (await _inventoryService.GetAllLocationsAsync())
             .Select(l => l.Name);
-        return new JsonResult(new { success = true, item, categories, locations }, AppJsonOptions.Web);
+        var tags = (await _tagService.GetAllAsync()).Select(t => t.Name);
+        return new JsonResult(new { success = true, item, categories, locations, tags }, AppJsonOptions.Web);
     }
 
     public async Task<IActionResult> OnPostEditItemAsync(
         int id, string name, int quantity, int minimumQuantity,
         string? sku, string? location, int? categoryId, string? expiryDate,
-        string? scanWarning, string? description, int? selectedMetadataId = null)
+        string? scanWarning, string? description, int? selectedMetadataId = null, string? tags = null)
     {
         if (!CanWrite()) return new JsonResult(new { success = false, error = "Insufficient permissions." }) { StatusCode = 403 };
         var (uid, uname) = GetUser();
@@ -153,7 +159,8 @@ public class IndexModel : PageModel
         try
         {
             await _inventoryService.UpdateItemAsync(id, new UpdateInventoryItemDto(
-                name, quantity, description, location, sku, minimumQuantity, scanWarning, categoryId, expiry, selectedMetadataId
+                name, quantity, description, location, sku, minimumQuantity, scanWarning, categoryId, expiry,
+                selectedMetadataId, SplitTags(tags) ?? []
             ), uid, uname);
             return new JsonResult(new { success = true });
         }
@@ -289,4 +296,11 @@ public class IndexModel : PageModel
 
     private (int userId, string username) GetUser() => User.GetIdentity();
     private bool CanWrite() => User.IsInRole("Admin") || User.IsInRole("Manager");
+
+    // Tag fields post a comma-separated string of names; null/absent means "not provided".
+    private static List<string>? SplitTags(string? tags)
+    {
+        if (tags is null) return null;
+        return tags.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+    }
 }

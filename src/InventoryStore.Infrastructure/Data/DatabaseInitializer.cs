@@ -50,6 +50,7 @@ public class DatabaseInitializer
 
         await EnsureCheckoutRecordsTableAsync(conn);
         await EnsureCategoriesTableAsync(conn);
+        await EnsureTagsTablesAsync(conn);
         await AddColumnIfMissingAsync(conn, "InventoryItems", "CategoryId",   "INTEGER NULL");
         await AddColumnIfMissingAsync(conn, "InventoryItems", "ExpiryDate",   "TEXT NULL");
         await AddColumnIfMissingAsync(conn, "InventoryItems", "IsPublic",     "INTEGER NOT NULL DEFAULT 0");
@@ -364,6 +365,27 @@ public class DatabaseInitializer
                 LastStatus TEXT    NULL,
                 LastSentAt TEXT    NULL
             );";
+        await cmd.ExecuteNonQueryAsync();
+    }
+
+    private static async Task EnsureTagsTablesAsync(SqliteConnection conn)
+    {
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+            CREATE TABLE IF NOT EXISTS Tags (
+                Id   INTEGER PRIMARY KEY AUTOINCREMENT,
+                Name TEXT    NOT NULL
+            );
+            CREATE UNIQUE INDEX IF NOT EXISTS IX_Tags_Name ON Tags (Name);
+
+            CREATE TABLE IF NOT EXISTS InventoryItemTags (
+                InventoryItemId INTEGER NOT NULL,
+                TagId           INTEGER NOT NULL,
+                PRIMARY KEY (InventoryItemId, TagId),
+                FOREIGN KEY (InventoryItemId) REFERENCES InventoryItems (Id) ON DELETE CASCADE,
+                FOREIGN KEY (TagId)           REFERENCES Tags (Id)           ON DELETE CASCADE
+            );
+            CREATE INDEX IF NOT EXISTS IX_InventoryItemTags_TagId ON InventoryItemTags (TagId);";
         await cmd.ExecuteNonQueryAsync();
     }
 

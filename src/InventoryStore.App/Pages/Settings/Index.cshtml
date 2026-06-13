@@ -41,6 +41,7 @@
     @if (User.IsInRole("Admin") || User.IsInRole("Manager"))
     {
         <option value="/Settings?tab=categories" selected="@(Model.Tab=="categories")">Categories</option>
+        <option value="/Settings?tab=tags"       selected="@(Model.Tab=="tags")">Tags</option>
         <option value="/Settings?tab=locations"  selected="@(Model.Tab=="locations")">Locations</option>
     }
     <option value="/Settings?tab=info" selected="@(Model.Tab=="info")">App Info</option>
@@ -78,6 +79,9 @@
         <div class="page-sidenav-section">Inventory</div>
         <a href="/Settings?tab=categories" class="nav-link @(Model.Tab == "categories" ? "active" : "")">
             <i class="bi bi-tags"></i> Categories
+        </a>
+        <a href="/Settings?tab=tags" class="nav-link @(Model.Tab == "tags" ? "active" : "")">
+            <i class="bi bi-tag"></i> Tags
         </a>
         <a href="/Settings?tab=locations" class="nav-link @(Model.Tab == "locations" ? "active" : "")">
             <i class="bi bi-geo-alt"></i> Locations
@@ -820,6 +824,160 @@
                                             style="width:28px;height:28px;border-radius:4px;background:@c;border:2px solid transparent;"></button>
                                 }
                             </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+}
+
+@if (Model.Tab == "tags" && (User.IsInRole("Admin") || User.IsInRole("Manager")))
+{
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0">Tags</h5>
+        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addTagModal">
+            <i class="bi bi-plus-lg me-1"></i> Add Tag
+        </button>
+    </div>
+
+    @if (!Model.Tags.Any())
+    {
+        <div class="text-center py-5 text-muted">
+            <i class="bi bi-tag display-4"></i>
+            <p class="mt-2">No tags yet. Add one, or create tags inline while editing an item.</p>
+        </div>
+    }
+    else
+    {
+        <div class="card">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Tag</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tags-tbody">
+                        @foreach (var tag in Model.Tags)
+                        {
+                            var color = InventoryStore.App.Utilities.TagColors.For(tag.Name);
+                            var dark = InventoryStore.App.Utilities.TagColors.NeedsDarkText(tag.Name);
+                            <tr>
+                                <td>
+                                    <span class="badge rounded-pill @(dark ? "text-dark" : "")" style="background:@color">@tag.Name</span>
+                                </td>
+                                <td class="text-end">
+                                    <button class="btn btn-sm btn-outline-primary me-1"
+                                            onclick="openManageTagModal(@tag.Id, '@tag.Name.Replace("'","\\'")')"
+                                            title="Manage items">
+                                        <i class="bi bi-list-ul"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-secondary me-1"
+                                            onclick="openEditTagModal(@tag.Id, '@tag.Name.Replace("'","\\'")')"
+                                            title="Rename">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <form method="post" asp-page-handler="DeleteTag" class="d-inline"
+                                          onsubmit="return confirm('Delete tag \'@tag.Name\'? It will be removed from all items.')">
+                                        <input type="hidden" name="tagId" value="@tag.Id" />
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <div class="d-flex align-items-center justify-content-between px-3 py-2 border-top small text-muted" id="tags-pg-bar">
+                <span id="tags-pg-range"></span>
+                <div class="d-flex align-items-center gap-1">
+                    <select class="form-select form-select-sm py-0" style="width:auto" onchange="pgSz('tags-pg',this.value)">
+                        <option value="5">5 / page</option>
+                        <option value="10" selected>10 / page</option>
+                        <option value="50">50 / page</option>
+                        <option value="100">100 / page</option>
+                    </select>
+                    <button class="btn btn-sm btn-outline-secondary py-0 px-2" id="tags-pg-prev" onclick="pgGo('tags-pg',-1)">&#8249;</button>
+                    <span class="px-1" id="tags-pg-lbl"></span>
+                    <button class="btn btn-sm btn-outline-secondary py-0 px-2" id="tags-pg-next" onclick="pgGo('tags-pg',1)">&#8250;</button>
+                </div>
+            </div>
+        </div>
+    }
+
+    <div class="modal fade" id="manageTagModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Items tagged <span id="mgr-tag-name"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="mgr-tag-loading" class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status"></div>
+                    </div>
+                    <div id="mgr-tag-content" class="d-none">
+                        <h6 class="fw-semibold mb-2">Items with this tag</h6>
+                        <div id="mgr-tag-in-list" class="mb-4"></div>
+                        <h6 class="fw-semibold mb-2">Add this tag to an item</h6>
+                        <div class="d-flex gap-2">
+                            <select id="mgr-tag-add-select" class="form-select form-select-sm"></select>
+                            <button type="button" class="btn btn-sm btn-primary flex-shrink-0" onclick="mgrTagAddItem()">
+                                <i class="bi bi-plus-lg me-1"></i>Add
+                            </button>
+                        </div>
+                        <div id="mgr-tag-error" class="text-danger small mt-2 d-none"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="addTagModal" tabindex="-1">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add Tag</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="post" asp-page-handler="AddTag">
+                    <div class="modal-body">
+                        <div class="mb-1">
+                            <label class="form-label">Name <span class="text-danger">*</span></label>
+                            <input name="name" class="form-control" required maxlength="100" />
+                        </div>
+                        <div class="form-text">Tags are coloured automatically from their name.</div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Create</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="editTagModal" tabindex="-1">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Rename Tag</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="post" asp-page-handler="EditTag">
+                    <input type="hidden" name="tagId" id="editTagId" />
+                    <div class="modal-body">
+                        <div class="mb-1">
+                            <label class="form-label">Name <span class="text-danger">*</span></label>
+                            <input name="name" id="editTagName" class="form-control" required maxlength="100" />
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -1672,6 +1830,7 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     if (document.getElementById('cats-tbody'))    pgInit('cats-pg',    'cats-tbody',    10);
+    if (document.getElementById('tags-tbody'))    pgInit('tags-pg',    'tags-tbody',    10);
     if (document.getElementById('locs-tbody'))    pgInit('locs-pg',    'locs-tbody',    10);
     if (document.getElementById('pubview-tbody')) pgInit('pubview-pg', 'pubview-tbody', 50);
 });
@@ -2233,6 +2392,96 @@ function selectSwatch(containerId, inputId, color) {
     initSwatches('addCatSwatches', 'addCatColor');
     initSwatches('editCatSwatches', 'editCatColor');
 })();
+
+// ── Tag manager ───────────────────────────────────────────────────────────────
+var _mgrTagId = null;
+var _mgrTagModal = null;
+
+function openEditTagModal(id, name) {
+    document.getElementById('editTagId').value = id;
+    document.getElementById('editTagName').value = name;
+    new bootstrap.Modal(document.getElementById('editTagModal')).show();
+}
+
+async function openManageTagModal(id, name) {
+    _mgrTagId = id;
+    document.getElementById('mgr-tag-name').textContent = name;
+    document.getElementById('mgr-tag-loading').classList.remove('d-none');
+    document.getElementById('mgr-tag-content').classList.add('d-none');
+    document.getElementById('mgr-tag-error').classList.add('d-none');
+
+    _mgrTagModal = _mgrTagModal || new bootstrap.Modal(document.getElementById('manageTagModal'));
+    _mgrTagModal.show();
+    await mgrTagLoad();
+}
+
+async function mgrTagLoad() {
+    try {
+        var res = await fetch('/Settings?handler=TagItemsJson&tagId=' + _mgrTagId);
+        var data = await res.json();
+        renderMgrTagInList(data.tagged);
+        renderMgrTagOthers(data.others);
+        document.getElementById('mgr-tag-loading').classList.add('d-none');
+        document.getElementById('mgr-tag-content').classList.remove('d-none');
+    } catch {
+        document.getElementById('mgr-tag-loading').classList.add('d-none');
+        document.getElementById('mgr-tag-error').textContent = 'Failed to load items.';
+        document.getElementById('mgr-tag-error').classList.remove('d-none');
+    }
+}
+
+function renderMgrTagInList(items) {
+    var el = document.getElementById('mgr-tag-in-list');
+    if (!items.length) {
+        el.innerHTML = '<p class="text-muted small">No items have this tag.</p>';
+        return;
+    }
+    el.innerHTML = items.map(function (i) {
+        return '<div class="d-flex justify-content-between align-items-center border rounded px-3 py-2 mb-1">' +
+            '<div><span class="fw-semibold">' + escHtml(i.name) + '</span>' +
+            (i.sku ? '<span class="text-muted small ms-2">' + escHtml(i.sku) + '</span>' : '') + '</div>' +
+            '<button class="btn btn-sm btn-outline-danger" onclick="mgrTagSetItem(' + i.id + ', false)">Remove</button>' +
+            '</div>';
+    }).join('');
+}
+
+function renderMgrTagOthers(items) {
+    var sel = document.getElementById('mgr-tag-add-select');
+    sel.innerHTML = items.length
+        ? items.map(function (i) {
+            return '<option value="' + i.id + '">' + escHtml(i.name) + (i.sku ? ' (' + escHtml(i.sku) + ')' : '') + '</option>';
+          }).join('')
+        : '<option value="">All items already have this tag</option>';
+    sel.disabled = !items.length;
+}
+
+async function mgrTagAddItem() {
+    var sel = document.getElementById('mgr-tag-add-select');
+    if (!sel.value) return;
+    await mgrTagSetItem(parseInt(sel.value), true);
+}
+
+async function mgrTagSetItem(itemId, assigned) {
+    document.getElementById('mgr-tag-error').classList.add('d-none');
+    var token = document.getElementById('af-token').value;
+    try {
+        var res = await fetch('/Settings?handler=SetItemTag', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'RequestVerificationToken': token },
+            body: new URLSearchParams({ itemId: itemId, tagId: _mgrTagId, assigned: assigned, __RequestVerificationToken: token }).toString()
+        });
+        var data = await res.json();
+        if (data.success) {
+            await mgrTagLoad();
+        } else {
+            document.getElementById('mgr-tag-error').textContent = data.error || 'Action failed.';
+            document.getElementById('mgr-tag-error').classList.remove('d-none');
+        }
+    } catch {
+        document.getElementById('mgr-tag-error').textContent = 'Network error.';
+        document.getElementById('mgr-tag-error').classList.remove('d-none');
+    }
+}
 </script>
 
 <script>

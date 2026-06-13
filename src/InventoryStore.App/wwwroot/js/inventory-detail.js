@@ -5,6 +5,7 @@ let _needsReload = false;
 let _detailModal = null;
 let _editModal = null;
 let _editItemId = null;
+let _editTagInput = null;
 let _canWrite = false;
 let _currentItemData = null;
 let _currentSdsRows = [];
@@ -162,6 +163,18 @@ function populateView(s) {
     } else {
         expDt.classList.add('d-none');
         expDd.classList.add('d-none');
+    }
+
+    // Tags — coloured pills; hide the whole section when the item has none.
+    const tagsBlock = document.getElementById('modal-tags-block');
+    const tagsEl    = document.getElementById('modal-detail-tags');
+    if (tagsBlock && tagsEl) {
+        if (s.tags && s.tags.length) {
+            tagsEl.innerHTML = s.tags.map(t => window.tagPillHtml(t.name)).join('');
+            tagsBlock.classList.remove('d-none');
+        } else {
+            tagsBlock.classList.add('d-none');
+        }
     }
 
     const descBlock = document.getElementById('modal-desc-block');
@@ -605,6 +618,7 @@ function populateEditForm(data) {
         ).join('');
 
     initEditCategoryWidget();
+    _editTagInput = initTagInput('edit-tags', data.tags || [], item.tags || []);
     setupEditSds(item);
     setupEditCost(item);
 }
@@ -724,6 +738,7 @@ async function saveEditItem() {
                 scanWarning:       document.getElementById('edit-scan-warning').value.trim(),
                 description:       document.getElementById('edit-description').value.trim(),
                 selectedMetadataId: document.getElementById('edit-metadata-id').value,
+                tags:              _editTagInput ? _editTagInput.getTags().join(',') : '',
                 __RequestVerificationToken: token
             }).toString()
         });

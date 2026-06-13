@@ -42,11 +42,20 @@ public class ClientService : IClientService
 
     public async Task<ClientDto> QuickCreateAsync(string name)
     {
-        var parts = name.Trim().Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
+        var parts     = name.Trim().Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
+        var firstName = parts[0];
+        var lastName  = parts.Length > 1 ? parts[1] : null;
+
+        // Reuse an existing client when the name matches (case-insensitive) so that
+        // "bob", "Bob" and "BOB" all link to the same client instead of duplicating.
+        var existing = await _repo.GetByNameAsync(firstName, lastName);
+        if (existing is not null)
+            return Map(existing);
+
         var client = new Client
         {
-            FirstName = parts[0],
-            LastName  = parts.Length > 1 ? parts[1] : null,
+            FirstName = firstName,
+            LastName  = lastName,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };

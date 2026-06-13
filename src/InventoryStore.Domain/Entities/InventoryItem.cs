@@ -13,6 +13,7 @@ public abstract class InventoryItem
     public DateOnly? ExpiryDate { get; set; }
     public int? CategoryId { get; set; }
     public Category? Category { get; set; }
+    public ICollection<Tag> Tags { get; set; } = new List<Tag>();
     public bool IsPublic { get; set; }
     public bool IsMetadataMatched { get; set; }
     public int? SelectedMetadataId { get; set; }

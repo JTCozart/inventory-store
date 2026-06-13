@@ -33,6 +33,7 @@ public record ItemStatusDto(
     DateOnly? ExpiryDate = null,
     string? CategoryName = null,
     string? CategoryColor = null,
+    IEnumerable<TagDto>? Tags = null,
     string? MetadataImageUrl = null,
     string? MetadataBrand = null,
     string? MetadataCategory = null,

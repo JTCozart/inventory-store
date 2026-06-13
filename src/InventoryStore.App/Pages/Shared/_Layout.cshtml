@@ -217,6 +217,10 @@ else
                   </dl>
                 </div>
               </div>
+              <div id="modal-tags-block" class="mb-3 d-none">
+                <div class="text-muted text-uppercase small fw-semibold mb-1">Tags</div>
+                <div id="modal-detail-tags" class="d-flex flex-wrap gap-1"></div>
+              </div>
               <div id="modal-desc-block" class="mb-3 d-none">
                 <div class="text-muted text-uppercase small fw-semibold mb-1">Description</div>
                 <div id="modal-detail-desc"></div>
@@ -289,6 +293,7 @@ else
         </div>
       </div>
     </div>
+    <script src="~/js/tag-input.js"></script>
     <script src="~/js/inventory-detail.js"></script>
 
     <!-- Edit item modal -->
@@ -323,7 +328,8 @@ else
                 </div>
               </div>
 
-              <h6 class="text-uppercase text-muted small fw-semibold mb-2 mt-3">Identification</h6>
+              <hr class="my-3">
+              <h6 class="text-uppercase text-muted small fw-semibold mb-2">Identification</h6>
               <div class="row g-3 mb-2">
                 <div class="col-md-6">
                   <label class="form-label">SKU / Barcode</label>
@@ -366,9 +372,14 @@ else
                     <div id="edit-new-cat-error" class="text-danger small mt-1 d-none"></div>
                   </div>
                 </div>
+                <div class="col-12">
+                  <label class="form-label">Tags <span class="text-muted small">(type to search, Enter to add)</span></label>
+                  <div id="edit-tags"></div>
+                </div>
               </div>
 
-              <h6 class="text-uppercase text-muted small fw-semibold mb-2 mt-3">Details</h6>
+              <hr class="my-3">
+              <h6 class="text-uppercase text-muted small fw-semibold mb-2">Details</h6>
               <div class="row g-3">
                 <div class="col-md-6" id="edit-expiry-col">
                   <label class="form-label">Expiry Date <span class="text-muted small">(optional)</span></label>

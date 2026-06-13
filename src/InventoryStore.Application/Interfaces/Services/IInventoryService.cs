@@ -18,6 +18,7 @@ public interface IInventoryService
     Task ClearLocationAsync(string location, int userId, string username);
     Task SetItemLocationAsync(int itemId, string? location, int userId, string username);
     Task SetItemCategoryAsync(int itemId, int? categoryId, int userId, string username);
+    Task SetItemTagAsync(int itemId, int tagId, bool assigned, int userId, string username);
     Task<string> ExportToCsvAsync();
     Task<(int Imported, int Failed, IReadOnlyList<string> Errors)> ImportFromCsvAsync(Stream csvStream, int userId, string username);
     Task<InventoryItemDto> ConvertItemTypeAsync(int id, int userId, string username);

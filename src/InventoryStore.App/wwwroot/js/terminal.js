@@ -109,9 +109,14 @@
             var avail = r.availableQuantity > 0
                 ? '<span class="badge bg-success ms-2">' + r.availableQuantity + ' avail</span>'
                 : '<span class="badge bg-secondary ms-2">0 avail</span>';
+            var tags = (r.tags && r.tags.length && window.tagPillHtml)
+                ? '<div class="d-flex flex-wrap gap-1 mt-1">' +
+                    r.tags.map(function (t) { return window.tagPillHtml(t); }).join('') + '</div>'
+                : '';
             return '<button class="btn btn-outline-secondary term-btn text-start" onclick="termPick(' + r.id + ')">' +
                 '<span class="fw-semibold">' + esc(r.name) + '</span>' + avail +
                 (r.location ? '<span class="text-muted ms-2">' + esc(r.location) + '</span>' : '') +
+                tags +
                 '</button>';
         }).join('');
         $('term-picker').classList.remove('d-none');

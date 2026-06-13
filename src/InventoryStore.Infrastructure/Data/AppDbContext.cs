@@ -9,6 +9,7 @@ public class AppDbContext : DbContext
 
     public DbSet<InventoryItem> InventoryItems => Set<InventoryItem>();
     public DbSet<Category> Categories => Set<Category>();
+    public DbSet<Tag> Tags => Set<Tag>();
     public DbSet<User> Users => Set<User>();
     public DbSet<ActivityLog> ActivityLogs => Set<ActivityLog>();
     public DbSet<AppSetting> AppSettings => Set<AppSetting>();
@@ -30,6 +31,13 @@ public class AppDbContext : DbContext
             e.HasIndex(c => c.Name).IsUnique();
         });
 
+        modelBuilder.Entity<Tag>(e =>
+        {
+            e.HasKey(t => t.Id);
+            e.Property(t => t.Name).IsRequired().HasMaxLength(100);
+            e.HasIndex(t => t.Name).IsUnique();
+        });
+
         modelBuilder.Entity<InventoryItem>(e =>
         {
             e.HasKey(i => i.Id);
@@ -48,6 +56,13 @@ public class AppDbContext : DbContext
              .WithMany()
              .HasForeignKey(i => i.SelectedMetadataId)
              .OnDelete(DeleteBehavior.SetNull);
+
+            e.HasMany(i => i.Tags)
+             .WithMany()
+             .UsingEntity(
+                "InventoryItemTags",
+                l => l.HasOne(typeof(Tag)).WithMany().HasForeignKey("TagId").OnDelete(DeleteBehavior.Cascade),
+                r => r.HasOne(typeof(InventoryItem)).WithMany().HasForeignKey("InventoryItemId").OnDelete(DeleteBehavior.Cascade));
 
             // Use the existing ItemType int column as the TPH discriminator.
             // 0 = ConsumableItem, 1 = ReusableItem — matches the ItemType enum values.

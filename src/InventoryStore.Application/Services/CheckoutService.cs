@@ -360,6 +360,7 @@ public class CheckoutService : ICheckoutService
             active.Select(r => MapRecord(r, item.Name)),
             lostRecords.Select(r => MapRecord(r, item.Name)),
             item.ExpiryDate, item.Category?.Name, item.Category?.Color,
+            item.Tags.OrderBy(t => t.Name).Select(t => new TagDto(t.Id, t.Name)).ToList(),
             item.SelectedMetadata?.ImageUrl, item.SelectedMetadata?.Brand, item.SelectedMetadata?.Category, item.SelectedMetadata?.Description
         );
     }

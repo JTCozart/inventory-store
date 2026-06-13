@@ -28,6 +28,16 @@ public class ClientRepository : IClientRepository
             .ToListAsync();
     }
 
+    public async Task<Client?> GetByNameAsync(string firstName, string? lastName)
+    {
+        var first = firstName.ToLower();
+        var last  = lastName?.ToLower();
+        return await _context.Clients.FirstOrDefaultAsync(c =>
+            c.FirstName.ToLower() == first
+            && ((last == null && c.LastName == null)
+                || (c.LastName != null && c.LastName.ToLower() == last)));
+    }
+
     public async Task<Client> CreateAsync(Client client)
     {
         _context.Clients.Add(client);

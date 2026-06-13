@@ -18,6 +18,7 @@ public class InventoryRepository : IInventoryRepository
         await _context.InventoryItems
             .Include(i => i.Category)
             .Include(i => i.SelectedMetadata)
+            .Include(i => i.Tags)
             .OrderBy(i => i.Name)
             .ToListAsync();
 
@@ -25,6 +26,7 @@ public class InventoryRepository : IInventoryRepository
         await _context.InventoryItems
             .Include(i => i.Category)
             .Include(i => i.SelectedMetadata)
+            .Include(i => i.Tags)
             .FirstOrDefaultAsync(i => i.Id == id);
 
     public async Task<IEnumerable<InventoryItem>> SearchAsync(string query)
@@ -33,18 +35,24 @@ public class InventoryRepository : IInventoryRepository
         return await _context.InventoryItems
             .Include(i => i.Category)
             .Include(i => i.SelectedMetadata)
+            .Include(i => i.Tags)
             .Where(i => i.Name.ToLower().Contains(lower)
                      || (i.SKU != null && i.SKU.ToLower().Contains(lower))
                      || (i.Location != null && i.Location.ToLower().Contains(lower))
                      || (i.Description != null && i.Description.ToLower().Contains(lower))
-                     || (i.Category != null && i.Category.Name.ToLower().Contains(lower)))
+                     || (i.Category != null && i.Category.Name.ToLower().Contains(lower))
+                     || i.Tags.Any(t => t.Name.ToLower().Contains(lower)))
             .OrderBy(i => i.Name)
             .ToListAsync();
     }
 
     public async Task<IEnumerable<InventoryItem>> GetLowStockAsync()
     {
-        var all = await _context.InventoryItems.Include(i => i.Category).Include(i => i.SelectedMetadata).ToListAsync();
+        var all = await _context.InventoryItems
+            .Include(i => i.Category)
+            .Include(i => i.SelectedMetadata)
+            .Include(i => i.Tags)
+            .ToListAsync();
         return all
             .Where(i => i.IsLowStock)
             .OrderBy(i => i.AvailableQuantity);
@@ -54,6 +62,7 @@ public class InventoryRepository : IInventoryRepository
         await _context.InventoryItems
             .Include(i => i.Category)
             .Include(i => i.SelectedMetadata)
+            .Include(i => i.Tags)
             .Where(i => i.IsPublic)
             .OrderBy(i => i.Name)
             .ToListAsync();
@@ -102,6 +111,23 @@ public class InventoryRepository : IInventoryRepository
         await _context.InventoryItems
             .Where(i => i.Location == from)
             .ExecuteUpdateAsync(s => s.SetProperty(i => i.Location, to));
+    }
+
+    public async Task SetTagsAsync(int itemId, IEnumerable<int> tagIds)
+    {
+        var item = await _context.InventoryItems
+            .Include(i => i.Tags)
+            .FirstOrDefaultAsync(i => i.Id == itemId);
+        if (item is null) return;
+
+        var ids = tagIds.Distinct().ToHashSet();
+        item.Tags.Clear();
+        if (ids.Count > 0)
+        {
+            var tags = await _context.Tags.Where(t => ids.Contains(t.Id)).ToListAsync();
+            foreach (var t in tags) item.Tags.Add(t);
+        }
+        await _context.SaveChangesAsync();
     }
 
     public async Task ConvertTypeAsync(int id, int newTypeValue)

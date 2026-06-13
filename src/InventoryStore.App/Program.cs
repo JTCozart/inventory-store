@@ -944,7 +944,7 @@ internal class Program
             {
                 if (string.IsNullOrWhiteSpace(q)) return Results.Ok(Array.Empty<object>());
                 var results = await svc.SearchItemsAsync(q);
-                return Results.Ok(results.Select(i => new { i.Id, i.Name, i.Location, i.SKU, i.ItemType, i.AvailableQuantity, i.CategoryName, i.CategoryColor }));
+                return Results.Ok(results.Select(i => new { i.Id, i.Name, i.Location, i.SKU, i.ItemType, i.AvailableQuantity, i.CategoryName, i.CategoryColor, Tags = i.Tags.Select(t => t.Name) }));
             });
 
             endpoints.MapGet("/api/inventory/available", [Authorize] async (IInventoryService svc) =>
