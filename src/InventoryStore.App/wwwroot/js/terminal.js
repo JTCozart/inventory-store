@@ -335,8 +335,10 @@
     // ── Camera scanning ───────────────────────────────────────────────
     window.termStartScan = function () {
         if (!window.isSecureContext) { showAlert('Camera needs HTTPS. Type the SKU instead.', 'warning'); return; }
+        // The scan button stays visible at all times, so guard against starting a second
+        // camera session if one is already running.
+        if (zxingReader) return;
         $('term-scan-wrap').classList.remove('d-none');
-        $('term-scan-btn').classList.add('d-none');
         var hints = new Map();
         hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
             ZXing.BarcodeFormat.UPC_A, ZXing.BarcodeFormat.UPC_E,
@@ -351,19 +353,19 @@
                 tmp.getTracks().forEach(function (t) { t.stop(); });
                 return zxingReader.decodeFromVideoDevice(deviceId, videoEl, function (result) {
                     if (result) {
-                        termStopScan(false);
+                        termStopScan();
                         $('term-search-input').value = result.getText();
                         lookupSku(result.getText());
                     }
                 });
             })
             .catch(function (err) {
-                termStopScan(true);
+                termStopScan();
                 showAlert('Camera unavailable: ' + (err.message || err), 'warning');
             });
     };
 
-    window.termStopScan = function (showBtn) {
+    window.termStopScan = function () {
         if (zxingReader) {
             try { zxingReader.stopContinuousDecode(); } catch (e) {}
             try { zxingReader.reset(); } catch (e) {}
@@ -373,8 +375,9 @@
             videoEl.srcObject.getTracks().forEach(function (t) { t.stop(); });
             videoEl.srcObject = null;
         }
+        // The green scan button lives next to the search box and is always available,
+        // so we only need to close the live-camera card here.
         $('term-scan-wrap').classList.add('d-none');
-        if (showBtn !== false) $('term-scan-btn').classList.remove('d-none');
     };
 
     // ── Theme toggle ──────────────────────────────────────────────────

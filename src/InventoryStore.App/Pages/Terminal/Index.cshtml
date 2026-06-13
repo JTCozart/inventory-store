@@ -72,11 +72,9 @@
             <div class="card-body">
                 <div class="d-flex gap-2">
                     <input type="text" id="term-search-input" class="form-control term-input" placeholder="Scan or type SKU or name…" autocomplete="off" autofocus />
-                    <button class="btn btn-primary term-btn px-4" onclick="termSearch()"><i class="bi bi-search"></i></button>
+                    <button class="btn btn-success term-btn px-4" id="term-scan-btn" onclick="termStartScan()" title="Scan with camera"><i class="bi bi-camera"></i></button>
+                    <button class="btn btn-primary term-btn px-4" onclick="termSearch()" title="Search"><i class="bi bi-search"></i></button>
                 </div>
-                <button class="btn btn-success term-btn w-100 mt-2" id="term-scan-btn" onclick="termStartScan()">
-                    <i class="bi bi-camera me-1"></i> Scan with camera
-                </button>
             </div>
         </div>
 
@@ -84,7 +82,7 @@
         <div id="term-scan-wrap" class="card term-card shadow-sm mb-3 d-none">
             <div class="card-body">
                 <video id="term-scan-video" autoplay muted playsinline></video>
-                <button class="btn btn-danger term-btn w-100 mt-2" onclick="termStopScan(true)">
+                <button class="btn btn-danger term-btn w-100 mt-2" onclick="termStopScan()">
                     <i class="bi bi-stop-circle me-1"></i> Stop camera
                 </button>
             </div>
