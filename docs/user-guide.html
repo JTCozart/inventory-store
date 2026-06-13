@@ -224,6 +224,7 @@
       <li><a href="#inventory-page">Inventory Page</a></li>
       <li><a href="#item-types">Item Types</a></li>
       <li><a href="#categories">Categories</a></li>
+      <li><a href="#tags">Tags</a></li>
       <li><a href="#locations">Locations</a></li>
       <li><a href="#adding-items">Adding Items</a></li>
       <li><a href="#editing-items">Editing Items</a></li>
@@ -391,6 +392,21 @@
       </div>
       <h3>Assigning items to a category from Settings</h3>
       <p>In <strong>Settings → Categories</strong>, each category row has a list icon button. Click it to open a panel showing all items currently in that category and a dropdown to add other items. Use <strong>Remove</strong> to take an item out of the category, or select from the dropdown and click <strong>Add</strong> to assign one. This lets you reorganize categories without opening each item individually.</p>
+    </section>
+
+    <section id="tags">
+      <h2><i class="fa-solid fa-tag"></i> Tags</h2>
+      <p>Tags are short, free-form labels you can stick on an item, such as "fragile", "on loan", or "needs repair". Unlike a category (an item has one), an item can have as many tags as you want. Each tag is automatically given its own color, so the same tag looks the same everywhere it appears.</p>
+      <h3>Adding tags to an item</h3>
+      <p>On the <strong>Add Item</strong> and <strong>Edit Item</strong> forms there is a <strong>Tags</strong> field. Start typing to pick from tags you already use, or type a new word and press <strong>Enter</strong> to create it on the spot. Click the small <strong>x</strong> on a tag to take it off the item. New tags are saved when you save the item.</p>
+      <h3>Where tags show up</h3>
+      <p>Tags appear as small colored pills on an item's detail screen and on the Terminal screen. The Inventory search box also matches tags, so typing a tag name brings up every item that has it.</p>
+      <h3>Managing tags from Settings</h3>
+      <p>Go to <strong>Settings → Tags</strong> to see every tag you have. From there you can add a tag, rename one, or delete one. You can also open a tag to see which items use it and add it to or remove it from items in one place. Requires Admin or Manager role.</p>
+      <div class="callout">
+        <i class="fa-solid fa-circle-info"></i>
+        Deleting a tag removes it from every item - it does not delete the items.
+      </div>
     </section>
 
     <section id="locations">
@@ -715,7 +731,7 @@
         <li>Go to <strong>Inventory</strong> and click <strong>Import</strong></li>
         <li>Prepare a CSV file. The first row must be the header:</li>
       </ol>
-      <pre><code>Type,Name,Quantity,MinimumQuantity,SKU,Location,Category,ExpiryDate,Description,ScanWarning</code></pre>
+      <pre><code>Type,Name,Quantity,MinimumQuantity,SKU,Location,Category,ExpiryDate,Description,ScanWarning,Tags</code></pre>
       <table>
         <tr><th>Column</th><th>Required</th><th>Notes</th></tr>
         <tr><td>Type</td><td>Yes</td><td><code>Reusable</code> or <code>Consumable</code> (case-insensitive)</td></tr>
@@ -728,6 +744,7 @@
         <tr><td>ExpiryDate</td><td>No</td><td>Format: <code>YYYY-MM-DD</code> (e.g. <code>2027-06-01</code>)</td></tr>
         <tr><td>Description</td><td>No</td><td>Free text</td></tr>
         <tr><td>ScanWarning</td><td>No</td><td>Free text</td></tr>
+        <tr><td>Tags</td><td>No</td><td>One or more tag names separated by <code>;</code> (or commas inside a quoted field) - created automatically if they don't exist</td></tr>
       </table>
       <p>After upload, a summary shows how many rows were imported and any rows that failed (with row number and reason).</p>
       <div class="callout">

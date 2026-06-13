@@ -1,17 +1,37 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFramework>net8.0-windows</TargetFramework>
+    <!-- Linux builds (RID linux-*) run headless under systemd; Windows builds host
+         the WinForms tray companion. Plain `dotnet build`/`dotnet run` with no RID
+         defaults to the Windows configuration. -->
+    <IsLinuxBuild Condition="$(RuntimeIdentifier.StartsWith('linux'))">true</IsLinuxBuild>
+
+    <TargetFramework Condition="'$(IsLinuxBuild)' == 'true'">net8.0</TargetFramework>
+    <TargetFramework Condition="'$(IsLinuxBuild)' != 'true'">net8.0-windows</TargetFramework>
+
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <UseWindowsForms>true</UseWindowsForms>
-    <OutputType>WinExe</OutputType>
+
+    <UseWindowsForms Condition="'$(IsLinuxBuild)' != 'true'">true</UseWindowsForms>
+    <OutputType Condition="'$(IsLinuxBuild)' == 'true'">Exe</OutputType>
+    <OutputType Condition="'$(IsLinuxBuild)' != 'true'">WinExe</OutputType>
+    <DefineConstants Condition="'$(IsLinuxBuild)' == 'true'">$(DefineConstants);LINUX</DefineConstants>
+
     <RootNamespace>InventoryStore.App</RootNamespace>
     <AssemblyName>InventoryStore.App</AssemblyName>
     <ApplicationIcon Condition="Exists('..\..\assets\icon.ico')">..\..\assets\icon.ico</ApplicationIcon>
   </PropertyGroup>
 
-  <ItemGroup>
+  <!-- The tray companion is WinForms-based; exclude it from the Linux build. -->
+  <ItemGroup Condition="'$(IsLinuxBuild)' == 'true'">
+    <Compile Remove="Tray\**\*.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(IsLinuxBuild)' == 'true'">
+    <PackageReference Include="Microsoft.Extensions.Hosting.Systemd" Version="8.0.1" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(IsLinuxBuild)' != 'true'">
     <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="8.0.1" />
   </ItemGroup>
 

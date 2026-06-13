@@ -1,0 +1,29 @@
+[Unit]
+Description=Inventory Store
+After=network.target
+
+[Service]
+# systemd-notify readiness is provided by the host's .UseSystemd() integration.
+Type=notify
+ExecStart=/opt/inventorystore/InventoryStore.App
+Restart=on-failure
+RestartSec=5
+
+# Dedicated unprivileged service account (created by install.sh).
+User=inventorystore
+Group=inventorystore
+
+# Persistent data (SQLite db, downloaded cloudflared, keys) lives here.
+# StateDirectory creates /var/lib/inventorystore owned by the service user.
+StateDirectory=inventorystore
+Environment=INVENTORYSTORE_DATA=/var/lib/inventorystore
+Environment=ASPNETCORE_ENVIRONMENT=Production
+
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

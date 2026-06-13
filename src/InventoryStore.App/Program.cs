@@ -1,6 +1,5 @@
 using InventoryStore.App.Extensions;
 using InventoryStore.App.Services;
-using InventoryStore.App.Tray;
 using InventoryStore.App.Modules;
 using InventoryStore.Application.Interfaces.Services;
 using InventoryStore.Domain.Interfaces.Repositories;
@@ -8,13 +7,16 @@ using InventoryStore.Infrastructure.Data;
 using InventoryStore.Infrastructure.Extensions;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.Extensions.Hosting.WindowsServices;
 using InventoryStore.App.Middleware;
 using InventoryStore.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 using System.Net.Http.Json;
+#if !LINUX
+using InventoryStore.App.Tray;
+using Microsoft.Extensions.Hosting.WindowsServices;
 using WinForms = System.Windows.Forms;
+#endif
 
 namespace InventoryStore.App;
 
@@ -293,6 +295,13 @@ internal class Program
     [STAThread]
     static void Main(string[] args)
     {
+#if LINUX
+        // Linux runs headless as a systemd service — no tray companion.
+        CreateHostBuilder(args)
+            .UseSystemd()
+            .Build()
+            .Run();
+#else
         if (WindowsServiceHelpers.IsWindowsService())
         {
             RunAsService(args);
@@ -301,8 +310,10 @@ internal class Program
         {
             RunAsTrayApplication(args);
         }
+#endif
     }
 
+#if !LINUX
     static void RunAsService(string[] args)
     {
         CreateHostBuilder(args)
@@ -327,6 +338,7 @@ internal class Program
         cts.Cancel();
         try { host.WaitForShutdown(); } catch { }
     }
+#endif
 
     static IHostBuilder CreateHostBuilder(string[] args) =>
         Host.CreateDefaultBuilder(args)
@@ -353,7 +365,7 @@ internal class Program
 
     static (bool Enabled, int Port, string CertPath, string? CertPassword) LoadHttpsConfig()
     {
-        var dataDir  = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "InventoryStore");
+        var dataDir  = InventoryStore.App.Utilities.AppPaths.DataDir;
         var certPath = Path.Combine(dataDir, "https.pfx");
         var dbPath   = Path.Combine(dataDir, "inventory.db");
         if (!File.Exists(dbPath)) return (false, 443, certPath, null);
@@ -380,10 +392,7 @@ internal class Program
     {
         var isDev = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
         var dbFileName = isDev ? "inventory-dev.db" : "inventory.db";
-        var dbPath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
-            "InventoryStore",
-            dbFileName);
+        var dbPath = Path.Combine(InventoryStore.App.Utilities.AppPaths.DataDir, dbFileName);
 
         Directory.CreateDirectory(Path.GetDirectoryName(dbPath)!);
 

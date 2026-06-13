@@ -412,7 +412,7 @@
       <div class="feature-card">
         <div class="feature-icon"><i class="fa-solid fa-people-group"></i></div>
         <h3>Client management</h3>
-        <p>Keep a searchable list of the people who borrow items. Store names, phone numbers, email addresses, dates of birth, and notes. Checkouts are linked to clients so you always know exactly who has what - and a full borrowing history is one click away on every client record.</p>
+        <p>Keep a searchable list of the people who borrow items, with full contact details and notes. Every checkout is linked to a client, so a complete borrowing history is one click away.</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon"><i class="fa-solid fa-box"></i></div>
@@ -421,38 +421,13 @@
       </div>
       <div class="feature-card">
         <div class="feature-icon"><i class="fa-solid fa-camera"></i></div>
-        <h3>Barcode scanning</h3>
-        <p>Scan UPC, EAN, QR codes, and ISBN barcodes with any device camera. Print barcode labels directly from the app. Supports manual SKU entry too.</p>
+        <h3>Barcode scanning &amp; lookup</h3>
+        <p>Scan UPC, EAN, QR, and ISBN barcodes with any device camera, then auto-fill the product name, image, brand, and size from free public databases. Print barcode labels too.</p>
       </div>
       <div class="feature-card">
-        <div class="feature-icon"><i class="fa-solid fa-magnifying-glass"></i></div>
-        <h3>Smart barcode lookup</h3>
-        <p>Scan an unknown barcode and auto-fill the product name, image, brand, category, size, and weight from free public databases - Open Library, UPC Item DB, and Open Food Facts. No more typing product details by hand.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon"><i class="fa-solid fa-database"></i></div>
-        <h3>Product metadata library</h3>
-        <p>Every barcode lookup is cached so it is only fetched once. Browse the library to refresh a product from its source or delete it - deleting cleanly unlinks it from any items first.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon"><i class="fa-solid fa-flask-vial"></i></div>
-        <h3>Safety data sheets</h3>
-        <p>An optional module for teams that handle chemicals. Look up hazard information for an item by chemical name, free from PubChem (run by the US National Institutes of Health). See the signal word, hazard pictograms, CAS number, and a link to the full record. Turn it on only if you need it.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon"><i class="fa-solid fa-coins"></i></div>
-        <h3>Cost &amp; valuation</h3>
-        <p>An optional module that adds a unit cost to any item, then shows your total inventory value, a breakdown by category, and straight-line depreciation for reusable equipment. Available on its own settings screen and as a Valuation report.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon"><i class="fa-solid fa-chart-line"></i></div>
-        <h3>Consumption forecasting</h3>
-        <p>An optional module that predicts when each consumable will run out, based on how fast you actually use it. The app keeps a real usage history and projects a run-out date so you can reorder before you run dry.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon"><i class="fa-solid fa-share-nodes"></i></div>
-        <h3>Webhooks &amp; integrations</h3>
-        <p>An optional module that sends a signed message to any web address when something happens in your inventory, such as a checkout, low-stock alert, or a new item. Connect Inventory Store to Slack, Zapier, Make, or your own scripts.</p>
+        <div class="feature-icon"><i class="fa-solid fa-tags"></i></div>
+        <h3>Categories &amp; tags</h3>
+        <p>Group items into color-coded categories and add any number of free-form tags. Filter and search your inventory by either in one click.</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon"><i class="fa-solid fa-chart-bar"></i></div>
@@ -460,34 +435,19 @@
         <p>Stock levels, active checkouts, lost items, take-inventory sheets, and a full activity log with date filtering.</p>
       </div>
       <div class="feature-card">
-        <div class="feature-icon"><i class="fa-solid fa-tags"></i></div>
-        <h3>Categories</h3>
-        <p>Organize items into color-coded categories. Filter your inventory list by category in one click.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon"><i class="fa-solid fa-calendar-xmark"></i></div>
-        <h3>Expiry tracking</h3>
-        <p>Set expiry dates on any item. Expired and Expiring Soon badges appear in the list, and a dedicated Expiry report shows what needs attention.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon"><i class="fa-solid fa-file-csv"></i></div>
-        <h3>CSV import &amp; export</h3>
-        <p>Bulk-load your inventory from a spreadsheet on day one. Export any time for backups or analysis in Excel.</p>
+        <div class="feature-icon"><i class="fa-solid fa-puzzle-piece"></i></div>
+        <h3>Optional modules</h3>
+        <p>Switch on only what you need: chemical safety data sheets, cost &amp; valuation, consumption forecasting, and webhooks for Slack, Zapier, or your own scripts. Each stays out of the way until enabled.</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon"><i class="fa-solid fa-globe"></i></div>
         <h3>Remote access</h3>
-        <p>Expose the UI over the internet via Serveo (free persistent subdomain) or Cloudflare Quick Tunnel. No VPN, no firewall changes required.</p>
+        <p>Expose the UI over the internet via Serveo or Cloudflare Quick Tunnel. No VPN, no firewall changes required.</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon"><i class="fa-solid fa-users"></i></div>
         <h3>Multi-user roles</h3>
-        <p>Admin, Manager, and Viewer roles. Admins manage users and settings; Viewers get read-only access.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon"><i class="fa-solid fa-desktop"></i></div>
-        <h3>Windows service</h3>
-        <p>Runs silently in the background, starts at boot. A system tray companion shows status and lets you open the UI instantly.</p>
+        <p>Admin, Manager, Staff, and Viewer roles. Staff are scoped to a touch-friendly Terminal for checkout; Viewers get read-only access.</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon"><i class="fa-solid fa-lock"></i></div>
@@ -495,29 +455,9 @@
         <p>Your data stays on your machine. No cloud accounts, no telemetry, no subscriptions.</p>
       </div>
       <div class="feature-card">
-        <div class="feature-icon"><i class="fa-solid fa-bolt"></i></div>
-        <h3>Fast installer</h3>
-        <p>Download one .exe and you're done. The installer stops the running service, upgrades the files, and restarts automatically.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon"><i class="fa-solid fa-eye"></i></div>
-        <h3>Public view &amp; iframe embed</h3>
-        <p>Publish a live read-only availability board to any website or intranet. Choose exactly which items appear and copy a single <code>&lt;iframe&gt;</code> tag. No login needed for visitors.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon"><i class="fa-solid fa-moon"></i></div>
-        <h3>Dark mode</h3>
-        <p>Full dark theme built in. Toggle with the sidebar button - preference is saved per browser and persists across sessions.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon"><i class="fa-solid fa-bell"></i></div>
-        <h3>Push notifications</h3>
-        <p>Get instant alerts on your phone via <a href="https://ntfy.sh" target="_blank" rel="noopener">ntfy</a>. Choose exactly which events trigger a notification: item checked out, item returned, item lost, low stock reached, or user login. Each event is optional and can be turned on or off independently.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon"><i class="fa-solid fa-database"></i></div>
-        <h3>Database backup &amp; restore</h3>
-        <p>Download a consistent point-in-time backup of your entire database with one click. Restore from any previous backup - the current database is saved automatically before overwriting.</p>
+        <div class="feature-icon"><i class="fa-solid fa-ellipsis"></i></div>
+        <h3>And more</h3>
+        <p>Expiry tracking, CSV import &amp; export, a public availability board with iframe embed, push notifications via ntfy, dark mode, one-click database backup &amp; restore, and a Windows service with tray companion. See the <a href="user-guide.html">User Guide</a> for the full list.</p>
       </div>
     </div>
   </div>

@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Net.Sockets;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
+using InventoryStore.App.Utilities;
 
 namespace InventoryStore.App.Services;
 
@@ -12,16 +13,16 @@ public sealed partial class TunnelService : IAsyncDisposable
         Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development" ? 5051 : 5050;
 
     private static readonly string CloudflaredPath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
-        "InventoryStore", "tools", "cloudflared.exe");
+        AppPaths.DataDir, "tools",
+        OperatingSystem.IsWindows() ? "cloudflared.exe" : "cloudflared");
 
-    private const string CloudflaredDownloadUrl =
-        "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe";
+    private static string CloudflaredDownloadUrl => OperatingSystem.IsWindows()
+        ? "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe"
+        : "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64";
 
     // ── Serveo / SSH paths ────────────────────────────────────────────────
     private static readonly string ServeoKeyPath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
-        "InventoryStore", "serveo_ed25519");
+        AppPaths.DataDir, "serveo_ed25519");
 
     // ── State ─────────────────────────────────────────────────────────────
     public enum TunnelState { Stopped, Downloading, Starting, Running, Error }
@@ -95,7 +96,7 @@ public sealed partial class TunnelService : IAsyncDisposable
         if (!string.IsNullOrWhiteSpace(existing)) return existing;
 
         // Generate key pair using Windows built-in ssh-keygen
-        var keygenExe = FindOpenSshExe("ssh-keygen.exe");
+        var keygenExe = FindOpenSshExe("ssh-keygen");
         var tmpKey    = Path.Combine(Path.GetTempPath(), $"serveo_tmp_{Guid.NewGuid():N}");
         try
         {
@@ -405,11 +406,10 @@ public sealed partial class TunnelService : IAsyncDisposable
             await File.WriteAllTextAsync(keyFile, privateKey);
 
             string sshExe;
-            try   { sshExe = FindOpenSshExe("ssh.exe"); }
+            try   { sshExe = FindOpenSshExe("ssh"); }
             catch (Exception ex)
             {
-                throw new Exception($"ssh.exe not found: {ex.Message} — " +
-                    "Enable OpenSSH Client via Settings > Apps > Optional Features.");
+                throw new Exception($"ssh not found: {ex.Message}");
             }
 
             _logger.LogWarning("Serveo: ssh.exe = {Exe}", sshExe);
@@ -537,23 +537,37 @@ public sealed partial class TunnelService : IAsyncDisposable
         return (result, outputLog.ToString());
     }
 
-    private static string FindOpenSshExe(string exeName)
+    private static string FindOpenSshExe(string baseName)
     {
-        // Windows built-in OpenSSH (Windows 10 1809+)
-        var win = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.System),
-            "OpenSSH", exeName);
-        if (File.Exists(win)) return win;
+        var fileName = OperatingSystem.IsWindows() ? baseName + ".exe" : baseName;
+
+        if (OperatingSystem.IsWindows())
+        {
+            // Windows built-in OpenSSH (Windows 10 1809+)
+            var win = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.System),
+                "OpenSSH", fileName);
+            if (File.Exists(win)) return win;
+        }
+        else
+        {
+            foreach (var dir in new[] { "/usr/bin", "/bin", "/usr/local/bin" })
+            {
+                var p = Path.Combine(dir, fileName);
+                if (File.Exists(p)) return p;
+            }
+        }
 
         // Fall back to PATH
         foreach (var dir in (Environment.GetEnvironmentVariable("PATH") ?? "").Split(Path.PathSeparator))
         {
-            var p = Path.Combine(dir.Trim(), exeName);
+            var p = Path.Combine(dir.Trim(), fileName);
             if (File.Exists(p)) return p;
         }
 
-        throw new InvalidOperationException(
-            $"{exeName} not found. Enable OpenSSH Client via Settings > Apps > Optional Features.");
+        throw new InvalidOperationException(OperatingSystem.IsWindows()
+            ? $"{fileName} not found. Enable OpenSSH Client via Settings > Apps > Optional Features."
+            : $"{fileName} not found. Install the OpenSSH client (e.g. sudo apt install openssh-client).");
     }
 
     // ── Shared helpers ────────────────────────────────────────────────────
@@ -565,6 +579,13 @@ public sealed partial class TunnelService : IAsyncDisposable
         http.DefaultRequestHeaders.UserAgent.ParseAdd("InventoryStore/1.0");
         var bytes = await http.GetByteArrayAsync(url);
         await File.WriteAllBytesAsync(destPath, bytes);
+
+        // Downloaded binaries (cloudflared) need the execute bit on Linux/macOS.
+        if (!OperatingSystem.IsWindows())
+            File.SetUnixFileMode(destPath,
+                UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute |
+                UnixFileMode.GroupRead | UnixFileMode.GroupExecute |
+                UnixFileMode.OtherRead | UnixFileMode.OtherExecute);
     }
 
     private Task NotifyAsync()

@@ -6,13 +6,62 @@ on:
       - 'v[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9].[0-9][0-9][0-9][0-9]'
 
 jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set version
+        id: ver
+        run: |
+          tag="${{ github.ref_name }}"          # v20260606.2119
+          echo "VERSION=${tag#v}" >> "$GITHUB_OUTPUT"
+          echo "ASM_VERSION=1.0.0.${{ github.run_number }}" >> "$GITHUB_OUTPUT"
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Publish (linux-x64)
+        run: |
+          dotnet publish src/InventoryStore.App/InventoryStore.App.csproj \
+            -c Release -r linux-x64 --self-contained true \
+            -p:PublishSingleFile=true \
+            -p:AssemblyVersion="${{ steps.ver.outputs.ASM_VERSION }}" \
+            -p:FileVersion="${{ steps.ver.outputs.ASM_VERSION }}" \
+            -p:InformationalVersion="${{ steps.ver.outputs.VERSION }}" \
+            -o publish/linux-app
+
+      - name: Stage release archive
+        run: |
+          name="InventoryStore-linux-x64-${{ steps.ver.outputs.VERSION }}"
+          mkdir -p "stage/$name/app"
+          cp -r publish/linux-app/. "stage/$name/app/"
+          cp linux/install.sh linux/inventorystore.service "stage/$name/"
+          chmod +x "stage/$name/install.sh" "stage/$name/app/InventoryStore.App"
+          tar czf "$name.tar.gz" -C stage "$name"
+
+      - name: Upload tarball artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-tarball
+          path: InventoryStore-linux-x64-*.tar.gz
+
   build-installer:
     runs-on: windows-latest
+    needs: build-linux
     permissions:
       contents: write
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Download Linux tarball
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-tarball
+          path: linux-release
 
       - name: Set version
         id: ver
@@ -78,11 +127,18 @@ jobs:
           body: |
             ## Inventory Store ${{ steps.ver.outputs.VERSION }}
 
-            ### Installation
+            ### Windows
             1. Download and run `InventoryStore-Setup-${{ steps.ver.outputs.VERSION }}.exe`
             2. The installer registers the Windows service and starts it automatically
             3. A tray icon appears at login - double-click to open the web UI
 
+            ### Linux (Ubuntu / Debian)
+            1. Download and extract `InventoryStore-linux-x64-${{ steps.ver.outputs.VERSION }}.tar.gz`
+            2. Run `sudo ./install.sh` from inside the extracted folder
+            3. The installer registers a systemd service and starts it automatically
+
             The web interface is available at **http://localhost:5050** after installation.
-          files: installer/Output/InventoryStore-Setup-*.exe
+          files: |
+            installer/Output/InventoryStore-Setup-*.exe
+            linux-release/InventoryStore-linux-x64-*.tar.gz
           generate_release_notes: false
