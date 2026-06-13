@@ -153,7 +153,7 @@
                             </td>
                             <td class="small">@(user.Email ?? "—")</td>
                             <td>
-                                <span class="badge @(user.Role == UserRole.Admin ? "bg-danger" : user.Role == UserRole.Manager ? "bg-warning text-dark" : "bg-secondary")">
+                                <span class="badge @(user.Role == UserRole.Admin ? "bg-danger" : user.Role == UserRole.Manager ? "bg-warning text-dark" : user.Role == UserRole.Staff ? "bg-info text-dark" : "bg-secondary")">
                                     @user.Role
                                 </span>
                             </td>
@@ -244,6 +244,7 @@
                             <label class="form-label">Role</label>
                             <select name="Add.Role" class="form-select">
                                 <option value="2">Viewer</option>
+                                <option value="3">Staff (Terminal)</option>
                                 <option value="1">Manager</option>
                                 <option value="0">Admin</option>
                             </select>
@@ -286,6 +287,7 @@
                             <label class="form-label">Role</label>
                             <select name="Edit.Role" id="editRole" class="form-select">
                                 <option value="2">Viewer</option>
+                                <option value="3">Staff (Terminal)</option>
                                 <option value="1">Manager</option>
                                 <option value="0">Admin</option>
                             </select>

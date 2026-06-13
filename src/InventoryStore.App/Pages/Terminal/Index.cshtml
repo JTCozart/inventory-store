@@ -1,0 +1,196 @@
+@page
+@model InventoryStore.App.Pages.Terminal.IndexModel
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Terminal - Inventory Store</title>
+    <script>(function(){var t=localStorage.getItem('it-theme');if(t)document.documentElement.setAttribute('data-bs-theme',t);}())</script>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="stylesheet" href="~/lib/bootstrap/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/lib/bootstrap-icons/font/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" />
+    <style>
+        /* Touch-first sizing: everything here is built for a finger on a tablet. */
+        html, body { height: 100%; }
+        body { overflow-x: hidden; }
+        #term-app { max-width: 720px; margin: 0 auto; padding: 1rem; }
+        .term-input { font-size: 1.4rem; padding: .75rem 1rem; height: auto; }
+        .term-btn { min-height: 64px; font-size: 1.2rem; font-weight: 600; border-radius: 14px; padding: .5rem 1rem;
+                    display: inline-flex; align-items: center; justify-content: center; gap: .4rem; }
+        /* Picker rows opt out of centering so their item text stays left-aligned. */
+        .term-btn.text-start { justify-content: flex-start; }
+        .term-btn-lg { min-height: 84px; font-size: 1.5rem; }
+        .term-stat { border-radius: 14px; padding: .75rem .5rem; }
+        .term-stat-value { font-size: 2rem; font-weight: 700; line-height: 1; }
+        .term-stat-label { font-size: .85rem; text-transform: uppercase; letter-spacing: .03em; }
+        .term-step-input { font-size: 2rem; font-weight: 700; text-align: center; height: 84px; }
+        .term-step-btn { min-width: 84px; min-height: 84px; font-size: 2rem; }
+        .term-card { border-radius: 18px; }
+        #term-scan-video { width: 100%; max-height: 320px; background: #000; border-radius: 14px; object-fit: cover; }
+        .term-co-item { font-size: 1.05rem; }
+        #term-client-dd > div { padding: .65rem .9rem; font-size: 1.1rem; }
+    </style>
+</head>
+<body class="bg-body-tertiary">
+    <div id="term-app">
+
+        <!-- Header -->
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-upc-scan fs-3 text-primary"></i>
+                <div>
+                    <div class="fw-bold fs-5 lh-1">Terminal</div>
+                    <div class="text-muted small">@Model.DisplayName · @Model.RoleName</div>
+                </div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <button class="btn btn-outline-secondary term-btn px-3" onclick="termToggleTheme()" title="Toggle theme">
+                    <i id="term-theme-icon" class="bi bi-moon"></i>
+                </button>
+                @if (Model.RoleName != "Staff")
+                {
+                    <a href="/" class="btn btn-outline-primary term-btn px-3" title="Go to main app">
+                        <i class="bi bi-house"></i>
+                    </a>
+                }
+                <form method="post" asp-page="/Auth/Logout" class="m-0">
+                    <input type="hidden" name="returnUrl" value="/Terminal" />
+                    <button type="submit" class="btn btn-outline-danger term-btn px-3" title="Log out">
+                        <i class="bi bi-box-arrow-left"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Search / scan bar -->
+        <div class="card term-card shadow-sm mb-3">
+            <div class="card-body">
+                <div class="d-flex gap-2">
+                    <input type="text" id="term-search-input" class="form-control term-input" placeholder="Scan or type SKU or name…" autocomplete="off" autofocus />
+                    <button class="btn btn-primary term-btn px-4" onclick="termSearch()"><i class="bi bi-search"></i></button>
+                </div>
+                <button class="btn btn-success term-btn w-100 mt-2" id="term-scan-btn" onclick="termStartScan()">
+                    <i class="bi bi-camera me-1"></i> Scan with camera
+                </button>
+            </div>
+        </div>
+
+        <!-- Live camera -->
+        <div id="term-scan-wrap" class="card term-card shadow-sm mb-3 d-none">
+            <div class="card-body">
+                <video id="term-scan-video" autoplay muted playsinline></video>
+                <button class="btn btn-danger term-btn w-100 mt-2" onclick="termStopScan(true)">
+                    <i class="bi bi-stop-circle me-1"></i> Stop camera
+                </button>
+            </div>
+        </div>
+
+        <!-- Status / feedback -->
+        <div id="term-alert" class="alert d-none term-card fs-5 py-3" role="alert"></div>
+
+        <!-- Result card -->
+        <div id="term-result" class="card term-card shadow-sm d-none">
+            <div class="card-body">
+                <div class="d-flex align-items-start justify-content-between mb-2">
+                    <div>
+                        <div id="term-item-name" class="fw-bold fs-3 lh-1"></div>
+                        <div id="term-item-meta" class="text-muted"></div>
+                    </div>
+                    <span id="term-stock-badge" class="badge fs-6 d-none"></span>
+                </div>
+
+                <div id="term-stock-warning" class="alert alert-danger d-none py-3 px-3 fs-5 fw-semibold">
+                    <i class="bi bi-exclamation-octagon-fill me-1"></i><span id="term-stock-warning-text"></span>
+                </div>
+
+                <div id="term-warning" class="alert alert-warning d-none py-2 px-3 fs-6">
+                    <i class="bi bi-exclamation-triangle-fill me-1"></i><span id="term-warning-text"></span>
+                </div>
+
+                <div id="term-stats" class="row g-2 text-center mb-3"></div>
+
+                <!-- Reusable: checkout + active checkouts -->
+                <div id="term-reusable" class="d-none">
+                    <div id="term-checkout-box">
+                        <label class="form-label fs-6 fw-semibold mb-1">Borrower</label>
+                        <div class="position-relative mb-2">
+                            <input type="text" id="term-client-input" class="form-control term-input" placeholder="Search name…" oninput="termClientInput()" autocomplete="off" />
+                            <input type="hidden" id="term-client-id" />
+                            <div id="term-client-dd" class="d-none position-absolute w-100 border rounded bg-body shadow" style="top:100%;z-index:1060;max-height:240px;overflow-y:auto"></div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <div class="input-group" style="max-width:230px">
+                                <button class="btn btn-outline-secondary term-step-btn" type="button" onclick="termStep('term-co-qty',-1)">−</button>
+                                <input type="number" id="term-co-qty" class="form-control term-step-input" value="1" min="1">
+                                <button class="btn btn-outline-secondary term-step-btn" type="button" onclick="termStep('term-co-qty',1)">+</button>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary term-btn term-btn-lg w-100" id="term-checkout-btn" onclick="termCheckout()">
+                            <i class="bi bi-box-arrow-up-right me-1"></i> Check Out
+                        </button>
+                    </div>
+                    <div id="term-active" class="mt-3 d-none">
+                        <div class="fw-semibold fs-6 mb-1">Currently out</div>
+                        <div id="term-active-list"></div>
+                    </div>
+                </div>
+
+                <!-- Consumable: consume / restock stepper -->
+                <div id="term-consumable" class="d-none">
+                    <label class="form-label fs-6 fw-semibold mb-1">Adjust stock</label>
+                    <div class="input-group" style="max-width:300px">
+                        <button id="term-consume-btn" class="btn btn-danger term-step-btn" type="button" onclick="termConsume()" title="Consume (use stock)">
+                            <i class="bi bi-dash-lg"></i>
+                        </button>
+                        <input type="number" id="term-adjust-qty" class="form-control term-step-input" value="1" min="1">
+                        @if (Model.CanRestock)
+                        {
+                            <button class="btn btn-success term-step-btn" type="button" onclick="termRestock()" title="Restock (add stock)">
+                                <i class="bi bi-plus-lg"></i>
+                            </button>
+                        }
+                    </div>
+                    <div class="form-text">Tap <span class="text-danger fw-semibold">−</span> to use stock@(Model.CanRestock ? ", + to add stock" : "").</div>
+                </div>
+
+                <button class="btn btn-outline-secondary term-btn w-100 mt-3" onclick="termReset()">
+                    <i class="bi bi-arrow-left me-1"></i> Next item
+                </button>
+            </div>
+        </div>
+
+        <!-- Not found -->
+        <div id="term-notfound" class="card term-card shadow-sm d-none">
+            <div class="card-body text-center py-4">
+                <i class="bi bi-question-circle fs-1 text-muted d-block mb-2"></i>
+                <div class="fs-5 mb-3">No item found.</div>
+                <button class="btn btn-outline-secondary term-btn" onclick="termReset()">
+                    <i class="bi bi-arrow-left me-1"></i> Try again
+                </button>
+            </div>
+        </div>
+
+        <!-- Multiple matches picker -->
+        <div id="term-picker" class="card term-card shadow-sm d-none">
+            <div class="card-body">
+                <div class="fw-semibold fs-5 mb-2">Select an item</div>
+                <div id="term-picker-list" class="d-grid gap-2"></div>
+                <button class="btn btn-outline-secondary term-btn w-100 mt-2" onclick="termReset()">Cancel</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        window.termCanRestock = @(Model.CanRestock ? "true" : "false");
+    </script>
+    <script src="~/lib/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@@zxing/library@@0.21.3/umd/index.min.js"></script>
+    <script src="~/js/terminal.js" asp-append-version="true"></script>
+</body>
+</html>

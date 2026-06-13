@@ -29,6 +29,7 @@ Categories let you group and filter items (e.g. Tools, Electronics, Safety).
 3. Choose a type:
    - **Reusable** - equipment that is checked out and returned (laptops, cameras, tools)
    - **Consumable** - stock that is depleted when used (batteries, paper, cable ties)
+   - You can change an item's type later. Open the item, click **Edit**, and use the **Convert to ...** link under the type badge. For a reusable item, check in all units first.
 4. Fill in the fields:
    - **Name** - required
    - **Quantity** - total units you have
@@ -154,6 +155,7 @@ Click **Export CSV** (top of Reports page) to download all items as a spreadshee
 3. Assign a role:
    - **Admin** - full access including user management and settings
    - **Manager** - manage inventory and run reports; cannot manage users or settings
+   - **Staff** - the Terminal only; can check out, check in, and consume, but cannot restock, add items, or open reports and settings
    - **Viewer** - read-only access
 
 ---
@@ -194,6 +196,21 @@ Inventory Store has optional add-ons under **Settings → Modules** (Admin only)
 See the [User Guide](https://inventorystore.app/user-guide.html) for full details on each module.
 
 > Tip: For SDS, PubChem lists chemicals, not brand names. Search the chemical (e.g. "sodium hypochlorite") rather than a product name (e.g. "bleach"). If there is no exact match, the app suggests close chemical names to pick from.
+
+---
+
+## 16. Use the Terminal on a shared tablet
+
+The Terminal is a simple, full-screen page with big buttons for a tablet or front desk. Open **http://localhost:5050/terminal** (or use your tunnel address).
+
+1. Type a SKU or part of a name in the search box - matches appear as you type - or tap **Scan with camera**
+2. Pick the item to open it
+3. For a reusable item, enter the borrower and tap **Check Out**, or tap **Check In** on a row to take it back
+4. For a consumable, tap the red **−** to use stock, or the green **+** to add stock (Admins and Managers only)
+
+If an item has none left, a red **Out of stock** message shows and the button is turned off.
+
+Tip: create a **Staff** user (see step 12) for front-desk people. Staff log straight into the Terminal and have just the buttons they need. Admins and Managers can open the Terminal any time from the tablet icon in the top bar and use the **home** button to return to the main app.
 
 ---
 

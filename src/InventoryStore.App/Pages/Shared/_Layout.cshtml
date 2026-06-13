@@ -34,12 +34,15 @@
                 <a href="/Clients" class="topnav-link @(ViewData["ActivePage"]?.ToString() == "Clients" ? "active" : "")">
                     <i class="bi bi-people"></i> Clients
                 </a>
-                <a href="/Reports" class="topnav-link @(ViewData["ActivePage"]?.ToString() == "Reports" ? "active" : "")">
-                    <i class="bi bi-bar-chart"></i> Reports
-                </a>
-                <a href="/Settings" class="topnav-link @(ViewData["ActivePage"]?.ToString() == "Settings" ? "active" : "")">
-                    <i class="bi bi-sliders"></i> Settings
-                </a>
+                @if (!User.IsInRole("Staff"))
+                {
+                    <a href="/Reports" class="topnav-link @(ViewData["ActivePage"]?.ToString() == "Reports" ? "active" : "")">
+                        <i class="bi bi-bar-chart"></i> Reports
+                    </a>
+                    <a href="/Settings" class="topnav-link @(ViewData["ActivePage"]?.ToString() == "Settings" ? "active" : "")">
+                        <i class="bi bi-sliders"></i> Settings
+                    </a>
+                }
             </div>
             <div class="topnav-sep"></div>
             @if (UpdateInfo.HasUpdate)
@@ -57,6 +60,12 @@
                 <i id="theme-icon" class="bi bi-moon"></i>
             </button>
             <div class="topnav-divider"></div>
+            @if (User.IsInRole("Admin") || User.IsInRole("Manager"))
+            {
+                <a href="/Terminal" class="topnav-btn text-decoration-none" title="Terminal (touch checkout)">
+                    <i class="bi bi-tablet-landscape"></i>
+                </a>
+            }
             <button class="topnav-btn" onclick="quickScan()" title="Quick Scan">
                 <i class="bi bi-upc-scan"></i>
             </button>
@@ -89,15 +98,24 @@
             <a href="/Clients" class="@(ViewData["ActivePage"]?.ToString() == "Clients" ? "active" : "")">
                 <i class="bi bi-people"></i> Clients
             </a>
-            <a href="/Reports" class="@(ViewData["ActivePage"]?.ToString() == "Reports" ? "active" : "")">
-                <i class="bi bi-bar-chart"></i> Reports
-            </a>
-            <a href="/Settings" class="@(ViewData["ActivePage"]?.ToString() == "Settings" ? "active" : "")">
-                <i class="bi bi-sliders"></i> Settings
-            </a>
+            @if (!User.IsInRole("Staff"))
+            {
+                <a href="/Reports" class="@(ViewData["ActivePage"]?.ToString() == "Reports" ? "active" : "")">
+                    <i class="bi bi-bar-chart"></i> Reports
+                </a>
+                <a href="/Settings" class="@(ViewData["ActivePage"]?.ToString() == "Settings" ? "active" : "")">
+                    <i class="bi bi-sliders"></i> Settings
+                </a>
+            }
             <a href="/UserGuide" class="@(ViewData["ActivePage"]?.ToString() == "UserGuide" ? "active" : "")">
                 <i class="bi bi-book"></i> User Guide
             </a>
+            @if (User.IsInRole("Admin") || User.IsInRole("Manager"))
+            {
+                <a href="/Terminal">
+                    <i class="bi bi-tablet-landscape"></i> Terminal
+                </a>
+            }
             <a href="#" onclick="toggleMobileNav(); quickScan(); return false;">
                 <i class="bi bi-upc-scan"></i> Quick Scan
             </a>
@@ -132,6 +150,8 @@ else
     var _moduleMap = await Modules.GetEnabledMapAsync();
     var _modulesJson = System.Text.Json.JsonSerializer.Serialize(_moduleMap);
     var _costCurrency = (await Settings.GetAsync("module.cost.currency")) ?? "$";
+    // One-time, app-wide usage check-in: only the first admin who hasn't resolved it sees this.
+    var _showUsagePrompt = User.IsInRole("Admin") && (await Settings.GetAsync("usage.prompt.resolved")) != "true";
     <text>
     <input type="hidden" id="af-token" value="@Antiforgery.GetAndStoreTokens(Context).RequestToken">
 
@@ -808,6 +828,57 @@ else
     <script>window.costCurrency = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(_costCurrency));</script>
     <script src="https://cdn.jsdelivr.net/npm/@@zxing/library@@0.21.3/umd/index.min.js"></script>
     <script src="~/js/scanner.js"></script>
+
+    @if (_showUsagePrompt)
+    {
+        <!-- One-time usage check-in (first admin only) -->
+        <div class="modal fade" id="usageModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-hand-thumbs-up text-primary me-2"></i>Are you using Inventory Store?</h5>
+              </div>
+              <div class="modal-body">
+                <p class="mb-2">We are not fans of telemetry, and we do not collect your data. None of your inventory, people, or settings ever leave this computer.</p>
+                <p class="mb-3">We would just love to know that someone out there is actually using the app. Clicking <strong>OK</strong> sends a single, one-time "hey, I am using your app" and nothing else. You will only ever be asked this once.</p>
+                <label class="form-label small fw-semibold mb-1">How did you hear about the app? <span class="text-muted">(optional)</span></label>
+                <input type="text" id="usage-how-heard" class="form-control" placeholder="e.g. GitHub, a friend, a search" maxlength="200" autocomplete="off" />
+                <div id="usage-error" class="text-danger small mt-2 d-none"></div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" id="usage-optout-btn" onclick="submitUsage(true)">No thanks, do not ask again</button>
+                <button type="button" class="btn btn-primary" id="usage-ok-btn" onclick="submitUsage(false)"><i class="bi bi-check-lg me-1"></i>OK</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <script>
+          document.addEventListener('DOMContentLoaded', function () {
+              var el = document.getElementById('usageModal');
+              if (el) bootstrap.Modal.getOrCreateInstance(el).show();
+          });
+          function submitUsage(optOut) {
+              var ok = document.getElementById('usage-ok-btn');
+              var no = document.getElementById('usage-optout-btn');
+              var err = document.getElementById('usage-error');
+              ok.disabled = true; no.disabled = true; err.classList.add('d-none');
+              var howHeard = (document.getElementById('usage-how-heard').value || '').trim();
+              fetch('/api/usage/report', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  credentials: 'include',
+                  body: JSON.stringify({ howHeard: howHeard, optOut: optOut })
+              }).then(function (r) {
+                  if (!r.ok) throw new Error();
+                  bootstrap.Modal.getInstance(document.getElementById('usageModal')).hide();
+              }).catch(function () {
+                  err.textContent = 'Could not save that just now. Please try again.';
+                  err.classList.remove('d-none');
+                  ok.disabled = false; no.disabled = false;
+              });
+          }
+        </script>
+    }
     </text>
 }
 @await RenderSectionAsync("Scripts", required: false)

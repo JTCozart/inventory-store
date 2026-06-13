@@ -538,7 +538,30 @@ function populateEditForm(data) {
     typeDisplay.innerHTML = isReusable
         ? '<span class="badge bg-info fs-6"><i class="bi bi-arrow-repeat me-1"></i>Reusable</span>'
         : '<span class="badge bg-secondary fs-6"><i class="bi bi-box me-1"></i>Consumable</span>';
-    typeDisplay.innerHTML += '<p class="text-muted small mt-1 mb-0">Item type cannot be changed after creation.</p>';
+    if (_canWrite) {
+        const targetType = isReusable ? 'Consumable' : 'Reusable';
+        const out  = isReusable ? (item.checkedOutCount || 0) : 0;
+        const lost = isReusable ? (item.lostCount       || 0) : 0;
+        const blocking = [];
+        if (out  > 0) blocking.push(`${out} checked out`);
+        if (lost > 0) blocking.push(`${lost} lost`);
+        if (blocking.length) {
+            typeDisplay.innerHTML +=
+                `<p class="text-muted small mt-1 mb-0">
+                    <i class="bi bi-arrow-left-right me-1"></i>Convert to ${targetType}
+                    &mdash; check in all units first (${blocking.join(', ')})
+                 </p>`;
+        } else {
+            typeDisplay.innerHTML +=
+                `<div><button type="button" class="btn btn-link p-0 text-secondary mt-1"
+                         id="convert-type-btn" data-target-type="${targetType}"
+                         onclick="handleConvertTypeClick()" style="font-size:.8rem;text-decoration:none">
+                     <i class="bi bi-arrow-left-right me-1"></i>Convert to ${targetType}
+                 </button></div>`;
+        }
+    } else {
+        typeDisplay.innerHTML += '<p class="text-muted small mt-1 mb-0">Item type cannot be changed after creation.</p>';
+    }
 
     // Type-aware fields: reusables track a total pool; expiry only applies to consumables.
     document.getElementById('edit-quantity-label').textContent = isReusable ? 'Total Quantity' : 'In Stock';
@@ -901,6 +924,52 @@ async function saveCost() {
         status.innerHTML = '<span class="text-danger">Network error.</span>';
     } finally {
         btn.disabled = false;
+    }
+}
+
+// ── Convert item type ─────────────────────────────────────────────────────────
+
+function handleConvertTypeClick() {
+    const btn = document.getElementById('convert-type-btn');
+    if (!btn) return;
+    if (btn.dataset.armed !== '1') {
+        btn.dataset.armed = '1';
+        btn.classList.remove('text-secondary');
+        btn.classList.add('text-danger');
+        btn.innerHTML = `<i class="bi bi-exclamation-triangle me-1"></i>Confirm convert to ${btn.dataset.targetType}?`;
+        btn._resetTimer = setTimeout(() => {
+            btn.dataset.armed = '';
+            btn.classList.remove('text-danger');
+            btn.classList.add('text-secondary');
+            btn.innerHTML = `<i class="bi bi-arrow-left-right me-1"></i>Convert to ${btn.dataset.targetType}`;
+        }, 4000);
+        return;
+    }
+    clearTimeout(btn._resetTimer);
+    doConvertType();
+}
+
+async function doConvertType() {
+    const btn = document.getElementById('convert-type-btn');
+    if (btn) btn.disabled = true;
+    const res = await apiPost('ConvertItemType', { id: _editItemId });
+    if (res.success) {
+        const editEl = document.getElementById('editItemModal');
+        editEl.addEventListener('hidden.bs.modal', function onHidden() {
+            editEl.removeEventListener('hidden.bs.modal', onHidden);
+            openItemModal(_editItemId);
+            _needsReload = true;
+        });
+        _editModal.hide();
+    } else {
+        showEditAlert(res.error || 'Conversion failed.', 'danger');
+        if (btn) {
+            btn.disabled = false;
+            btn.dataset.armed = '';
+            btn.classList.remove('text-danger');
+            btn.classList.add('text-secondary');
+            btn.innerHTML = `<i class="bi bi-arrow-left-right me-1"></i>Convert to ${btn.dataset.targetType}`;
+        }
     }
 }
 

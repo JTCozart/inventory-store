@@ -18,6 +18,7 @@
 
             <form id="login-form" autocomplete="on">
                 <input type="hidden" id="af-token" name="__RequestVerificationToken" value="@Antiforgery.GetAndStoreTokens(HttpContext).RequestToken" />
+                <input type="hidden" id="returnUrl" value="@Model.ReturnUrl" />
                 <div class="mb-3">
                     <label for="username" class="form-label">Username</label>
                     <input id="username" name="username" class="form-control"
@@ -53,6 +54,7 @@ document.getElementById('login-form').addEventListener('submit', async function 
     var body = new URLSearchParams({
         username: document.getElementById('username').value,
         password: document.getElementById('password').value,
+        returnUrl: document.getElementById('returnUrl').value,
         __RequestVerificationToken: document.getElementById('af-token').value
     });
 
@@ -65,7 +67,8 @@ document.getElementById('login-form').addEventListener('submit', async function 
         });
 
         if (response.ok) {
-            window.location.href = '/';
+            var data = await response.json().catch(function () { return {}; });
+            window.location.href = data.redirect || '/';
         } else {
             var msg = await response.text();
             errorEl.textContent = msg || 'Login failed. Please try again.';

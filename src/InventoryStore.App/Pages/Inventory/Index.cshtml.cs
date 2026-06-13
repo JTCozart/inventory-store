@@ -268,6 +268,25 @@ public class IndexModel : PageModel
         return new JsonResult(new { success = true });
     }
 
+    public async Task<IActionResult> OnPostConvertItemTypeAsync(int id)
+    {
+        if (!CanWrite()) return new JsonResult(new { success = false, error = "Insufficient permissions." }) { StatusCode = 403 };
+        var (uid, uname) = GetUser();
+        try
+        {
+            var updated = await _inventoryService.ConvertItemTypeAsync(id, uid, uname);
+            return new JsonResult(new { success = true, newType = updated.ItemType.ToString() });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return new JsonResult(new { success = false, error = ex.Message });
+        }
+        catch (Exception)
+        {
+            return new JsonResult(new { success = false, error = "Conversion failed." });
+        }
+    }
+
     private (int userId, string username) GetUser() => User.GetIdentity();
     private bool CanWrite() => User.IsInRole("Admin") || User.IsInRole("Manager");
 }

@@ -18,6 +18,7 @@ public class LoginModel : PageModel
     public LoginInputModel Input { get; set; } = new();
 
     public string? ErrorMessage { get; set; }
+    public string? ReturnUrl { get; set; }
 
     public LoginModel(IUserAuthService authService, INtfyService ntfy)
     {
@@ -25,10 +26,11 @@ public class LoginModel : PageModel
         _ntfy        = ntfy;
     }
 
-    public IActionResult OnGet()
+    public IActionResult OnGet(string? returnUrl = null)
     {
+        ReturnUrl = returnUrl;
         if (User.Identity?.IsAuthenticated == true)
-            return RedirectToPage("/Index");
+            return Redirect(ResolveDestination(returnUrl, User.IsInRole(nameof(InventoryStore.Domain.Enums.UserRole.Staff))));
         return Page();
     }
 
@@ -55,7 +57,20 @@ public class LoginModel : PageModel
         await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity));
 
         _ = _ntfy.NotifyLoginAsync(user.DisplayName);
-        return new OkResult();
+
+        // Respect where they came from (e.g. /Terminal); otherwise Staff land on the Terminal
+        // and everyone else on the main app.
+        var returnUrl = Request.Form["returnUrl"].ToString();
+        var redirect  = ResolveDestination(returnUrl, user.Role == InventoryStore.Domain.Enums.UserRole.Staff);
+        return new JsonResult(new { redirect });
+    }
+
+    // A valid local return URL wins; failing that, Staff go to the Terminal and others to the app root.
+    private string ResolveDestination(string? returnUrl, bool isStaff)
+    {
+        if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+            return returnUrl;
+        return isStaff ? "/Terminal" : "/";
     }
 
     public class LoginInputModel

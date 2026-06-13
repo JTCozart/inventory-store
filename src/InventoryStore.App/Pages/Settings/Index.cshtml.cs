@@ -12,7 +12,8 @@ using Microsoft.Data.Sqlite;
 
 namespace InventoryStore.App.Pages.Settings;
 
-[Authorize]
+// Staff are scoped to the Terminal and have no settings access.
+[Authorize(Roles = "Admin,Manager,Viewer")]
 public class IndexModel : PageModel
 {
     private readonly IUserAuthService _authService;

@@ -6,7 +6,8 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace InventoryStore.App.Pages.Reports;
 
-[Authorize]
+// Staff are scoped to the Terminal and have no reports access.
+[Authorize(Roles = "Admin,Manager,Viewer")]
 public class IndexModel : PageModel
 {
     private readonly IReportService _reportService;

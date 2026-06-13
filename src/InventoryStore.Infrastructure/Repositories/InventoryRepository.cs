@@ -103,4 +103,12 @@ public class InventoryRepository : IInventoryRepository
             .Where(i => i.Location == from)
             .ExecuteUpdateAsync(s => s.SetProperty(i => i.Location, to));
     }
+
+    public async Task ConvertTypeAsync(int id, int newTypeValue)
+    {
+        await _context.Database.ExecuteSqlRawAsync(
+            "UPDATE InventoryItems SET ItemType = {0}, CheckedOutCount = 0, LostCount = 0 WHERE Id = {1}",
+            newTypeValue, id);
+        _context.ChangeTracker.Clear();
+    }
 }

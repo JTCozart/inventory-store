@@ -16,4 +16,5 @@ public interface IInventoryRepository
     Task<int> TotalQuantityAsync();
     Task<IEnumerable<(string Location, int Count)>> GetAllLocationsAsync();
     Task BulkUpdateLocationAsync(string from, string? to);
+    Task ConvertTypeAsync(int id, int newTypeValue);
 }

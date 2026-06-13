@@ -377,6 +377,48 @@ public class InventoryService : IInventoryService
         return (imported, failed, errors);
     }
 
+    public async Task<InventoryItemDto> ConvertItemTypeAsync(int id, int userId, string username)
+    {
+        var item = await _inventoryRepository.GetByIdAsync(id)
+            ?? throw new KeyNotFoundException($"Inventory item {id} not found.");
+
+        string oldType, newType;
+        int newTypeValue;
+
+        if (item is ReusableItem reusable)
+        {
+            if (reusable.CheckedOutCount > 0)
+                throw new InvalidOperationException(
+                    $"Cannot convert: {reusable.CheckedOutCount} unit(s) are currently checked out.");
+            if (reusable.LostCount > 0)
+                throw new InvalidOperationException(
+                    $"Cannot convert: {reusable.LostCount} unit(s) are marked as lost.");
+            oldType = "Reusable";
+            newType = "Consumable";
+            newTypeValue = (int)ItemType.Consumable;
+        }
+        else
+        {
+            oldType = "Consumable";
+            newType = "Reusable";
+            newTypeValue = (int)ItemType.Reusable;
+        }
+
+        await _inventoryRepository.ConvertTypeAsync(id, newTypeValue);
+
+        await _activityLogRepository.CreateAsync(new ActivityLog
+        {
+            UserId = userId, Username = username,
+            Action = "TypeConverted", EntityType = "InventoryItem", EntityId = id,
+            Details = $"Converted '{item.Name}' from {oldType} to {newType}"
+        });
+
+        _ = _webhooks.DispatchAsync("item.updated", new { item = ItemPayload(item), actor = username });
+
+        var updated = await _inventoryRepository.GetByIdAsync(id);
+        return MapToDto(updated!);
+    }
+
     private static string CsvEscape(string? value)
     {
         if (string.IsNullOrEmpty(value)) return string.Empty;

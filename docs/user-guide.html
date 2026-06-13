@@ -234,6 +234,7 @@
       <li><a href="#checkout">Check Out &amp; Check In</a></li>
       <li><a href="#consumables">Consumables</a></li>
       <li><a href="#barcode-scanning">Barcode Scanning</a></li>
+      <li><a href="#terminal">Terminal Mode</a></li>
       <li><a href="#product-lookup">Product Lookup &amp; Metadata</a></li>
       <li><a href="#csv">CSV Import &amp; Export</a></li>
 
@@ -350,7 +351,7 @@
 
     <section id="item-types">
       <h2><i class="fa-solid fa-boxes-stacked"></i> Item Types</h2>
-      <p>Every item is one of two types - chosen at creation and <strong>cannot be changed afterwards</strong>.</p>
+      <p>Every item is one of two types, chosen when you create it. You can change the type later if you need to (see <a href="#changing-type">Changing an item's type</a> below).</p>
       <table>
         <tr><th>Type</th><th>Use for</th><th>Operations</th></tr>
         <tr>
@@ -365,6 +366,14 @@
         </tr>
       </table>
       <p><strong>Available Quantity</strong> for Reusable items reflects how many units are physically on hand (not checked out or lost). For Consumables it is the same as the total quantity.</p>
+
+      <h3 id="changing-type">Changing an item's type</h3>
+      <p>If you set the wrong type, or an item's use changes, you can switch it between Reusable and Consumable. Open the item, click <strong>Edit</strong>, and use the <strong>Convert to …</strong> link shown under the type badge (Admin or Manager only). To prevent mistakes you click it once to arm it, then click <strong>Confirm</strong> to apply.</p>
+      <p>Before converting a Reusable item you must <strong>check in every unit and clear any lost ones</strong> - the convert link explains what is still out and stays disabled until the item is fully back. Converting a Consumable to Reusable has no such requirement.</p>
+      <div class="callout">
+        <i class="fa-solid fa-circle-info"></i>
+        The change is recorded in the activity log. Quantities are kept; only the way the item is tracked changes.
+      </div>
     </section>
 
     <section id="categories">
@@ -410,7 +419,7 @@
 
     <section id="editing-items">
       <h2><i class="fa-solid fa-pencil"></i> Editing Items</h2>
-      <p>Click any item row to open its detail screen, then click the <strong>Edit</strong> button (pencil icon). The detail screen closes and the edit form opens in its place - you never leave the inventory list. All fields except Item Type can be changed. Requires Admin or Manager role.</p>
+      <p>Click any item row to open its detail screen, then click the <strong>Edit</strong> button (pencil icon). The detail screen closes and the edit form opens in its place - you never leave the inventory list. Every field can be changed, and the item's type can be converted from the link under the type badge (see <a href="#changing-type">Changing an item's type</a>). Requires Admin or Manager role.</p>
       <p>The form is grouped into <strong>Basics</strong> (name, quantity, minimum), <strong>Identification</strong> (SKU, location, category), and <strong>Details</strong> (expiry, scan warning, description). The labels adapt to the item type - Consumables show <em>In Stock</em>, while Reusables show <em>Total Quantity</em> with a reminder of how many units are currently checked out so you don't set the total below what is out. Expiry Date only appears for Consumables.</p>
       <p>Click the <strong>magnifying glass</strong> button inside the SKU field to look up the product by its barcode (see <a href="#product-lookup">Product Lookup &amp; Metadata</a>). Choosing a match fills in the name and links the product's image, brand, category, size, and weight to the item when you save. After saving, the detail screen reopens automatically with the updated information.</p>
       <h3>Deleting items</h3>
@@ -534,6 +543,37 @@
         <li>Go to <strong>Reports → Barcode Sheet</strong></li>
         <li>Click <strong>Print</strong> - the page formats itself with one barcode per item in a label-friendly grid</li>
       </ol>
+    </section>
+
+    <section id="terminal">
+      <h2><i class="fa-solid fa-tablet-screen-button"></i> Terminal Mode</h2>
+      <p>Terminal Mode is a simple, full-screen page built for a tablet or shared front-desk device. It has large touch-friendly buttons and only the controls needed to hand items out, take them back, and use up stock. It lives at <code>/terminal</code> (for example <code>http://localhost:5050/terminal</code>).</p>
+
+      <h3>Finding an item</h3>
+      <p>There is one search box at the top. Type a SKU or part of an item name and matches appear as you type, or tap <strong>Scan with camera</strong> to read a barcode. Pick a result to open it. If only one item matches it opens on its own.</p>
+
+      <h3>What you can do on the Terminal</h3>
+      <ul>
+        <li><strong>Check out</strong> a reusable item to a person, and <strong>check in</strong> items that come back</li>
+        <li><strong>Consume</strong> (use up) consumable stock by tapping the red <strong>−</strong> button next to the quantity</li>
+        <li><strong>Restock</strong> with the green <strong>+</strong> button - only Admins and Managers see this</li>
+      </ul>
+      <p>There is no add, edit, or delete on the Terminal. It is meant for quick day-to-day handouts, not for managing the catalog.</p>
+      <div class="callout">
+        <i class="fa-solid fa-circle-info"></i>
+        If an item has none left, a red <strong>Out of stock</strong> message appears at the top of its card and the check out or consume button is turned off, so you cannot hand out something you do not have.
+      </div>
+
+      <h3>The Staff role</h3>
+      <p>There is a user role called <strong>Staff</strong> made for the Terminal. A Staff user can check out, check in, and consume stock, but cannot add items, restock, or open the reports or settings. When a Staff user logs in they are taken straight to the Terminal, and logging out brings them back to the Terminal sign-in so the device is always ready for the next person.</p>
+      <p>Create a Staff user the same way as any other - go to <strong>Settings → User Management</strong>, click <strong>Add User</strong>, and choose <strong>Staff (Terminal)</strong> as the role.</p>
+      <div class="callout">
+        <i class="fa-solid fa-circle-info"></i>
+        Admins and Managers can open the Terminal any time from the tablet icon in the top bar, and they get the <strong>Restock</strong> button and a <strong>home</strong> button to return to the main app. Staff do not see the home button.
+      </div>
+
+      <h3>Using it on a tablet</h3>
+      <p>Open <code>/terminal</code> in the tablet's browser. Buttons are sized for fingers, and the page remembers your light or dark theme choice using the moon and sun button in the corner. When you are done with one item, tap <strong>Next item</strong> to clear the screen for the next person.</p>
     </section>
 
     <section id="product-lookup">
@@ -754,6 +794,7 @@
         <tr><th>Role</th><th>Can do</th></tr>
         <tr><td><strong>Admin</strong></td><td>Everything - manage users, settings, categories, database backup/restore, and all inventory operations</td></tr>
         <tr><td><strong>Manager</strong></td><td>All inventory operations (checkout, consume, restock, add/edit/delete items, manage categories); run all reports; cannot manage users, remote access, or database settings</td></tr>
+        <tr><td><strong>Staff</strong></td><td>Terminal only. Can check out, check in, and consume stock from the <a href="#terminal">Terminal</a>, but cannot restock, add/edit/delete items, or change settings. Sent straight to the Terminal at login.</td></tr>
         <tr><td><strong>Viewer</strong></td><td>View inventory and reports only. Can see item details and active checkouts but cannot check out, consume, edit, delete, or import items.</td></tr>
       </table>
     </section>
@@ -973,22 +1014,24 @@
     <section id="roles">
       <h2><i class="fa-solid fa-shield"></i> Role Reference</h2>
       <table>
-        <tr><th>Action</th><th>Admin</th><th>Manager</th><th>Viewer</th></tr>
-        <tr><td>View inventory &amp; reports</td><td>✓</td><td>✓</td><td>✓</td></tr>
-        <tr><td>Export CSV</td><td>✓</td><td>✓</td><td>✓</td></tr>
-        <tr><td>Check out / check in items</td><td>✓</td><td>✓</td><td></td></tr>
-        <tr><td>Consume / restock items</td><td>✓</td><td>✓</td><td></td></tr>
-        <tr><td>Add / edit / delete items</td><td>✓</td><td>✓</td><td></td></tr>
-        <tr><td>Import CSV</td><td>✓</td><td>✓</td><td></td></tr>
-        <tr><td>Manage categories &amp; locations</td><td>✓</td><td>✓</td><td></td></tr>
-        <tr><td>Manage users</td><td>✓</td><td></td><td></td></tr>
-        <tr><td>Configure remote access &amp; tunnels</td><td>✓</td><td></td><td></td></tr>
-        <tr><td>Configure custom HTTPS certificate</td><td>✓</td><td></td><td></td></tr>
-        <tr><td>Configure push notifications</td><td>✓</td><td></td><td></td></tr>
-        <tr><td>Enable / disable public view</td><td>✓</td><td></td><td></td></tr>
-        <tr><td>Toggle item visibility in public view</td><td>✓</td><td>✓</td><td></td></tr>
-        <tr><td>Database backup &amp; restore</td><td>✓</td><td></td><td></td></tr>
-        <tr><td>Change own password</td><td>✓</td><td>✓</td><td>✓</td></tr>
+        <tr><th>Action</th><th>Admin</th><th>Manager</th><th>Staff</th><th>Viewer</th></tr>
+        <tr><td>View inventory</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
+        <tr><td>View reports</td><td>✓</td><td>✓</td><td></td><td>✓</td></tr>
+        <tr><td>Export CSV</td><td>✓</td><td>✓</td><td></td><td>✓</td></tr>
+        <tr><td>Check out / check in items</td><td>✓</td><td>✓</td><td>✓</td><td></td></tr>
+        <tr><td>Consume stock</td><td>✓</td><td>✓</td><td>✓</td><td></td></tr>
+        <tr><td>Restock items</td><td>✓</td><td>✓</td><td></td><td></td></tr>
+        <tr><td>Add / edit / delete items</td><td>✓</td><td>✓</td><td></td><td></td></tr>
+        <tr><td>Import CSV</td><td>✓</td><td>✓</td><td></td><td></td></tr>
+        <tr><td>Manage categories &amp; locations</td><td>✓</td><td>✓</td><td></td><td></td></tr>
+        <tr><td>Manage users</td><td>✓</td><td></td><td></td><td></td></tr>
+        <tr><td>Configure remote access &amp; tunnels</td><td>✓</td><td></td><td></td><td></td></tr>
+        <tr><td>Configure custom HTTPS certificate</td><td>✓</td><td></td><td></td><td></td></tr>
+        <tr><td>Configure push notifications</td><td>✓</td><td></td><td></td><td></td></tr>
+        <tr><td>Enable / disable public view</td><td>✓</td><td></td><td></td><td></td></tr>
+        <tr><td>Toggle item visibility in public view</td><td>✓</td><td>✓</td><td></td><td></td></tr>
+        <tr><td>Database backup &amp; restore</td><td>✓</td><td></td><td></td><td></td></tr>
+        <tr><td>Change own password</td><td>✓</td><td>✓</td><td></td><td>✓</td></tr>
       </table>
     </section>
 

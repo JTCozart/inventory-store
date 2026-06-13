@@ -13,6 +13,7 @@ using InventoryStore.App.Middleware;
 using InventoryStore.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
+using System.Net.Http.Json;
 using WinForms = System.Windows.Forms;
 
 namespace InventoryStore.App;
@@ -26,6 +27,7 @@ internal record ConsumeRequest(int ItemId, int Quantity, string? Notes);
 internal record RestockRequest(int ItemId, int Quantity, string? Notes);
 internal record CostInput(decimal UnitCost, string? PurchaseDate, int? UsefulLifeMonths);
 internal record WebhookInput(string Url, string? Events, string? Secret);
+internal record UsageReportRequest(string? HowHeard, bool OptOut);
 
 // Fetches product metadata from the three public APIs. Shared by the barcode-lookup
 // endpoint and the metadata-explorer refresh action. Pure fetch — no DB access.
@@ -406,6 +408,11 @@ internal class Program
             c.DefaultRequestHeaders.UserAgent.ParseAdd("InventoryStore/1.0 (webhooks)");
             c.Timeout = TimeSpan.FromSeconds(10);
         });
+        services.AddHttpClient("posthog", c =>
+        {
+            c.DefaultRequestHeaders.UserAgent.ParseAdd("InventoryStore/1.0 (usage)");
+            c.Timeout = TimeSpan.FromSeconds(8);
+        });
         services.AddScoped<InventoryStore.Application.Interfaces.Services.IWebhookService,
                            InventoryStore.App.Services.WebhookService>();
 
@@ -436,7 +443,9 @@ internal class Program
                 {
                     OnRedirectToLogin = ctx =>
                     {
-                        ctx.Response.Redirect("/Auth/Login");
+                        // Preserve the originally requested page (e.g. /Terminal) as ReturnUrl so
+                        // login sends the user back where they were headed.
+                        ctx.Response.Redirect(ctx.RedirectUri);
                         return Task.CompletedTask;
                     },
                     OnRedirectToAccessDenied = ctx =>
@@ -960,22 +969,36 @@ internal class Program
                 return Results.Ok(status);
             });
 
-            endpoints.MapPost("/api/inventory/checkout", [Authorize(Roles = "Admin,Manager")] async (HttpContext ctx, ICheckoutService svc) =>
+            endpoints.MapPost("/api/inventory/checkout", [Authorize(Roles = "Admin,Manager,Staff")] async (HttpContext ctx, ICheckoutService svc) =>
             {
                 var dto = await ctx.Request.ReadFromJsonAsync<CheckOutRequest>();
                 if (dto is null) return Results.BadRequest();
                 var (uid, uname) = HttpContextExtensions.GetUser(ctx);
-                var record = await svc.CheckOutAsync(new Application.DTOs.CheckOutItemDto(dto.ItemId, dto.CheckedOutBy, dto.Quantity, dto.Notes, dto.ClientId), uid, uname);
-                return Results.Ok(record);
+                try
+                {
+                    var record = await svc.CheckOutAsync(new Application.DTOs.CheckOutItemDto(dto.ItemId, dto.CheckedOutBy, dto.Quantity, dto.Notes, dto.ClientId), uid, uname);
+                    return Results.Ok(record);
+                }
+                catch (Exception ex) when (ex is InvalidOperationException or KeyNotFoundException)
+                {
+                    return Results.Text(ex.Message, "text/plain", null, StatusCodes.Status400BadRequest);
+                }
             });
 
-            endpoints.MapPost("/api/inventory/checkin", [Authorize(Roles = "Admin,Manager")] async (HttpContext ctx, ICheckoutService svc) =>
+            endpoints.MapPost("/api/inventory/checkin", [Authorize(Roles = "Admin,Manager,Staff")] async (HttpContext ctx, ICheckoutService svc) =>
             {
                 var dto = await ctx.Request.ReadFromJsonAsync<CheckInRequest>();
                 if (dto is null) return Results.BadRequest();
                 var (uid, uname) = HttpContextExtensions.GetUser(ctx);
-                var record = await svc.CheckInAsync(new Application.DTOs.CheckInItemDto(dto.RecordId, dto.Notes), uid, uname);
-                return Results.Ok(record);
+                try
+                {
+                    var record = await svc.CheckInAsync(new Application.DTOs.CheckInItemDto(dto.RecordId, dto.Notes), uid, uname);
+                    return Results.Ok(record);
+                }
+                catch (Exception ex) when (ex is InvalidOperationException or KeyNotFoundException)
+                {
+                    return Results.Text(ex.Message, "text/plain", null, StatusCodes.Status400BadRequest);
+                }
             });
 
             endpoints.MapPost("/api/inventory/lost", [Authorize(Roles = "Admin,Manager")] async (HttpContext ctx, ICheckoutService svc) =>
@@ -983,17 +1006,31 @@ internal class Program
                 var dto = await ctx.Request.ReadFromJsonAsync<MarkLostRequest>();
                 if (dto is null) return Results.BadRequest();
                 var (uid, uname) = HttpContextExtensions.GetUser(ctx);
-                var record = await svc.MarkLostAsync(new Application.DTOs.MarkLostDto(dto.RecordId, dto.Notes), uid, uname);
-                return Results.Ok(record);
+                try
+                {
+                    var record = await svc.MarkLostAsync(new Application.DTOs.MarkLostDto(dto.RecordId, dto.Notes), uid, uname);
+                    return Results.Ok(record);
+                }
+                catch (Exception ex) when (ex is InvalidOperationException or KeyNotFoundException)
+                {
+                    return Results.Text(ex.Message, "text/plain", null, StatusCodes.Status400BadRequest);
+                }
             });
 
-            endpoints.MapPost("/api/inventory/consume", [Authorize(Roles = "Admin,Manager")] async (HttpContext ctx, ICheckoutService svc) =>
+            endpoints.MapPost("/api/inventory/consume", [Authorize(Roles = "Admin,Manager,Staff")] async (HttpContext ctx, ICheckoutService svc) =>
             {
                 var dto = await ctx.Request.ReadFromJsonAsync<ConsumeRequest>();
                 if (dto is null) return Results.BadRequest();
                 var (uid, uname) = HttpContextExtensions.GetUser(ctx);
-                await svc.ConsumeAsync(new Application.DTOs.ConsumeItemDto(dto.ItemId, dto.Quantity, dto.Notes), uid, uname);
-                return Results.Ok();
+                try
+                {
+                    await svc.ConsumeAsync(new Application.DTOs.ConsumeItemDto(dto.ItemId, dto.Quantity, dto.Notes), uid, uname);
+                    return Results.Ok();
+                }
+                catch (Exception ex) when (ex is InvalidOperationException or KeyNotFoundException)
+                {
+                    return Results.Text(ex.Message, "text/plain", null, StatusCodes.Status400BadRequest);
+                }
             });
 
             endpoints.MapPost("/api/inventory/restock", [Authorize(Roles = "Admin,Manager")] async (HttpContext ctx, ICheckoutService svc) =>
@@ -1001,8 +1038,15 @@ internal class Program
                 var dto = await ctx.Request.ReadFromJsonAsync<RestockRequest>();
                 if (dto is null) return Results.BadRequest();
                 var (uid, uname) = HttpContextExtensions.GetUser(ctx);
-                await svc.RestockAsync(new Application.DTOs.RestockItemDto(dto.ItemId, dto.Quantity, dto.Notes), uid, uname);
-                return Results.Ok();
+                try
+                {
+                    await svc.RestockAsync(new Application.DTOs.RestockItemDto(dto.ItemId, dto.Quantity, dto.Notes), uid, uname);
+                    return Results.Ok();
+                }
+                catch (Exception ex) when (ex is InvalidOperationException or KeyNotFoundException)
+                {
+                    return Results.Text(ex.Message, "text/plain", null, StatusCodes.Status400BadRequest);
+                }
             });
 
             // ── Clients API ───────────────────────────────────────────────
@@ -1043,7 +1087,7 @@ internal class Program
                 return Results.Ok();
             });
 
-            endpoints.MapPost("/api/clients/quick-create", [Authorize(Roles = "Admin,Manager")] async (HttpContext ctx, IClientService svc) =>
+            endpoints.MapPost("/api/clients/quick-create", [Authorize(Roles = "Admin,Manager,Staff")] async (HttpContext ctx, IClientService svc) =>
             {
                 var body = await ctx.Request.ReadFromJsonAsync<QuickCreateClientRequest>();
                 if (body is null || string.IsNullOrWhiteSpace(body.Name))
@@ -1068,6 +1112,48 @@ internal class Program
             {
                 _ = Task.Run(async () => { await Task.Delay(800); lifetime.StopApplication(); });
                 return Results.Ok();
+            });
+
+            // ── One-time usage check-in ───────────────────────────────────
+            // Shown once per install to the first admin. "OK" sends a single anonymous
+            // "someone is using the app" event to PostHog; opting out (or OK) marks it
+            // resolved app-wide so no admin is ever asked again.
+            endpoints.MapPost("/api/usage/report", [Authorize(Roles = "Admin")] async (
+                UsageReportRequest body, ISettingsService settings, IHttpClientFactory httpFactory, UpdateInfo updateInfo) =>
+            {
+                await settings.SetAsync("usage.prompt.resolved", "true");
+
+                if (body is { OptOut: true }) return Results.Ok(new { success = true });
+
+                // Stable anonymous id so one install counts as one user, with nothing identifying.
+                var installId = await settings.GetAsync("usage.installid");
+                if (string.IsNullOrWhiteSpace(installId))
+                {
+                    installId = Guid.NewGuid().ToString("N");
+                    await settings.SetAsync("usage.installid", installId);
+                }
+
+                var payload = new
+                {
+                    api_key     = "phc_u3KvbsAKsLL7jghUPb9i59NpcW5uHrS7wNn9TELwCTrN",
+                    @event      = "Device usage",
+                    distinct_id = installId,
+                    properties  = new
+                    {
+                        how_heard   = string.IsNullOrWhiteSpace(body?.HowHeard) ? null : body!.HowHeard!.Trim(),
+                        app_version = updateInfo.CurrentVersion
+                    }
+                };
+
+                // Best effort: never let a telemetry hiccup affect the user.
+                try
+                {
+                    var http = httpFactory.CreateClient("posthog");
+                    await http.PostAsJsonAsync("https://us.i.posthog.com/capture/", payload);
+                }
+                catch { }
+
+                return Results.Ok(new { success = true });
             });
         });
 

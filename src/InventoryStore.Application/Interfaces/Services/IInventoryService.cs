@@ -20,4 +20,5 @@ public interface IInventoryService
     Task SetItemCategoryAsync(int itemId, int? categoryId, int userId, string username);
     Task<string> ExportToCsvAsync();
     Task<(int Imported, int Failed, IReadOnlyList<string> Errors)> ImportFromCsvAsync(Stream csvStream, int userId, string username);
+    Task<InventoryItemDto> ConvertItemTypeAsync(int id, int userId, string username);
 }

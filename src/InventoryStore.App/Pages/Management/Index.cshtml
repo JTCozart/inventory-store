@@ -46,7 +46,7 @@
                             <td class="fw-semibold">@user.Username</td>
                             <td class="text-muted small">@user.Email</td>
                             <td>
-                                <span class="badge @(user.Role == InventoryStore.Domain.Enums.UserRole.Admin ? "bg-danger" : user.Role == InventoryStore.Domain.Enums.UserRole.Manager ? "bg-warning text-dark" : "bg-secondary")">
+                                <span class="badge @(user.Role == InventoryStore.Domain.Enums.UserRole.Admin ? "bg-danger" : user.Role == InventoryStore.Domain.Enums.UserRole.Manager ? "bg-warning text-dark" : user.Role == InventoryStore.Domain.Enums.UserRole.Staff ? "bg-info text-dark" : "bg-secondary")">
                                     @user.Role
                                 </span>
                             </td>
@@ -130,6 +130,7 @@
                         <label class="form-label">Role</label>
                         <select name="NewUser.Role" class="form-select">
                             <option value="2">Viewer</option>
+                            <option value="3">Staff (Terminal)</option>
                             <option value="1">Manager</option>
                             <option value="0">Admin</option>
                         </select>
