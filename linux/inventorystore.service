@@ -7,12 +7,18 @@ After=network.target
 Type=notify
 WorkingDirectory=/opt/inventorystore
 ExecStart=/opt/inventorystore/InventoryStore.App
-Restart=on-failure
+# Restart=always so the in-app "Restart Service" button (a graceful exit) brings it back.
+Restart=always
 RestartSec=5
 
 # Dedicated unprivileged service account (created by install.sh).
 User=inventorystore
 Group=inventorystore
+
+# Allow the unprivileged service to bind the privileged ports 80/443 used by HTTPS
+# and the Let's Encrypt HTTP-01 challenge.
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
 
 # Persistent data (SQLite db, downloaded cloudflared, keys) lives here.
 # StateDirectory creates /var/lib/inventorystore owned by the service user.

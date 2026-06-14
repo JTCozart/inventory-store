@@ -537,8 +537,8 @@
                         <button class="accordion-button @(Model.HttpsEnabled || Model.HttpsCertUploaded ? "" : "collapsed")"
                                 type="button" data-bs-toggle="collapse" data-bs-target="#https-section">
                             <i class="bi bi-lock me-2 text-primary"></i>
-                            Custom HTTPS / Port 443
-                            @if (Model.HttpsEnabled && Model.HttpsCertUploaded)
+                            HTTPS / TLS (Port 443)
+                            @if (Model.HttpsEnabled)
                             {
                                 <span class="badge bg-success ms-2">Active</span>
                             }
@@ -550,6 +550,51 @@
                     </h2>
                     <div id="https-section" class="accordion-collapse collapse @(Model.HttpsEnabled || Model.HttpsCertUploaded ? "show" : "")">
                         <div class="accordion-body">
+                            <h6 class="mb-2"><i class="bi bi-magic me-1"></i>Automatic certificate (Let's Encrypt)</h6>
+                            <p class="text-muted small mb-3">
+                                Inventory Store can obtain and automatically renew a free certificate from
+                                Let's Encrypt. Your domain's DNS must point to this server, and ports
+                                <strong>80</strong> and <strong>443</strong> must be reachable from the internet.
+                                Changes take effect after restarting the service.
+                            </p>
+                            <form method="post" asp-page-handler="SaveLetsEncrypt">
+                                @Html.AntiForgeryToken()
+                                <div class="row g-3 mb-3">
+                                    <div class="col-12">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" id="le-enabled"
+                                                   name="leEnabled" value="true"
+                                                   @(Model.HttpsMode == "letsencrypt" && Model.HttpsEnabled ? "checked" : "") />
+                                            <label class="form-check-label" for="le-enabled">Enable automatic HTTPS</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small mb-1">Domain</label>
+                                        <input type="text" name="leDomain" class="form-control form-control-sm"
+                                               value="@Model.HttpsDomain" placeholder="e.g. inventory.mycompany.com" />
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small mb-1">Email <span class="text-muted">(renewal notices)</span></label>
+                                        <input type="email" name="leEmail" class="form-control form-control-sm"
+                                               value="@Model.LeEmail" placeholder="you@example.com" autocomplete="email" />
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="le-tos"
+                                                   name="leAcceptTos" value="true" @(Model.LeTosAccepted ? "checked" : "") />
+                                            <label class="form-check-label small" for="le-tos">
+                                                I accept the
+                                                <a href="https://letsencrypt.org/repository/" target="_blank" rel="noopener">Let's Encrypt Terms of Service</a>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-floppy me-1"></i>Save</button>
+                            </form>
+
+                            <hr class="my-4" />
+
+                            <h6 class="mb-2"><i class="bi bi-upload me-1"></i>Or upload your own certificate</h6>
                             <p class="text-muted small mb-3">
                                 Serve Inventory Store over HTTPS on your own domain using a certificate you provide.
                                 Supply a <strong>.pfx</strong> file (certificate + private key bundled together).

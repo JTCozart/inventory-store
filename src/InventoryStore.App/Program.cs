@@ -12,6 +12,7 @@ using InventoryStore.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 using System.Net.Http.Json;
+using LettuceEncrypt;
 #if !LINUX
 using InventoryStore.App.Tray;
 using Microsoft.Extensions.Hosting.WindowsServices;
@@ -348,31 +349,68 @@ internal class Program
         Host.CreateDefaultBuilder(args)
             .ConfigureWebHostDefaults(web =>
             {
-                web.ConfigureServices(ConfigureServices);
-                web.Configure(ConfigureApp);
                 var isDev = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
                 var httpPort = isDev ? 5051 : 5050;
                 var https = LoadHttpsConfig();
 
+                var useLetsEncrypt = https is { Enabled: true, Mode: "letsencrypt" }
+                    && !string.IsNullOrWhiteSpace(https.Domain) && https.TosAccepted;
+
+                web.ConfigureServices(services =>
+                {
+                    ConfigureServices(services);
+
+                    if (useLetsEncrypt)
+                    {
+                        // In-process ACME (HTTP-01). LettuceEncrypt obtains the cert on
+                        // startup, serves the challenge via an IStartupFilter, and renews
+                        // automatically in the background with SNI hot-reload.
+                        services.AddLettuceEncrypt(o =>
+                        {
+                            o.AcceptTermsOfService = true;
+                            o.EmailAddress = https.Email ?? string.Empty;
+                            o.DomainNames  = new[] { https.Domain! };
+                        })
+                        .PersistDataToDirectory(
+                            new DirectoryInfo(InventoryStore.App.Utilities.AppPaths.DataDir),
+                            https.CertPassword);
+                    }
+                });
+
+                web.Configure(app => ConfigureApp(app, https));
+
                 web.UseKestrel(options =>
                 {
                     options.ListenAnyIP(httpPort);
-                    if (https.Enabled && File.Exists(https.CertPath))
+
+                    if (https.Enabled && (useLetsEncrypt || File.Exists(https.CertPath)))
                     {
+                        // Port 80 carries the ACME HTTP-01 challenge and (see ConfigureApp)
+                        // redirects everything else to HTTPS.
+                        options.ListenAnyIP(80);
+
                         options.ListenAnyIP(https.Port, listen =>
                         {
-                            listen.UseHttps(https.CertPath, https.CertPassword);
+                            if (useLetsEncrypt)
+                                listen.UseHttps(h => h.UseLettuceEncrypt(options.ApplicationServices));
+                            else
+                                listen.UseHttps(https.CertPath, https.CertPassword);
                         });
                     }
                 });
             });
 
-    static (bool Enabled, int Port, string CertPath, string? CertPassword) LoadHttpsConfig()
+    internal sealed record HttpsSettings(
+        bool Enabled, string Mode, int Port, string CertPath, string? CertPassword,
+        string? Domain, string? Email, bool TosAccepted);
+
+    static HttpsSettings LoadHttpsConfig()
     {
         var dataDir  = InventoryStore.App.Utilities.AppPaths.DataDir;
         var certPath = Path.Combine(dataDir, "https.pfx");
         var dbPath   = Path.Combine(dataDir, "inventory.db");
-        if (!File.Exists(dbPath)) return (false, 443, certPath, null);
+        var disabled = new HttpsSettings(false, "manual", 443, certPath, null, null, null, false);
+        if (!File.Exists(dbPath)) return disabled;
         try
         {
             using var conn = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={dbPath}");
@@ -385,11 +423,15 @@ internal class Program
                 return cmd.ExecuteScalar() as string;
             }
             var enabled  = Get("https.enabled") == "true";
+            var mode     = Get("https.mode") ?? "manual";
             var port     = int.TryParse(Get("https.port"), out var p) ? p : 443;
             var password = Get("https.cert.password");
-            return (enabled, port, certPath, password);
+            var domain   = Get("https.domain");
+            var email    = Get("https.letsencrypt.email");
+            var tos      = Get("https.letsencrypt.tos") == "true";
+            return new HttpsSettings(enabled, mode, port, certPath, password, domain, email, tos);
         }
-        catch { return (false, 443, certPath, null); }
+        catch { return disabled; }
     }
 
     static void ConfigureServices(IServiceCollection services)
@@ -472,7 +514,7 @@ internal class Program
         services.AddAuthorization();
     }
 
-    static void ConfigureApp(IApplicationBuilder app)
+    static void ConfigureApp(IApplicationBuilder app, HttpsSettings https)
     {
         var env = app.ApplicationServices.GetRequiredService<IWebHostEnvironment>();
 
@@ -480,6 +522,27 @@ internal class Program
             app.UseDeveloperExceptionPage();
         else
             app.UseExceptionHandler("/Error");
+
+        // When HTTPS is enabled, redirect plain HTTP arriving on port 80 to HTTPS. The ACME
+        // HTTP-01 challenge (served first by LettuceEncrypt's startup filter) is excluded so
+        // certificate issuance and renewal keep working over port 80.
+        if (https.Enabled)
+        {
+            app.Use(async (ctx, next) =>
+            {
+                if (!ctx.Request.IsHttps
+                    && ctx.Connection.LocalPort == 80
+                    && !ctx.Request.Path.StartsWithSegments("/.well-known/acme-challenge"))
+                {
+                    var portSuffix = https.Port == 443 ? "" : $":{https.Port}";
+                    var target = $"https://{ctx.Request.Host.Host}{portSuffix}" +
+                                 $"{ctx.Request.PathBase}{ctx.Request.Path}{ctx.Request.QueryString}";
+                    ctx.Response.Redirect(target, permanent: false);
+                    return;
+                }
+                await next();
+            });
+        }
 
         app.UseStaticFiles();
         app.UseRouting();

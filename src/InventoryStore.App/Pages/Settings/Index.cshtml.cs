@@ -60,6 +60,9 @@ public class IndexModel : PageModel
     public int     HttpsPort          { get; private set; } = 443;
     public string? HttpsDomain        { get; private set; }
     public bool    HttpsCertUploaded  { get; private set; }
+    public string  HttpsMode          { get; private set; } = "manual";
+    public string? LeEmail            { get; private set; }
+    public bool    LeTosAccepted      { get; private set; }
 
     // Modules tab
     public IReadOnlyList<InventoryStore.App.Modules.ModuleDescriptor> Modules { get; private set; } = [];
@@ -130,6 +133,9 @@ public class IndexModel : PageModel
             var portStr   = await _settingsService.GetAsync("https.port");
             HttpsPort     = int.TryParse(portStr, out var p) ? p : 443;
             HttpsCertUploaded = System.IO.File.Exists(HttpsCertPath());
+            HttpsMode     = await _settingsService.GetAsync("https.mode") ?? "manual";
+            LeEmail       = await _settingsService.GetAsync("https.letsencrypt.email");
+            LeTosAccepted = await _settingsService.GetAsync("https.letsencrypt.tos") == "true";
         }
 
         if (tab == "modules")
@@ -202,6 +208,7 @@ public class IndexModel : PageModel
             await certFile.CopyToAsync(stream);
         }
 
+        await _settingsService.SetAsync("https.mode",    "manual");
         await _settingsService.SetAsync("https.enabled", httpsEnabled ? "true" : "false");
         await _settingsService.SetAsync("https.port",    httpsPort > 0 ? httpsPort.ToString() : "443");
         await _settingsService.SetAsync("https.domain",  httpsDomain?.Trim());
@@ -209,6 +216,36 @@ public class IndexModel : PageModel
             await _settingsService.SetAsync("https.cert.password", httpsCertPassword);
 
         return RedirectWithMessage("network", success: "HTTPS settings saved. Restart the service for changes to take effect.");
+    }
+
+    public async Task<IActionResult> OnPostSaveLetsEncryptAsync(
+        bool leEnabled, string? leDomain, string? leEmail, bool leAcceptTos)
+    {
+        if (!User.IsInRole("Admin")) return Forbid();
+
+        leDomain = leDomain?.Trim();
+        leEmail  = leEmail?.Trim();
+
+        if (leEnabled)
+        {
+            if (string.IsNullOrWhiteSpace(leDomain))
+                return RedirectWithMessage("network", error: "A domain name is required for Let's Encrypt.");
+            if (string.IsNullOrWhiteSpace(leEmail))
+                return RedirectWithMessage("network", error: "An email address is required for Let's Encrypt.");
+            if (!leAcceptTos)
+                return RedirectWithMessage("network", error: "You must accept the Let's Encrypt Terms of Service.");
+        }
+
+        await _settingsService.SetAsync("https.mode",              "letsencrypt");
+        await _settingsService.SetAsync("https.enabled",           leEnabled ? "true" : "false");
+        await _settingsService.SetAsync("https.port",              "443");
+        await _settingsService.SetAsync("https.domain",            leDomain);
+        await _settingsService.SetAsync("https.letsencrypt.email", leEmail);
+        await _settingsService.SetAsync("https.letsencrypt.tos",   leAcceptTos ? "true" : "false");
+
+        return RedirectWithMessage("network", success:
+            "Let's Encrypt settings saved. Restart the service to obtain and enable the certificate. " +
+            "Make sure your domain points to this server and ports 80 and 443 are reachable.");
     }
 
     public async Task<IActionResult> OnPostClearHttpsCertAsync()
@@ -220,9 +257,7 @@ public class IndexModel : PageModel
         return RedirectWithMessage("network", success: "Certificate removed. Restart the service to disable HTTPS.");
     }
 
-    private static string HttpsCertPath() =>
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
-                     "InventoryStore", "https.pfx");
+    private static string HttpsCertPath() => Path.Combine(AppPaths.DataDir, "https.pfx");
 
     public async Task<IActionResult> OnPostSaveTunnelConfigAsync(
         string? tunnelToken, string? tunnelUrl, string? ltSubdomain, string? autostart, string? serveoSubdomain)
@@ -598,9 +633,7 @@ public class IndexModel : PageModel
         return RedirectWithMessage("database", success: "Database restored successfully. A backup of the previous database was saved alongside it.");
     }
 
-    private static string GetDbPath() => Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
-        "InventoryStore", "inventory.db");
+    private static string GetDbPath() => Path.Combine(AppPaths.DataDir, "inventory.db");
 
     public async Task<IActionResult> OnPostToggleModuleAsync(string key, bool enabled)
     {

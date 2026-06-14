@@ -45,7 +45,15 @@ chmod +x "$APP_DIR/InventoryStore.App"
 # 4. Install the systemd unit.
 cp "$SCRIPT_DIR/inventorystore.service" "$UNIT"
 
-# 5. Enable + start at boot.
+# 5. Open the firewall (best effort): 5050 (LAN HTTP), 80 + 443 (HTTPS / Let's Encrypt).
+if command -v ufw >/dev/null 2>&1 && ufw status | grep -q "Status: active"; then
+  ufw allow 5050/tcp >/dev/null 2>&1 || true
+  ufw allow 80/tcp   >/dev/null 2>&1 || true
+  ufw allow 443/tcp  >/dev/null 2>&1 || true
+  echo "Opened ufw ports 5050, 80, 443."
+fi
+
+# 6. Enable + start at boot.
 systemctl daemon-reload
 systemctl enable inventorystore
 systemctl restart inventorystore

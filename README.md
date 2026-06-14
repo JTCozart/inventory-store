@@ -81,6 +81,18 @@ sudo systemctl restart inventorystore
 - A 64-bit Ubuntu/Debian-based distribution with systemd (the release archive is self-contained, no .NET install required)
 - `openssh-client` (`sudo apt install openssh-client`) - required only for Serveo remote access
 
+### HTTPS / TLS
+
+Inventory Store can manage its own certificate. Go to **Settings → Network → HTTPS / TLS** and choose:
+
+- **Automatic (Let's Encrypt)** - enter your domain and email, accept the Terms of Service, save, then restart the service. The app obtains a free certificate over the ACME HTTP-01 challenge and renews it automatically in the background. Requirements:
+  - The domain's DNS A/AAAA record points at this server
+  - Inbound TCP **80** and **443** are reachable (open them in `ufw` and any cloud provider security group)
+  - When HTTPS is enabled, port 80 redirects to 443 (the ACME challenge path is always served on 80 so renewals keep working); plain HTTP stays available on 5050 for LAN use
+- **Upload your own certificate** - supply a `.pfx` (certificate + key) if you already have one
+
+The systemd unit grants `CAP_NET_BIND_SERVICE` so the unprivileged service can bind ports 80 and 443.
+
 ---
 
 ## Quick start
