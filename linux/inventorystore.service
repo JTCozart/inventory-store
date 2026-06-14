@@ -5,6 +5,7 @@ After=network.target
 [Service]
 # systemd-notify readiness is provided by the host's .UseSystemd() integration.
 Type=notify
+WorkingDirectory=/opt/inventorystore
 ExecStart=/opt/inventorystore/InventoryStore.App
 Restart=on-failure
 RestartSec=5

@@ -297,7 +297,11 @@ internal class Program
     {
 #if LINUX
         // Linux runs headless as a systemd service — no tray companion.
+        // UseSystemd (unlike UseWindowsService) does not set the content root, so
+        // pin it to the executable's directory; otherwise static files (wwwroot)
+        // and appsettings.json are resolved against the service's working dir ("/").
         CreateHostBuilder(args)
+            .UseContentRoot(AppContext.BaseDirectory)
             .UseSystemd()
             .Build()
             .Run();

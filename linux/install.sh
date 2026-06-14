@@ -7,6 +7,10 @@
 #
 # Expects the published application in an "app" subdirectory next to this script.
 
+# Re-exec under bash if started with a POSIX shell (e.g. `sh install.sh`), since
+# this script uses bash features (pipefail, [[ ]], BASH_SOURCE).
+if [ -z "${BASH_VERSION:-}" ]; then exec bash "$0" "$@"; fi
+
 set -euo pipefail
 
 APP_DIR=/opt/inventorystore
