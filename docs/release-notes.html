@@ -152,9 +152,9 @@
     <p>What's new, improved, and fixed in each version of Inventory Store.</p>
   </div>
 
-  <section class="release" id="v20260613-1450">
+  <section class="release" id="v20260613-2227">
     <div class="release-head">
-      <h2>v20260613.1450</h2>
+      <h2>v20260613.2227</h2>
       <span class="release-date">June 13, 2026</span>
       <span class="release-latest">Latest</span>
     </div>
@@ -162,6 +162,8 @@
     <div class="release-group">
       <span class="release-group-label label-new">New</span>
       <ul>
+        <li><strong>Now runs on Linux too.</strong> Besides Windows, you can now install Inventory Store on an Ubuntu or Debian computer. It runs quietly in the background and you open it in your web browser, exactly like on Windows. There is no tray icon on Linux. Just download the Linux file, run one setup command, and you are ready to go. See the <a href="user-guide.html#installation">User Guide</a> for the steps.</li>
+        <li><strong>Turn on a secure web address in one step.</strong> If you have your own domain name, Inventory Store can now get a free security certificate for you and switch your site to a secure <code>https://</code> address automatically. It even renews the certificate on its own before it runs out, so you never have to think about it. Prefer to use a certificate you already have? You can still upload your own. Find it under <strong>Settings &rarr; Network</strong>.</li>
         <li><strong>Tags for your items.</strong> You can now add as many short labels as you like to an item, such as "fragile", "on loan", or "needs repair". Add or remove them right on the Add Item and Edit Item screens: start typing to pick from tags you already use, or type a new word and press Enter to make a fresh one on the spot. Each tag gets its own color automatically, so the same tag looks the same everywhere it shows up.</li>
         <li><strong>See tags at a glance.</strong> Tags appear as small colored pills on an item's details and on the Terminal screen. The Inventory search box now also finds items by their tags, so typing a tag name brings up every item that has it.</li>
         <li><strong>Manage tags in Settings.</strong> A new <strong>Settings &rarr; Tags</strong> screen lists every tag you have. From there you can add a tag, rename one, delete one (which removes it from every item), or open a tag to see which items use it and add or remove it from items in one place.</li>
@@ -173,6 +175,14 @@
       <span class="release-group-label label-improved">Improved</span>
       <ul>
         <li><strong>Client names match no matter the capitalization.</strong> When you quickly add a person by name while checking something out, the app now matches an existing person even if the capitals are different. So "bob", "Bob", and "BOB" all link to the same person instead of creating duplicates.</li>
+      </ul>
+    </div>
+
+    <div class="release-group">
+      <span class="release-group-label label-fixed">Fixed</span>
+      <ul>
+        <li><strong>Camera button stays put in Terminal mode.</strong> On the Terminal screen, the button to scan with your camera no longer vanishes after you use it, so you can keep scanning one item after another.</li>
+        <li><strong>Dashboard activity list pages correctly.</strong> Clicking through the pages of recent activity on the Dashboard now works as expected instead of getting stuck.</li>
       </ul>
     </div>
   </section>

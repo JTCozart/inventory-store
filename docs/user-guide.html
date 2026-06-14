@@ -254,7 +254,7 @@
       <li><a href="#manage-categories">Managing Categories</a></li>
       <li><a href="#manage-locations">Managing Locations</a></li>
       <li><a href="#remote-access">Network &amp; Remote Access</a></li>
-      <li><a href="#custom-https">Custom HTTPS</a></li>
+      <li><a href="#custom-https">HTTPS / TLS</a></li>
       <li><a href="#public-view">Public View</a></li>
       <li><a href="#notifications">Push Notifications</a></li>
       <li><a href="#dark-mode">Dark Mode</a></li>
@@ -278,6 +278,9 @@
 
     <section id="installation">
       <h2><i class="fa-solid fa-download"></i> Installation</h2>
+      <p>Inventory Store runs on Windows and on Linux. Both use the same web app, so the screens you see in your browser are identical. Pick your platform below.</p>
+
+      <h3>Windows</h3>
       <ol>
         <li>Download <code>InventoryStore-Setup-&lt;version&gt;.exe</code> from the <a href="https://github.com/JTCozart/inventory-store/releases/latest" target="_blank">latest release</a>.</li>
         <li>Run the installer as <strong>Administrator</strong>.</li>
@@ -285,12 +288,33 @@
       </ol>
       <div class="callout">
         <i class="fa-solid fa-circle-info"></i>
-        <strong>System requirements:</strong> Windows 10 version 1803 or later (x64). OpenSSH Client is required only for Serveo remote access (built in on Windows 10 1809+).
+        <strong>Windows requirements:</strong> Windows 10 version 1803 or later (x64). OpenSSH Client is required only for Serveo remote access (built in on Windows 10 1809+).
       </div>
+
+      <h3>Linux (Ubuntu / Debian)</h3>
+      <p>On Linux there is no tray icon. Inventory Store runs quietly in the background as a service, and you reach it from your browser just like on Windows.</p>
+      <ol>
+        <li>Download <code>InventoryStore-linux-x64-&lt;version&gt;.tar.gz</code> from the <a href="https://github.com/JTCozart/inventory-store/releases/latest" target="_blank">latest release</a>.</li>
+        <li>Open a terminal, unpack it, and run the installer:</li>
+      </ol>
+      <pre><code>tar xzf InventoryStore-linux-x64-&lt;version&gt;.tar.gz
+cd InventoryStore-linux-x64-&lt;version&gt;
+sudo ./install.sh</code></pre>
+      <p>The installer sets everything up for you and starts the app at boot. When it finishes, open <strong>http://localhost:5050</strong> (or <code>http://&lt;your-server-ip&gt;:5050</code> from another computer) to create your admin account.</p>
+      <p>To check on the app or read its logs later, use:</p>
+      <pre><code>systemctl status inventorystore     # is it running?
+journalctl -u inventorystore -f     # watch the logs
+sudo systemctl restart inventorystore</code></pre>
+      <div class="callout">
+        <i class="fa-solid fa-circle-info"></i>
+        <strong>Linux requirements:</strong> a 64-bit Ubuntu or Debian-based system with systemd. Nothing else to install - the download includes everything it needs. For Serveo remote access only, also install <code>openssh-client</code>.
+      </div>
+
       <h3>Upgrading</h3>
-      <p>Run the new installer over the existing installation. It upgrades and restarts automatically. Your data and settings are preserved.</p>
+      <p><strong>Windows:</strong> run the new installer over the existing installation. It upgrades and restarts automatically. Your data and settings are preserved.</p>
+      <p><strong>Linux:</strong> download the new archive and run <code>sudo ./install.sh</code> again. Your database and settings are kept.</p>
       <h3>Uninstalling</h3>
-      <p>Use <strong>Add or Remove Programs</strong>. You will be asked whether to delete the database and settings - choose No to keep your data for a future reinstall.</p>
+      <p><strong>Windows:</strong> use <strong>Add or Remove Programs</strong>. You will be asked whether to delete the database and settings - choose No to keep your data for a future reinstall.</p>
     </section>
 
     <section id="first-login">
@@ -847,10 +871,34 @@
     </section>
 
     <section id="custom-https">
-      <h2><i class="fa-solid fa-lock"></i> Custom HTTPS</h2>
-      <p>If you own a domain and have an SSL certificate, you can run Inventory Store directly over HTTPS on port 443 without any tunnel. This is the right choice when the server is accessible from the internet on a fixed IP or hostname.</p>
+      <h2><i class="fa-solid fa-lock"></i> HTTPS / TLS</h2>
+      <p>If you own a domain, you can run Inventory Store over a secure <code>https://</code> address on port 443 without any tunnel. This is the right choice when the server is reachable from the internet on a fixed address. There are two ways to do it: let the app get a free certificate for you automatically, or upload one you already have.</p>
 
-      <h3>What you need</h3>
+      <h3>Automatic certificate (Let's Encrypt)</h3>
+      <p>This is the easiest option. Inventory Store will fetch a free certificate from Let's Encrypt, turn on HTTPS, and renew the certificate on its own before it ever runs out, all in the background.</p>
+      <p><strong>What you need first:</strong></p>
+      <ul>
+        <li>A domain name whose DNS points at this server's address</li>
+        <li>Ports <strong>80</strong> and <strong>443</strong> open and reachable from the internet (check your router or firewall, and any cloud provider's security group)</li>
+      </ul>
+      <p><strong>Steps:</strong></p>
+      <ol>
+        <li>Go to <strong>Settings → Network</strong> (Admin only)</li>
+        <li>Open the <strong>HTTPS / TLS (Port 443)</strong> section</li>
+        <li>Under <strong>Automatic certificate (Let's Encrypt)</strong>, turn on <strong>Enable automatic HTTPS</strong></li>
+        <li>Enter your <strong>domain</strong> (for example <code>inventory.mycompany.com</code>) and an <strong>email</strong> address for renewal notices</li>
+        <li>Tick the box to accept the Let's Encrypt Terms of Service</li>
+        <li>Click <strong>Save</strong>, then restart the service</li>
+      </ol>
+      <p>After the restart, the app contacts Let's Encrypt, gets the certificate, and switches on HTTPS. From then on it renews the certificate by itself, so you do not have to think about it again.</p>
+      <div class="callout">
+        <i class="fa-solid fa-circle-info"></i>
+        When automatic HTTPS is on, visitors who type the plain <code>http://</code> address are sent to the secure one. The app still answers on <code>http://localhost:5050</code> for use on your own network. On Linux the service is allowed to use ports 80 and 443 even though it does not run as the root user.
+      </div>
+
+      <h3>Upload your own certificate</h3>
+      <p>If you already have a certificate, you can use it instead of the automatic option.</p>
+      <p><strong>What you need:</strong></p>
       <ul>
         <li>A domain name pointing to your server's IP address (via your DNS provider)</li>
         <li>An SSL certificate in <strong>.pfx format</strong> (certificate + private key bundled together)</li>
@@ -862,25 +910,25 @@
       <pre><code>openssl pkcs12 -export -out https.pfx -inkey privkey.pem -in fullchain.pem</code></pre>
       <p>You will be asked to set a password for the .pfx - keep this, you will need it in the next step.</p>
 
-      <h3>Setting up HTTPS</h3>
+      <h3>Setting up HTTPS with your own certificate</h3>
       <ol>
         <li>Go to <strong>Settings → Network</strong> (Admin only)</li>
-        <li>Open the <strong>Custom HTTPS / Port 443</strong> section</li>
-        <li>Enter your domain name and port (default 443)</li>
+        <li>Open the <strong>HTTPS / TLS (Port 443)</strong> section</li>
+        <li>Under <strong>Or upload your own certificate</strong>, enter your domain name and port (default 443)</li>
         <li>Upload your <strong>.pfx</strong> file and enter its password</li>
         <li>Check <strong>Enable HTTPS</strong></li>
         <li>Click <strong>Save</strong></li>
-        <li>Click <strong>Restart Service</strong> - the app will stop and the Windows service manager will restart it automatically</li>
+        <li>Restart the service - the app will stop and start back up with HTTPS on</li>
       </ol>
       <p>After restart, Inventory Store will be available at both <code>http://localhost:5050</code> (local HTTP) and <code>https://yourdomain.com</code> (HTTPS on your chosen port).</p>
 
       <div class="callout">
         <i class="fa-solid fa-circle-info"></i>
-        The certificate password is stored in the app database. The .pfx file is stored in <code>%AppData%\InventoryStore\https.pfx</code> on the server. Back up your certificate separately.
+        The certificate password is stored in the app database. The .pfx file is stored next to your database in the app's data folder (<code>%ProgramData%\InventoryStore</code> on Windows, <code>/var/lib/inventorystore</code> on Linux). Back up your certificate separately.
       </div>
 
       <h3>Removing HTTPS</h3>
-      <p>Click <strong>Remove Certificate</strong> in the Custom HTTPS section, then click <strong>Restart Service</strong>. The app will revert to HTTP only.</p>
+      <p>To turn off automatic HTTPS, untick <strong>Enable automatic HTTPS</strong>, click <strong>Save</strong>, and restart the service. To remove an uploaded certificate, click <strong>Remove Certificate</strong> in the HTTPS / TLS section, then restart the service. Either way the app reverts to HTTP only.</p>
 
       <h3>Changing the certificate</h3>
       <p>Upload a new .pfx file and click <strong>Save</strong>, then <strong>Restart Service</strong>. The old certificate is replaced immediately.</p>
@@ -1043,7 +1091,7 @@
         <tr><td>Manage categories &amp; locations</td><td>✓</td><td>✓</td><td></td><td></td></tr>
         <tr><td>Manage users</td><td>✓</td><td></td><td></td><td></td></tr>
         <tr><td>Configure remote access &amp; tunnels</td><td>✓</td><td></td><td></td><td></td></tr>
-        <tr><td>Configure custom HTTPS certificate</td><td>✓</td><td></td><td></td><td></td></tr>
+        <tr><td>Configure HTTPS / TLS (automatic or uploaded certificate)</td><td>✓</td><td></td><td></td><td></td></tr>
         <tr><td>Configure push notifications</td><td>✓</td><td></td><td></td><td></td></tr>
         <tr><td>Enable / disable public view</td><td>✓</td><td></td><td></td><td></td></tr>
         <tr><td>Toggle item visibility in public view</td><td>✓</td><td>✓</td><td></td><td></td></tr>
