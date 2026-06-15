@@ -14,6 +14,7 @@ public class IndexModel : PageModel
 {
     private readonly IInventoryService _inventoryService;
     private readonly ICheckoutService _checkoutService;
+    private readonly IKitService _kitService;
     private readonly ICategoryService _categoryService;
     private readonly ITagService _tagService;
     private readonly InventoryStore.App.Modules.IModuleRegistry _modules;
@@ -24,6 +25,8 @@ public class IndexModel : PageModel
 
     // SDS ("hazmat") module: GHS pictogram names per item id, for the list. Empty when disabled.
     public bool HazmatEnabled { get; private set; }
+    // Kits & Bundles module: gates the "Kit" item type and all kit management UI.
+    public bool KitsEnabled { get; private set; }
     public IReadOnlyDictionary<int, List<string>> ItemPictograms { get; private set; } =
         new Dictionary<int, List<string>>();
     public string? Query { get; private set; }
@@ -34,12 +37,14 @@ public class IndexModel : PageModel
     public bool IsFiltered => !string.IsNullOrWhiteSpace(Query) || CategoryFilter.HasValue;
 
     public IndexModel(IInventoryService inventoryService, ICheckoutService checkoutService,
+        IKitService kitService,
         ICategoryService categoryService, ITagService tagService,
         InventoryStore.App.Modules.IModuleRegistry modules,
         InventoryStore.Domain.Interfaces.Repositories.ISafetyDataSheetRepository sdsRepo)
     {
         _inventoryService = inventoryService;
         _checkoutService  = checkoutService;
+        _kitService       = kitService;
         _categoryService  = categoryService;
         _tagService       = tagService;
         _modules          = modules;
@@ -64,6 +69,7 @@ public class IndexModel : PageModel
             ? items.Where(i => i.CategoryId == category.Value)
             : items;
 
+        KitsEnabled   = await _modules.IsEnabledAsync("kits");
         HazmatEnabled = await _modules.IsEnabledAsync("sds");
         if (HazmatEnabled)
         {
@@ -100,7 +106,7 @@ public class IndexModel : PageModel
     public async Task<IActionResult> OnPostCreateItemAsync(
         string name, int quantity, int minimumQuantity, string itemType,
         string? sku, string? location, int? categoryId, string? expiryDate,
-        string? scanWarning, string? description, string? tags = null)
+        string? scanWarning, string? description, string? tags = null, bool allowPartial = false)
     {
         if (!CanWrite()) return new JsonResult(new { success = false, error = "Insufficient permissions." }) { StatusCode = 403 };
         if (string.IsNullOrWhiteSpace(name))
@@ -112,11 +118,13 @@ public class IndexModel : PageModel
             expiry = parsed;
 
         var type = Enum.TryParse<ItemType>(itemType, out var t) ? t : ItemType.Consumable;
+        if (type == ItemType.Kit && !await _modules.IsEnabledAsync("kits"))
+            return new JsonResult(new { success = false, error = "The Kits module is not enabled." });
         try
         {
             var created = await _inventoryService.CreateItemAsync(new CreateInventoryItemDto(
                 name, quantity, description, location, sku, minimumQuantity, type, scanWarning, categoryId, expiry,
-                null, SplitTags(tags)
+                null, SplitTags(tags), allowPartial
             ), uid, uname);
             return new JsonResult(new { success = true, id = created.Id });
         }
@@ -149,7 +157,8 @@ public class IndexModel : PageModel
     public async Task<IActionResult> OnPostEditItemAsync(
         int id, string name, int quantity, int minimumQuantity,
         string? sku, string? location, int? categoryId, string? expiryDate,
-        string? scanWarning, string? description, int? selectedMetadataId = null, string? tags = null)
+        string? scanWarning, string? description, int? selectedMetadataId = null, string? tags = null,
+        bool allowPartial = false)
     {
         if (!CanWrite()) return new JsonResult(new { success = false, error = "Insufficient permissions." }) { StatusCode = 403 };
         var (uid, uname) = GetUser();
@@ -160,13 +169,66 @@ public class IndexModel : PageModel
         {
             await _inventoryService.UpdateItemAsync(id, new UpdateInventoryItemDto(
                 name, quantity, description, location, sku, minimumQuantity, scanWarning, categoryId, expiry,
-                selectedMetadataId, SplitTags(tags) ?? []
+                selectedMetadataId, SplitTags(tags) ?? [], allowPartial
             ), uid, uname);
             return new JsonResult(new { success = true });
         }
         catch (Exception)
         {
             return new JsonResult(new { success = false, error = "Failed to save item." });
+        }
+    }
+
+    // ── Kit component editing (edit-mode wiring) ─────────────────────────
+    public async Task<IActionResult> OnGetKitComponentsAsync(int id)
+    {
+        var item = await _inventoryService.GetItemAsync(id);
+        if (item is null) return new JsonResult(new { success = false, error = "Kit not found." });
+        return new JsonResult(new { success = true, components = item.Components ?? [], buildable = item.BuildableQuantity }, AppJsonOptions.Web);
+    }
+
+    public async Task<IActionResult> OnPostKitLinkAsync(int kitId, int componentItemId, int quantity)
+    {
+        if (!CanWrite()) return new JsonResult(new { success = false, error = "Insufficient permissions." }) { StatusCode = 403 };
+        var (uid, uname) = GetUser();
+        try
+        {
+            await _kitService.LinkComponentAsync(new LinkKitComponentDto(kitId, componentItemId, quantity), uid, uname);
+            return new JsonResult(new { success = true });
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or KeyNotFoundException)
+        {
+            return new JsonResult(new { success = false, error = ex.Message });
+        }
+    }
+
+    public async Task<IActionResult> OnPostKitUnlinkAsync(int kitId, int componentItemId)
+    {
+        if (!CanWrite()) return new JsonResult(new { success = false, error = "Insufficient permissions." }) { StatusCode = 403 };
+        var (uid, uname) = GetUser();
+        try
+        {
+            await _kitService.UnlinkComponentAsync(kitId, componentItemId, uid, uname);
+            return new JsonResult(new { success = true });
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or KeyNotFoundException)
+        {
+            return new JsonResult(new { success = false, error = ex.Message });
+        }
+    }
+
+    public async Task<IActionResult> OnPostKitSetQtyAsync(int kitId, int componentItemId, int quantity)
+    {
+        if (!CanWrite()) return new JsonResult(new { success = false, error = "Insufficient permissions." }) { StatusCode = 403 };
+        var (uid, uname) = GetUser();
+        try
+        {
+            await _kitService.SetComponentQuantityAsync(kitId, componentItemId, quantity, uid, uname);
+            return new JsonResult(new { success = true });
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or KeyNotFoundException)
+        {
+            return new JsonResult(new { success = false, error = ex.Message });
         }
     }
 

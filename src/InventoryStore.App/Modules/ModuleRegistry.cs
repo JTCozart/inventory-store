@@ -22,6 +22,12 @@ public class ModuleRegistry : IModuleRegistry
         new ModuleDescriptor("webhooks", "Webhooks & Integrations",
             "Send signed JSON to external URLs when inventory events happen.",
             "bi-broadcast", HasConfigure: true),
+        new ModuleDescriptor("kits", "Kits & Bundles",
+            "Group items into kits that can be checked out, used, or restocked all at once.",
+            "bi-box-seam", HasConfigure: false),
+        new ModuleDescriptor("maintenance", "Maintenance",
+            "Track service schedules, send items out to vendors, and get due / overdue alerts.",
+            "bi-tools", HasConfigure: true),
     };
 
     public ModuleRegistry(ISettingsService settings) => _settings = settings;

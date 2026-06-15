@@ -19,6 +19,8 @@ public class InventoryRepository : IInventoryRepository
             .Include(i => i.Category)
             .Include(i => i.SelectedMetadata)
             .Include(i => i.Tags)
+            // Kit members (and their stock) so a kit's buildable count can be computed.
+            .Include("Components.ComponentItem")
             .OrderBy(i => i.Name)
             .ToListAsync();
 
@@ -27,6 +29,7 @@ public class InventoryRepository : IInventoryRepository
             .Include(i => i.Category)
             .Include(i => i.SelectedMetadata)
             .Include(i => i.Tags)
+            .Include("Components.ComponentItem")
             .FirstOrDefaultAsync(i => i.Id == id);
 
     public async Task<IEnumerable<InventoryItem>> SearchAsync(string query)
@@ -36,6 +39,7 @@ public class InventoryRepository : IInventoryRepository
             .Include(i => i.Category)
             .Include(i => i.SelectedMetadata)
             .Include(i => i.Tags)
+            .Include("Components.ComponentItem")
             .Where(i => i.Name.ToLower().Contains(lower)
                      || (i.SKU != null && i.SKU.ToLower().Contains(lower))
                      || (i.Location != null && i.Location.ToLower().Contains(lower))
@@ -52,6 +56,7 @@ public class InventoryRepository : IInventoryRepository
             .Include(i => i.Category)
             .Include(i => i.SelectedMetadata)
             .Include(i => i.Tags)
+            .Include("Components.ComponentItem")
             .ToListAsync();
         return all
             .Where(i => i.IsLowStock)

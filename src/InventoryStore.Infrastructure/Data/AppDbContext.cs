@@ -20,6 +20,11 @@ public class AppDbContext : DbContext
     public DbSet<ItemCost> ItemCosts => Set<ItemCost>();
     public DbSet<StockMovement> StockMovements => Set<StockMovement>();
     public DbSet<WebhookEndpoint> WebhookEndpoints => Set<WebhookEndpoint>();
+    public DbSet<KitComponent> KitComponents => Set<KitComponent>();
+    public DbSet<KitCheckout> KitCheckouts => Set<KitCheckout>();
+    public DbSet<Vendor> Vendors => Set<Vendor>();
+    public DbSet<MaintenanceSchedule> MaintenanceSchedules => Set<MaintenanceSchedule>();
+    public DbSet<MaintenanceVisit> MaintenanceVisits => Set<MaintenanceVisit>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -65,10 +70,45 @@ public class AppDbContext : DbContext
                 r => r.HasOne(typeof(InventoryItem)).WithMany().HasForeignKey("InventoryItemId").OnDelete(DeleteBehavior.Cascade));
 
             // Use the existing ItemType int column as the TPH discriminator.
-            // 0 = ConsumableItem, 1 = ReusableItem — matches the ItemType enum values.
+            // 0 = ConsumableItem, 1 = ReusableItem, 2 = KitItem — matches the ItemType enum values.
             e.HasDiscriminator<int>("ItemType")
                 .HasValue<ConsumableItem>(0)
-                .HasValue<ReusableItem>(1);
+                .HasValue<ReusableItem>(1)
+                .HasValue<KitItem>(2);
+        });
+
+        modelBuilder.Entity<KitComponent>(e =>
+        {
+            e.HasKey(c => c.Id);
+            e.HasIndex(c => c.KitItemId);
+            e.HasIndex(c => c.ComponentItemId);
+
+            // A kit's component lines are owned by the kit — drop them when the kit is deleted.
+            e.HasOne(c => c.Kit)
+             .WithMany(k => k.Components)
+             .HasForeignKey(c => c.KitItemId)
+             .OnDelete(DeleteBehavior.Cascade);
+
+            // No cascade from the component item: deleting an item that happens to be a kit member
+            // is cleaned up in InventoryService so we avoid multiple-cascade-path issues in SQLite.
+            e.HasOne(c => c.ComponentItem)
+             .WithMany()
+             .HasForeignKey(c => c.ComponentItemId)
+             .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<KitCheckout>(e =>
+        {
+            e.HasKey(k => k.Id);
+            e.HasIndex(k => k.KitItemId);
+            e.Property(k => k.CheckedOutBy).IsRequired().HasMaxLength(200);
+            e.Ignore(k => k.IsCheckedIn);
+            e.Ignore(k => k.IsOut);
+
+            e.HasMany(k => k.ComponentCheckouts)
+             .WithOne()
+             .HasForeignKey(r => r.KitCheckoutId)
+             .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<User>(e =>
@@ -176,6 +216,42 @@ public class AppDbContext : DbContext
             e.Property(c => c.Email).HasMaxLength(255);
             e.Property(c => c.Address).HasMaxLength(500);
             e.Ignore(c => c.DisplayName);
+        });
+
+        modelBuilder.Entity<Vendor>(e =>
+        {
+            e.HasKey(v => v.Id);
+            e.Property(v => v.Name).IsRequired().HasMaxLength(200);
+            e.Property(v => v.Phone).HasMaxLength(50);
+            e.Property(v => v.Email).HasMaxLength(255);
+            e.Property(v => v.Address).HasMaxLength(500);
+        });
+
+        modelBuilder.Entity<MaintenanceSchedule>(e =>
+        {
+            e.HasKey(s => s.Id);
+            e.HasIndex(s => s.InventoryItemId).IsUnique();
+            e.Ignore(s => s.NextDueDate);
+            e.Ignore(s => s.IsOverdue);
+            e.HasOne<InventoryItem>()
+             .WithMany()
+             .HasForeignKey(s => s.InventoryItemId)
+             .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<MaintenanceVisit>(e =>
+        {
+            e.HasKey(v => v.Id);
+            e.HasIndex(v => v.InventoryItemId);
+            e.Ignore(v => v.IsOut);
+            e.HasOne<InventoryItem>()
+             .WithMany()
+             .HasForeignKey(v => v.InventoryItemId)
+             .OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(v => v.Vendor)
+             .WithMany()
+             .HasForeignKey(v => v.VendorId)
+             .OnDelete(DeleteBehavior.SetNull);
         });
     }
 }

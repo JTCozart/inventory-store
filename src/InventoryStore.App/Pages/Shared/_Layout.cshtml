@@ -193,57 +193,60 @@ else
                 <i class="bi bi-exclamation-triangle-fill mt-1"></i>
                 <div><strong>Warning:</strong> <span id="modal-warning-text"></span></div>
               </div>
-              <div class="row g-3 mb-3 align-items-start">
-                <div class="col-12 col-md-4 d-none" id="modal-image-col">
-                  <img id="modal-item-image" src="" alt="Product image" class="img-fluid rounded border w-100"
-                       style="max-height:200px;object-fit:contain;background:var(--bs-tertiary-bg)">
-                  <button type="button" class="more-info-btn mt-2" onclick="showMetadataInfo()">
-                    <i class="bi bi-info-circle me-1"></i>Product Details
-                  </button>
-                </div>
-                <div class="col-12" id="modal-info-col">
-                  <div id="modal-stats" class="d-flex flex-wrap gap-2 mb-3">
-                    <div class="stat-cell text-center" id="stat-qty-col"><div class="stat-cell-value" id="modal-stat-qty">-</div><div class="stat-cell-label" id="modal-stat-qty-label">In Stock</div></div>
-                    <div class="stat-cell text-center d-none" id="stat-available-col"><div class="stat-cell-value text-success" id="modal-stat-available">-</div><div class="stat-cell-label">Available</div></div>
-                    <div class="stat-cell text-center d-none" id="stat-out-col"><div class="stat-cell-value text-warning" id="modal-stat-out">-</div><div class="stat-cell-label">Checked Out</div></div>
-                    <div class="stat-cell text-center d-none" id="stat-lost-col"><div class="stat-cell-value text-danger" id="modal-stat-lost">-</div><div class="stat-cell-label">Lost</div></div>
-                    <div class="stat-cell text-center" id="stat-min-col"><div class="stat-cell-value text-muted" id="modal-stat-min">-</div><div class="stat-cell-label">Min Qty</div></div>
+              <div id="modal-maintenance-banner" class="alert d-none d-flex align-items-start gap-2 mb-3" role="alert">
+                <i class="bi bi-tools mt-1"></i>
+                <div><span id="modal-maintenance-text"></span></div>
+              </div>
+
+              <ul class="nav nav-tabs mb-3" role="tablist">
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link active" id="view-tab-general-btn" data-bs-toggle="tab"
+                          data-bs-target="#view-pane-general" type="button" role="tab">General</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link" id="view-tab-details-btn" data-bs-toggle="tab"
+                          data-bs-target="#view-pane-details" type="button" role="tab">Details</button>
+                </li>
+                <li class="nav-item d-none" id="view-tab-safety" role="presentation">
+                  <button class="nav-link" id="view-tab-safety-btn" data-bs-toggle="tab"
+                          data-bs-target="#view-pane-safety" type="button" role="tab">Safety</button>
+                </li>
+                <li class="nav-item d-none" id="view-tab-cost" role="presentation">
+                  <button class="nav-link" id="view-tab-cost-btn" data-bs-toggle="tab"
+                          data-bs-target="#view-pane-cost" type="button" role="tab">Cost</button>
+                </li>
+                <li class="nav-item d-none" id="view-tab-maintenance" role="presentation">
+                  <button class="nav-link" id="view-tab-maintenance-btn" data-bs-toggle="tab"
+                          data-bs-target="#view-pane-maintenance" type="button" role="tab">Maintenance</button>
+                </li>
+              </ul>
+
+              <div class="tab-content">
+                <div class="tab-pane fade show active" id="view-pane-general" role="tabpanel">
+                  <div class="row g-3 mb-3 align-items-start">
+                    <div class="col-12 col-md-4 d-none" id="modal-image-col">
+                      <img id="modal-item-image" src="" alt="Product image" class="img-fluid rounded border w-100"
+                           style="max-height:200px;object-fit:contain;background:var(--bs-tertiary-bg)">
+                      <button type="button" class="more-info-btn mt-2" onclick="showMetadataInfo()">
+                        <i class="bi bi-info-circle me-1"></i>Product Details
+                      </button>
+                    </div>
+                    <div class="col-12" id="modal-info-col">
+                      <div id="modal-stats" class="d-flex flex-wrap gap-2 mb-3">
+                        <div class="stat-cell text-center" id="stat-qty-col"><div class="stat-cell-value" id="modal-stat-qty">-</div><div class="stat-cell-label" id="modal-stat-qty-label">In Stock</div></div>
+                        <div class="stat-cell text-center d-none" id="stat-available-col"><div class="stat-cell-value text-success" id="modal-stat-available">-</div><div class="stat-cell-label">Available</div></div>
+                        <div class="stat-cell text-center d-none" id="stat-out-col"><div class="stat-cell-value text-warning" id="modal-stat-out">-</div><div class="stat-cell-label">Checked Out</div></div>
+                        <div class="stat-cell text-center d-none" id="stat-lost-col"><div class="stat-cell-value text-danger" id="modal-stat-lost">-</div><div class="stat-cell-label">Lost</div></div>
+                        <div class="stat-cell text-center" id="stat-min-col"><div class="stat-cell-value text-muted" id="modal-stat-min">-</div><div class="stat-cell-label">Min Qty</div></div>
+                      </div>
+                      <dl class="row mb-0 small">
+                        <dt class="col-4 col-sm-3 text-muted fw-normal">Location</dt><dd class="col-8 col-sm-9 mb-1" id="modal-detail-location">-</dd>
+                        <dt class="col-4 col-sm-3 text-muted fw-normal d-none" id="lbl-category">Category</dt><dd class="col-8 col-sm-9 mb-1 d-none" id="modal-detail-category"></dd>
+                      </dl>
+                    </div>
                   </div>
-                  <dl class="row mb-0 small">
-                    <dt class="col-4 col-sm-3 text-muted fw-normal">Location</dt><dd class="col-8 col-sm-9 mb-1" id="modal-detail-location">-</dd>
-                    <dt class="col-4 col-sm-3 text-muted fw-normal">SKU</dt><dd class="col-8 col-sm-9 mb-1" id="modal-detail-sku">-</dd>
-                    <dt class="col-4 col-sm-3 text-muted fw-normal d-none" id="lbl-category">Category</dt><dd class="col-8 col-sm-9 mb-1 d-none" id="modal-detail-category"></dd>
-                    <dt class="col-4 col-sm-3 text-muted fw-normal d-none" id="lbl-expiry">Expiry</dt><dd class="col-8 col-sm-9 mb-1 d-none" id="modal-detail-expiry"></dd>
-                  </dl>
-                </div>
-              </div>
-              <div id="modal-tags-block" class="mb-3 d-none">
-                <div class="text-muted text-uppercase small fw-semibold mb-1">Tags</div>
-                <div id="modal-detail-tags" class="d-flex flex-wrap gap-1"></div>
-              </div>
-              <div id="modal-desc-block" class="mb-3 d-none">
-                <div class="text-muted text-uppercase small fw-semibold mb-1">Description</div>
-                <div id="modal-detail-desc"></div>
-              </div>
-              <div id="modal-sds-block" class="mb-3 d-none">
-                <div class="text-muted text-uppercase small fw-semibold mb-1">Safety</div>
-                <div class="d-flex align-items-center gap-2 flex-wrap mb-2">
-                  <span id="modal-sds-signal" class="badge d-none"></span>
-                  <span id="modal-sds-pictograms" class="d-flex align-items-center gap-1"></span>
-                </div>
-                <button type="button" class="btn btn-sm btn-outline-warning" onclick="viewSds()">
-                  <i class="bi bi-eyedropper me-1"></i>View SDS Info
-                </button>
-              </div>
-              <div id="modal-cost-block" class="mb-3 d-none">
-                <div class="text-muted text-uppercase small fw-semibold mb-1">Cost &amp; Valuation</div>
-                <dl class="row mb-0 small">
-                  <dt class="col-4 col-sm-3 text-muted fw-normal">Unit Cost</dt><dd class="col-8 col-sm-9 mb-1" id="modal-cost-unit">-</dd>
-                  <dt class="col-4 col-sm-3 text-muted fw-normal">Line Value</dt><dd class="col-8 col-sm-9 mb-1" id="modal-cost-line">-</dd>
-                </dl>
-              </div>
-              <hr>
-              <div id="actions-reusable" class="d-none">
+                  <hr>
+                  <div id="actions-reusable" class="d-none">
                 <h6 class="fw-semibold mb-2">Active Checkouts</h6>
                 <div id="active-checkouts-list" class="mb-3"></div>
                 <div id="lost-checkouts-section" class="d-none mb-3">
@@ -285,6 +288,57 @@ else
                   <div class="form-text">Tap <span class="text-danger fw-semibold">−</span> to consume stock, <span class="text-success fw-semibold">+</span> to add stock.</div>
                 }
               </div>
+              <!-- Kit actions are built dynamically by inventory-detail.js (populateKitView). -->
+              <div id="actions-kit" class="d-none" data-can-write="@(_canWrite ? "1" : "0")"></div>
+                </div>
+
+                <div class="tab-pane fade" id="view-pane-details" role="tabpanel">
+                  <dl class="row mb-3 small">
+                    <dt class="col-4 col-sm-3 text-muted fw-normal">SKU</dt><dd class="col-8 col-sm-9 mb-1" id="modal-detail-sku">-</dd>
+                    <dt class="col-4 col-sm-3 text-muted fw-normal d-none" id="lbl-expiry">Expiry</dt><dd class="col-8 col-sm-9 mb-1 d-none" id="modal-detail-expiry"></dd>
+                  </dl>
+                  <div id="modal-tags-block" class="mb-3 d-none">
+                    <div class="text-muted text-uppercase small fw-semibold mb-1">Tags</div>
+                    <div id="modal-detail-tags" class="d-flex flex-wrap gap-1"></div>
+                  </div>
+                  <div id="modal-desc-block" class="mb-3 d-none">
+                    <div class="text-muted text-uppercase small fw-semibold mb-1">Description</div>
+                    <div id="modal-detail-desc"></div>
+                  </div>
+                </div>
+
+                <div class="tab-pane fade" id="view-pane-safety" role="tabpanel">
+                  <div id="modal-sds-block" class="d-none">
+                    <div class="d-flex align-items-center gap-2 flex-wrap mb-2">
+                      <span id="modal-sds-signal" class="badge d-none"></span>
+                      <span id="modal-sds-pictograms" class="d-flex align-items-center gap-1"></span>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-warning" onclick="viewSds()">
+                      <i class="bi bi-eyedropper me-1"></i>View SDS Info
+                    </button>
+                  </div>
+                </div>
+
+                <div class="tab-pane fade" id="view-pane-cost" role="tabpanel">
+                  <div id="modal-cost-block" class="d-none">
+                    <dl class="row mb-0 small">
+                      <dt class="col-4 col-sm-3 text-muted fw-normal">Unit Cost</dt><dd class="col-8 col-sm-9 mb-1" id="modal-cost-unit">-</dd>
+                      <dt class="col-4 col-sm-3 text-muted fw-normal">Line Value</dt><dd class="col-8 col-sm-9 mb-1" id="modal-cost-line">-</dd>
+                    </dl>
+                  </div>
+                </div>
+
+                <div class="tab-pane fade" id="view-pane-maintenance" role="tabpanel" data-can-write="@(_canWrite ? "1" : "0")">
+                  <dl class="row mb-3 small">
+                    <dt class="col-5 col-sm-4 text-muted fw-normal">Last Maintained</dt>
+                    <dd class="col-7 col-sm-8 mb-1" id="modal-maint-last">-</dd>
+                    <dt class="col-5 col-sm-4 text-muted fw-normal">Next Due</dt>
+                    <dd class="col-7 col-sm-8 mb-1" id="modal-maint-next">-</dd>
+                  </dl>
+                  <!-- Out / return action panel built dynamically by inventory-detail.js. -->
+                  <div id="modal-maintenance-actions"></div>
+                </div>
+              </div>
             </div>
           </div>
           <div class="modal-footer d-none" id="modal-view-footer">
@@ -311,134 +365,211 @@ else
             </div>
             <div id="edit-form" class="d-none">
               <div class="mb-3" id="edit-type-display"></div>
-              <h6 class="text-uppercase text-muted small fw-semibold mb-2">Basics</h6>
-              <div class="row g-3 mb-2">
-                <div class="col-12">
-                  <label class="form-label">Name <span class="text-danger">*</span></label>
-                  <input type="text" id="edit-name" class="form-control" />
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label" id="edit-quantity-label">Total Quantity</label>
-                  <input type="number" id="edit-quantity" class="form-control" min="0" />
-                  <div class="form-text d-none" id="edit-quantity-help"></div>
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">Minimum Quantity <span class="text-muted small">(low-stock alert)</span></label>
-                  <input type="number" id="edit-min-quantity" class="form-control" min="0" />
-                </div>
-              </div>
 
-              <hr class="my-3">
-              <h6 class="text-uppercase text-muted small fw-semibold mb-2">Identification</h6>
-              <div class="row g-3 mb-2">
-                <div class="col-md-6">
-                  <label class="form-label">SKU / Barcode</label>
-                  <div class="input-group">
-                    <input type="text" id="edit-sku" class="form-control" />
-                    <button type="button" class="btn btn-outline-secondary" onclick="openUpcLookup('edit-sku','edit-name',null,null,'edit-match-badge','edit-metadata-id')" title="Look up product by barcode">
-                      <i class="bi bi-search"></i>
-                    </button>
-                  </div>
-                  <input type="hidden" id="edit-metadata-id" value="" />
-                  <span id="edit-match-badge" class="badge bg-success mt-1 d-none"><i class="bi bi-check-lg me-1"></i>Product matched</span>
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">Location</label>
-                  <input type="text" id="edit-location" class="form-control" list="edit-location-list" autocomplete="off" />
-                  <datalist id="edit-location-list"></datalist>
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">Category</label>
-                  <div class="d-flex gap-2">
-                    <select id="edit-category" class="form-select"></select>
-                    <button type="button" class="btn btn-outline-secondary" id="edit-new-cat-btn" title="Create new category">
-                      <i class="bi bi-plus-lg"></i>
-                    </button>
-                  </div>
-                  <div id="edit-new-cat-form" class="mt-2 border rounded p-2 d-none">
-                    <div class="mb-2">
-                      <label class="form-label small mb-1">Name <span class="text-danger">*</span></label>
-                      <input type="text" id="edit-new-cat-name" class="form-control form-control-sm" placeholder="Category name" />
-                    </div>
-                    <div class="mb-2">
-                      <label class="form-label small mb-1">Color <span class="text-muted small">(optional)</span></label>
-                      <input type="hidden" id="edit-new-cat-color" value="" />
-                      <div class="d-flex flex-wrap gap-1" id="edit-new-cat-swatches"></div>
-                    </div>
-                    <div class="d-flex gap-2">
-                      <button type="button" class="btn btn-sm btn-primary" id="edit-new-cat-save">Create</button>
-                      <button type="button" class="btn btn-sm btn-outline-secondary" id="edit-new-cat-cancel">Cancel</button>
-                    </div>
-                    <div id="edit-new-cat-error" class="text-danger small mt-1 d-none"></div>
-                  </div>
-                </div>
-                <div class="col-12">
-                  <label class="form-label">Tags <span class="text-muted small">(type to search, Enter to add)</span></label>
-                  <div id="edit-tags"></div>
-                </div>
-              </div>
+              <ul class="nav nav-tabs mb-3" role="tablist">
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link active" id="edit-tab-general-btn" data-bs-toggle="tab"
+                          data-bs-target="#edit-pane-general" type="button" role="tab">General</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link" id="edit-tab-details-btn" data-bs-toggle="tab"
+                          data-bs-target="#edit-pane-details" type="button" role="tab">Details</button>
+                </li>
+                <li class="nav-item d-none" id="edit-tab-safety" role="presentation">
+                  <button class="nav-link" id="edit-tab-safety-btn" data-bs-toggle="tab"
+                          data-bs-target="#edit-pane-safety" type="button" role="tab">Safety</button>
+                </li>
+                <li class="nav-item d-none" id="edit-tab-cost" role="presentation">
+                  <button class="nav-link" id="edit-tab-cost-btn" data-bs-toggle="tab"
+                          data-bs-target="#edit-pane-cost" type="button" role="tab">Cost</button>
+                </li>
+                <li class="nav-item d-none" id="edit-tab-maintenance" role="presentation">
+                  <button class="nav-link" id="edit-tab-maintenance-btn" data-bs-toggle="tab"
+                          data-bs-target="#edit-pane-maintenance" type="button" role="tab">Maintenance</button>
+                </li>
+              </ul>
 
-              <hr class="my-3">
-              <h6 class="text-uppercase text-muted small fw-semibold mb-2">Details</h6>
-              <div class="row g-3">
-                <div class="col-md-6" id="edit-expiry-col">
-                  <label class="form-label">Expiry Date <span class="text-muted small">(optional)</span></label>
-                  <input type="date" id="edit-expiry" class="form-control" />
-                </div>
-                <div class="col-12">
-                  <label class="form-label">Scan Warning</label>
-                  <input type="text" id="edit-scan-warning" class="form-control" placeholder="e.g. Requires PPE, Handle with care" />
-                </div>
-                <div class="col-12">
-                  <label class="form-label">Description</label>
-                  <textarea id="edit-description" class="form-control" rows="3"></textarea>
-                </div>
-              </div>
-
-              <div id="edit-sds-section" class="d-none">
-                <h6 class="text-uppercase text-muted small fw-semibold mb-2 mt-3">Safety Data Sheet</h6>
-                <div class="row g-3">
-                  <div class="col-12">
-                    <label class="form-label">Chemical name <span class="text-muted small">(for SDS lookup)</span></label>
-                    <div class="input-group">
-                      <input type="text" id="edit-sds-name" class="form-control" placeholder="e.g. Acetone" />
-                      <button type="button" class="btn btn-outline-warning" id="edit-sds-lookup-btn"
-                              onclick="lookupSds()" title="Look up safety data from PubChem">
-                        <i class="bi bi-eyedropper me-1"></i>Look up SDS
-                      </button>
+              <div class="tab-content">
+                <div class="tab-pane fade show active" id="edit-pane-general" role="tabpanel">
+                  <div class="row g-3">
+                    <div class="col-12">
+                      <label class="form-label">Name <span class="text-danger">*</span></label>
+                      <input type="text" id="edit-name" class="form-control" />
                     </div>
-                    <div class="form-text">Searches PubChem for GHS hazard data and attaches it to this item.</div>
-                  </div>
-                  <div class="col-12">
-                    <div id="edit-sds-status" class="small mb-2"></div>
-                    <div id="edit-sds-result"></div>
-                  </div>
-                </div>
-              </div>
-
-              <div id="edit-cost-section" class="d-none">
-                <h6 class="text-uppercase text-muted small fw-semibold mb-2 mt-3">Cost &amp; Valuation</h6>
-                <div class="row g-3">
-                  <div class="col-md-4">
-                    <label class="form-label">Unit Cost</label>
-                    <div class="input-group">
-                      <span class="input-group-text" id="edit-cost-currency">$</span>
-                      <input type="number" id="edit-cost-unit" class="form-control" min="0" step="0.01" />
+                    <div class="col-md-6" id="edit-quantity-col">
+                      <label class="form-label" id="edit-quantity-label">Total Quantity</label>
+                      <input type="number" id="edit-quantity" class="form-control" min="0" />
+                      <div class="form-text d-none" id="edit-quantity-help"></div>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label">Minimum Quantity <span class="text-muted small">(low-stock alert)</span></label>
+                      <input type="number" id="edit-min-quantity" class="form-control" min="0" />
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label">Location</label>
+                      <input type="text" id="edit-location" class="form-control" list="edit-location-list" autocomplete="off" />
+                      <datalist id="edit-location-list"></datalist>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label">Category</label>
+                      <div class="d-flex gap-2">
+                        <select id="edit-category" class="form-select"></select>
+                        <button type="button" class="btn btn-outline-secondary" id="edit-new-cat-btn" title="Create new category">
+                          <i class="bi bi-plus-lg"></i>
+                        </button>
+                      </div>
+                      <div id="edit-new-cat-form" class="mt-2 border rounded p-2 d-none">
+                        <div class="mb-2">
+                          <label class="form-label small mb-1">Name <span class="text-danger">*</span></label>
+                          <input type="text" id="edit-new-cat-name" class="form-control form-control-sm" placeholder="Category name" />
+                        </div>
+                        <div class="mb-2">
+                          <label class="form-label small mb-1">Color <span class="text-muted small">(optional)</span></label>
+                          <input type="hidden" id="edit-new-cat-color" value="" />
+                          <div class="d-flex flex-wrap gap-1" id="edit-new-cat-swatches"></div>
+                        </div>
+                        <div class="d-flex gap-2">
+                          <button type="button" class="btn btn-sm btn-primary" id="edit-new-cat-save">Create</button>
+                          <button type="button" class="btn btn-sm btn-outline-secondary" id="edit-new-cat-cancel">Cancel</button>
+                        </div>
+                        <div id="edit-new-cat-error" class="text-danger small mt-1 d-none"></div>
+                      </div>
+                    </div>
+                    <!-- Kit contents editor — shown only when editing a Kit (filled by inventory-detail.js). -->
+                    <div class="col-12 d-none" id="edit-kit-block">
+                      <hr class="my-1" />
+                      <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" id="edit-kit-allow-partial" />
+                        <label class="form-check-label" for="edit-kit-allow-partial">
+                          Allow checking out / using a partial kit when some items are short
+                        </label>
+                      </div>
+                      <div class="form-text mb-2">When off, the kit must be complete (every item in stock) to be checked out or used.</div>
+                      <label class="form-label">Kit Items</label>
+                      <div class="position-relative mb-2">
+                        <input type="text" id="edit-kit-search" class="form-control form-control-sm"
+                               placeholder="Search items to add…" autocomplete="off" oninput="onKitSearchInput()" />
+                        <div id="edit-kit-dd" class="d-none position-absolute w-100 border rounded bg-body shadow-sm"
+                             style="top:100%;z-index:1060;max-height:200px;overflow-y:auto;font-size:.875rem"></div>
+                      </div>
+                      <div id="edit-kit-members" class="small"></div>
                     </div>
                   </div>
-                  <div class="col-md-4">
-                    <label class="form-label">Purchase Date <span class="text-muted small">(optional)</span></label>
-                    <input type="date" id="edit-cost-purchase" class="form-control" />
+                </div>
+
+                <div class="tab-pane fade" id="edit-pane-details" role="tabpanel">
+                  <div class="row g-3">
+                    <div class="col-md-6">
+                      <label class="form-label">SKU / Barcode</label>
+                      <div class="input-group">
+                        <input type="text" id="edit-sku" class="form-control" />
+                        <button type="button" class="btn btn-outline-secondary" onclick="openUpcLookup('edit-sku','edit-name',null,null,'edit-match-badge','edit-metadata-id')" title="Look up product by barcode">
+                          <i class="bi bi-search"></i>
+                        </button>
+                      </div>
+                      <input type="hidden" id="edit-metadata-id" value="" />
+                      <span id="edit-match-badge" class="badge bg-success mt-1 d-none"><i class="bi bi-check-lg me-1"></i>Product matched</span>
+                    </div>
+                    <div class="col-md-6" id="edit-expiry-col">
+                      <label class="form-label">Expiry Date <span class="text-muted small">(optional)</span></label>
+                      <input type="date" id="edit-expiry" class="form-control" />
+                    </div>
+                    <div class="col-12">
+                      <label class="form-label">Tags <span class="text-muted small">(type to search, Enter to add)</span></label>
+                      <div id="edit-tags"></div>
+                    </div>
+                    <div class="col-12">
+                      <label class="form-label">Scan Warning</label>
+                      <input type="text" id="edit-scan-warning" class="form-control" placeholder="e.g. Requires PPE, Handle with care" />
+                    </div>
+                    <div class="col-12">
+                      <label class="form-label">Description</label>
+                      <textarea id="edit-description" class="form-control" rows="3"></textarea>
+                    </div>
                   </div>
-                  <div class="col-md-4">
-                    <label class="form-label">Useful Life <span class="text-muted small">(months, reusables)</span></label>
-                    <input type="number" id="edit-cost-life" class="form-control" min="0" step="1" />
+                </div>
+
+                <div class="tab-pane fade" id="edit-pane-safety" role="tabpanel">
+                  <div id="edit-sds-section">
+                    <div class="row g-3">
+                      <div class="col-12">
+                        <label class="form-label">Chemical name <span class="text-muted small">(for SDS lookup)</span></label>
+                        <div class="input-group">
+                          <input type="text" id="edit-sds-name" class="form-control" placeholder="e.g. Acetone" />
+                          <button type="button" class="btn btn-outline-warning" id="edit-sds-lookup-btn"
+                                  onclick="lookupSds()" title="Look up safety data from PubChem">
+                            <i class="bi bi-eyedropper me-1"></i>Look up SDS
+                          </button>
+                        </div>
+                        <div class="form-text">Searches PubChem for GHS hazard data and attaches it to this item.</div>
+                      </div>
+                      <div class="col-12">
+                        <div id="edit-sds-status" class="small mb-2"></div>
+                        <div id="edit-sds-result"></div>
+                      </div>
+                    </div>
                   </div>
-                  <div class="col-12">
-                    <button type="button" class="btn btn-sm btn-outline-primary" id="edit-cost-save-btn" onclick="saveCost()">
-                      <i class="bi bi-cash-coin me-1"></i>Save Cost
-                    </button>
-                    <span id="edit-cost-status" class="small ms-2"></span>
+                </div>
+
+                <div class="tab-pane fade" id="edit-pane-cost" role="tabpanel">
+                  <div id="edit-cost-section">
+                    <div class="row g-3">
+                      <div class="col-md-4">
+                        <label class="form-label">Unit Cost</label>
+                        <div class="input-group">
+                          <span class="input-group-text" id="edit-cost-currency">$</span>
+                          <input type="number" id="edit-cost-unit" class="form-control" min="0" step="0.01" />
+                        </div>
+                      </div>
+                      <div class="col-md-4">
+                        <label class="form-label">Purchase Date <span class="text-muted small">(optional)</span></label>
+                        <input type="date" id="edit-cost-purchase" class="form-control" />
+                      </div>
+                      <div class="col-md-4">
+                        <label class="form-label">Useful Life <span class="text-muted small">(months, reusables)</span></label>
+                        <input type="number" id="edit-cost-life" class="form-control" min="0" step="1" />
+                      </div>
+                      <div class="col-12">
+                        <button type="button" class="btn btn-sm btn-outline-primary" id="edit-cost-save-btn" onclick="saveCost()">
+                          <i class="bi bi-cash-coin me-1"></i>Save Cost
+                        </button>
+                        <span id="edit-cost-status" class="small ms-2"></span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="tab-pane fade" id="edit-pane-maintenance" role="tabpanel">
+                  <div id="edit-maintenance-section">
+                    <div class="row g-3">
+                      <div class="col-md-6">
+                        <label class="form-label">Last Maintained <span class="text-muted small">(optional)</span></label>
+                        <input type="date" id="edit-maint-last" class="form-control" oninput="updateEditMaintNext()" />
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label">Service Every</label>
+                        <div class="input-group">
+                          <input type="number" id="edit-maint-interval" class="form-control" min="0" step="1" placeholder="0" oninput="updateEditMaintNext()" />
+                          <select id="edit-maint-unit" class="form-select" style="max-width:120px" onchange="updateEditMaintNext()">
+                            <option value="0">Days</option>
+                            <option value="1" selected>Months</option>
+                            <option value="2">Years</option>
+                          </select>
+                        </div>
+                        <div class="form-text">Set 0 for no recurring schedule.</div>
+                      </div>
+                      <div class="col-12">
+                        <label class="form-label">Maintenance Notes <span class="text-muted small">(optional)</span></label>
+                        <textarea id="edit-maint-notes" class="form-control" rows="2"></textarea>
+                      </div>
+                      <div class="col-12">
+                        <div class="text-muted small mb-2" id="edit-maint-next"></div>
+                        <button type="button" class="btn btn-sm btn-outline-primary" id="edit-maint-save-btn" onclick="saveMaintenance()">
+                          <i class="bi bi-tools me-1"></i>Save Schedule
+                        </button>
+                        <span id="edit-maint-status" class="small ms-2"></span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -681,6 +812,11 @@ else
                         <div id="scan-warning" class="d-none alert alert-warning py-2 px-3 mb-2">
                             <i class="bi bi-exclamation-triangle-fill me-1"></i>
                             <span id="scan-warning-text"></span>
+                        </div>
+
+                        <div id="scan-maintenance-warning" class="d-none alert alert-warning py-2 px-3 mb-2">
+                            <i class="bi bi-tools me-1"></i>
+                            <span id="scan-maintenance-text"></span>
                         </div>
 
                         <!-- Compact 2-column layout mirroring the item view modal: image left, stats right -->

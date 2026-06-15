@@ -17,6 +17,24 @@
     var DISPLAY_H         = window.innerWidth <= 576 ? Math.round(window.innerHeight * 0.42) : 220;
     var _scannerDidAction = false;
 
+    // Maintenance module: build a due/overdue (or currently-out) warning from an item status.
+    // Exposed on window so the Terminal reuses the exact same logic. Returns {text, cls} or null.
+    window.maintenanceWarning = function (item) {
+        if (!item) return null;
+        if (item.maintenanceOut) {
+            return { text: 'This item is currently out for maintenance.', cls: 'alert-info' };
+        }
+        if (!item.nextMaintenanceDue) return null;
+        var d = new Date(item.nextMaintenanceDue + 'T00:00:00');
+        if (isNaN(d)) return null;
+        var today = new Date(); today.setHours(0, 0, 0, 0);
+        var days = Math.round((d - today) / 86400000);
+        var pretty = d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+        if (days < 0) return { text: 'Maintenance overdue — service was due ' + pretty + '.', cls: 'alert-danger' };
+        if (days <= 14) return { text: 'Maintenance due soon — service is due ' + pretty + '.', cls: 'alert-warning' };
+        return null;
+    };
+
     // Show manage-only elements if the user has write access
     if (window.canManage) {
         document.querySelectorAll('.scanner-manage-only').forEach(function (el) {
@@ -261,6 +279,17 @@
         if (item.scanWarning) {
             document.getElementById('scan-warning-text').textContent = item.scanWarning;
             document.getElementById('scan-warning').classList.remove('d-none');
+        }
+
+        var scanMaint = document.getElementById('scan-maintenance-warning');
+        if (scanMaint) {
+            scanMaint.classList.add('d-none');
+            var mw = (window.modules && window.modules.maintenance) ? maintenanceWarning(item) : null;
+            if (mw) {
+                document.getElementById('scan-maintenance-text').textContent = mw.text;
+                scanMaint.className = 'alert ' + mw.cls + ' py-2 px-3 mb-2';
+                scanMaint.classList.remove('d-none');
+            }
         }
 
         var stats = document.getElementById('item-stats');

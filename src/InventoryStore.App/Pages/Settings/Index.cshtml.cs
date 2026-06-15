@@ -69,6 +69,8 @@ public class IndexModel : PageModel
     public IReadOnlyDictionary<string, bool> EnabledMap { get; private set; } = new Dictionary<string, bool>();
     public string? ModuleSection { get; private set; }
     public bool IsModuleEnabled(string key) => EnabledMap.TryGetValue(key, out var v) && v;
+    // Loaded on every tab so the sidenav can show the Vendors link only when the module is on.
+    public bool MaintenanceModuleEnabled { get; private set; }
     // Per-module Configure state
     public string CostCurrency      { get; private set; } = "$";
     public int    ForecastWindowDays { get; private set; } = 30;
@@ -106,6 +108,7 @@ public class IndexModel : PageModel
         ErrorMessage   = error;
         LocalIpAddress = NetworkUtility.GetLocalIpAddress();
         CurrentUserId  = User.GetIdentity().userId;
+        MaintenanceModuleEnabled = await _modules.IsEnabledAsync("maintenance");
 
         if (tab == "users")
             Users = await _authService.GetAllUsersAsync();

@@ -55,16 +55,19 @@ async function refreshModal() {
 
 function populateView(s) {
     _currentItemData = s;
+    activateTab('view-tab-general-btn');
     const isReusable = s.itemType === 'Reusable';
+    const isKit = s.itemType === 'Kit';
 
     // Header
     document.getElementById('modal-item-name').textContent = s.name;
     const typeBadge = document.getElementById('modal-type-badge');
     typeBadge.textContent = s.itemType;
-    typeBadge.className = `badge ms-2 ${isReusable ? 'bg-info' : 'bg-secondary'}`;
+    typeBadge.className = `badge ms-2 ${isReusable ? 'bg-info' : isKit ? 'bg-dark' : 'bg-secondary'}`;
     // Title stock badge: red when nothing is available, yellow when low.
     const stockBadge = document.getElementById('modal-stock-badge');
-    const availForBadge = isReusable ? s.availableQuantity : s.quantity;
+    // For kits the "stock" is how many whole kits can be built (availableQuantity).
+    const availForBadge = (isReusable || isKit) ? s.availableQuantity : s.quantity;
     if (availForBadge <= 0) {
         stockBadge.className = 'badge bg-danger ms-1';
         stockBadge.textContent = 'Out of Stock';
@@ -93,8 +96,9 @@ function populateView(s) {
 
     // Stats — labelled differently per type. For consumables the single
     // quantity is "In Stock"; reusables break it into Total/Available/Out/Lost.
-    document.getElementById('modal-stat-qty').textContent = s.quantity;
-    document.getElementById('modal-stat-qty-label').textContent = isReusable ? 'Total' : 'In Stock';
+    // Kits show their buildable count as the headline number; consumables/reusables show stock.
+    document.getElementById('modal-stat-qty').textContent = isKit ? s.buildableQuantity : s.quantity;
+    document.getElementById('modal-stat-qty-label').textContent = isReusable ? 'Total' : isKit ? 'Kits Available' : 'In Stock';
     document.getElementById('modal-stat-min').textContent = s.minimumQuantity;
 
     const availCol = document.getElementById('stat-available-col');
@@ -110,7 +114,7 @@ function populateView(s) {
     }
 
     // Colour the headline stock number by health (Available for reusables, In Stock for consumables).
-    const available = isReusable ? s.availableQuantity : s.quantity;
+    const available = (isReusable || isKit) ? s.availableQuantity : s.quantity;
     const headlineEl = isReusable
         ? document.getElementById('modal-stat-available')
         : document.getElementById('modal-stat-qty');
@@ -119,8 +123,8 @@ function populateView(s) {
     if (available <= 0)    healthClass = 'text-danger';
     else if (s.isLowStock) healthClass = 'text-warning';
     else                   healthClass = 'text-success';
-    // Reusables always tint the headline; consumables stay neutral when healthy.
-    if (isReusable || available <= 0 || s.isLowStock) headlineEl.classList.add(healthClass);
+    // Reusables and kits always tint the headline; consumables stay neutral when healthy.
+    if (isReusable || isKit || available <= 0 || s.isLowStock) headlineEl.classList.add(healthClass);
 
     // Product image drives the two-column top layout: when present the image takes
     // the left column and info fills the remaining 8 cols; otherwise info is full width.
@@ -196,19 +200,25 @@ function populateView(s) {
         warnBanner.classList.add('d-none');
     }
 
-    // Actions
+    // Actions — one section per item type.
     document.getElementById('actions-reusable').classList.toggle('d-none', !isReusable);
-    document.getElementById('actions-consumable').classList.toggle('d-none', isReusable);
+    document.getElementById('actions-consumable').classList.toggle('d-none', !(!isReusable && !isKit));
+    document.getElementById('actions-kit').classList.toggle('d-none', !isKit);
 
     if (isReusable) {
         buildActiveCheckouts(s.activeCheckouts || []);
         buildLostCheckouts(s.lostCheckouts || []);
+    }
+    if (isKit) {
+        populateKitView(s);
     }
 
     // SDS module: reveal the "View SDS Info" button only when this item has data attached.
     setupViewSds(s.id);
     // Cost module: show the cost line when this item has a unit cost on file.
     setupViewCost(s);
+    // Maintenance module: schedule/out-return tab + due/overdue banner.
+    setupViewMaintenance(s);
 
     document.getElementById('modal-content').classList.remove('d-none');
 }
@@ -387,6 +397,186 @@ async function handleRestock() {
 }
 
 
+// ── Kit detail view ───────────────────────────────────────────────────────────
+
+// Renders the read-only contents + whole-kit actions into #actions-kit.
+function populateKitView(s) {
+    const canWrite = document.getElementById('actions-kit').dataset.canWrite === '1';
+    const comps = s.components || [];
+    const checkouts = s.activeKitCheckouts || [];
+
+    const memberRows = comps.length ? comps.map(c => {
+        const typeBadge = c.itemType === 'Reusable'
+            ? '<span class="badge bg-info">Reusable</span>'
+            : '<span class="badge bg-secondary">Consumable</span>';
+        const short = c.availableQuantity < c.perKitQuantity;
+        return `<tr>
+            <td>${esc(c.name)}</td>
+            <td>${typeBadge}</td>
+            <td class="text-end">${c.perKitQuantity}</td>
+            <td class="text-end ${short ? 'text-danger fw-semibold' : ''}">${c.availableQuantity}</td>
+        </tr>`;
+    }).join('') : '<tr><td colspan="4" class="text-muted">No items in this kit yet. Use Edit to add some.</td></tr>';
+
+    const membersTable = `
+        <h6 class="fw-semibold mb-2">Kit Contents</h6>
+        <div class="table-responsive mb-3">
+            <table class="table table-sm align-middle mb-0">
+                <thead class="table-light"><tr>
+                    <th>Item</th><th>Type</th><th class="text-end">Per Kit</th><th class="text-end">Available</th>
+                </tr></thead>
+                <tbody>${memberRows}</tbody>
+            </table>
+        </div>`;
+
+    const checkoutsHtml = checkouts.length ? `
+        <h6 class="fw-semibold mb-2">Checked-out Kits</h6>
+        <div class="mb-3">${checkouts.map(k => {
+            const when = new Date(k.checkedOutAt).toLocaleDateString();
+            return `<div class="border rounded p-2 mb-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div><strong>${esc(k.checkedOutBy)}</strong>
+                    <span class="badge bg-secondary ms-1">x${k.quantity}</span>
+                    <span class="text-muted small ms-2">${when}</span></div>
+                ${canWrite ? `<div class="d-flex gap-2">
+                    <button class="btn btn-sm btn-outline-success" onclick="handleKitCheckin(${k.id})"><i class="bi bi-box-arrow-in-down me-1"></i>Check In</button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="handleKitLost(${k.id})"><i class="bi bi-x-circle me-1"></i>Mark Lost</button>
+                </div>` : ''}
+            </div>`;
+        }).join('')}</div>` : '';
+
+    const hasConsumables = comps.some(c => c.itemType === 'Consumable');
+    const actionPanel = canWrite ? `
+        <div id="kit-shortage" class="alert alert-warning d-none"></div>
+        <h6 class="fw-semibold mb-2">Check Out Kit</h6>
+        <div class="row g-2 mb-3 align-items-end">
+            <div class="col"><label class="form-label small mb-1">Borrower</label>
+                <input type="text" id="kit-co-by" class="form-control form-control-sm" placeholder="Name"></div>
+            <div class="col-2"><label class="form-label small mb-1">Kits</label>
+                <input type="number" id="kit-co-qty" class="form-control form-control-sm" value="1" min="1"></div>
+            <div class="col-auto"><button class="btn btn-sm btn-primary" onclick="handleKitCheckout()">
+                <i class="bi bi-box-arrow-up-right me-1"></i>Check Out</button></div>
+        </div>
+        ${hasConsumables ? `
+        <h6 class="fw-semibold mb-2">Use / Restock</h6>
+        <div class="d-flex gap-2 align-items-end flex-wrap mb-1">
+            <div style="width:90px"><label class="form-label small mb-1">Kits</label>
+                <input type="number" id="kit-adjust-qty" class="form-control form-control-sm" value="1" min="1"></div>
+            <button class="btn btn-sm btn-outline-danger" onclick="handleKitConsume()"><i class="bi bi-dash-lg me-1"></i>Consume</button>
+            <button class="btn btn-sm btn-outline-success" onclick="handleKitRestock()"><i class="bi bi-plus-lg me-1"></i>Restock All</button>
+        </div>
+        <div class="form-text">Consume reduces only the kit's consumable items; Restock All adds them back.</div>` : ''}
+    ` : '';
+
+    document.getElementById('actions-kit').innerHTML = membersTable + checkoutsHtml + actionPanel;
+}
+
+// POSTs JSON to a /api/inventory/kit/* endpoint. Resolves to the parsed body, or throws the
+// server's plain-text message so callers can surface it.
+async function kitApiPost(path, body) {
+    const res = await fetch('/api/inventory/kit/' + path, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(body)
+    });
+    if (!res.ok) {
+        let t = (await res.text() || '').trim();
+        if (!t || t.charAt(0) === '<') t = 'Something went wrong (' + res.status + ').';
+        throw t;
+    }
+    try { return await res.json(); } catch { return {}; }
+}
+
+function kitShortageHtml(result) {
+    const lines = (result.shortages || []).map(sh =>
+        `<li>${esc(sh.name)}: need ${sh.required}, ${sh.available} available</li>`).join('');
+    return `<div class="fw-semibold mb-1"><i class="bi bi-exclamation-triangle me-1"></i>Some items are short</div>
+        <ul class="mb-0 small">${lines}</ul>`;
+}
+
+// Runs a kit checkout/consume, handling the "needs confirmation" shortage flow. `path` is
+// 'checkout' or 'consume'; `body` carries the kit id/qty (+ borrower for checkout).
+async function runKitAction(path, body, successMsg) {
+    const box = document.getElementById('kit-shortage');
+    try {
+        let result = await kitApiPost(path, body);
+        if (result.needsConfirmation) {
+            if (!result.allowPartial) {
+                // Whole-only kit: block and explain. Cancel is the only way out.
+                box.className = 'alert alert-danger';
+                box.innerHTML = kitShortageHtml(result) +
+                    '<div class="small mt-1">This kit must be complete to proceed.</div>';
+                box.classList.remove('d-none');
+                return;
+            }
+            // Partials allowed: offer to proceed with what's available.
+            box.className = 'alert alert-warning';
+            box.innerHTML = kitShortageHtml(result) +
+                `<div class="mt-2 d-flex gap-2">
+                    <button class="btn btn-sm btn-warning" id="kit-partial-go"><i class="bi bi-check2 me-1"></i>Proceed with available</button>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="document.getElementById('kit-shortage').classList.add('d-none')">Cancel</button>
+                </div>`;
+            box.classList.remove('d-none');
+            document.getElementById('kit-partial-go').onclick = async () => {
+                box.classList.add('d-none');
+                try {
+                    await kitApiPost(path, Object.assign({}, body, { allowPartialFallback: true }));
+                    showAlert('modal-alert', successMsg, 'success');
+                    _needsReload = true;
+                    await refreshModal();
+                } catch (msg) { showAlert('modal-alert', msg || 'Action failed.', 'danger'); }
+            };
+            return;
+        }
+        box.classList.add('d-none');
+        showAlert('modal-alert', successMsg, 'success');
+        _needsReload = true;
+        await refreshModal();
+    } catch (msg) {
+        showAlert('modal-alert', msg || 'Action failed.', 'danger');
+    }
+}
+
+window.handleKitCheckout = function () {
+    const by  = (document.getElementById('kit-co-by').value || '').trim();
+    const qty = parseInt(document.getElementById('kit-co-qty').value) || 1;
+    if (!by) { showAlert('modal-alert', 'Enter a borrower name first.', 'warning'); return; }
+    runKitAction('checkout', { kitId: _currentItemId, quantity: qty, checkedOutBy: by }, 'Kit checked out.');
+};
+
+window.handleKitConsume = function () {
+    const qty = parseInt(document.getElementById('kit-adjust-qty').value) || 1;
+    runKitAction('consume', { kitId: _currentItemId, quantity: qty }, 'Kit consumed.');
+};
+
+window.handleKitRestock = async function () {
+    const qty = parseInt(document.getElementById('kit-adjust-qty').value) || 1;
+    try {
+        await kitApiPost('restock', { kitId: _currentItemId, quantity: qty });
+        showAlert('modal-alert', 'Restocked the kit’s items.', 'success');
+        _needsReload = true;
+        await refreshModal();
+    } catch (msg) { showAlert('modal-alert', msg || 'Restock failed.', 'danger'); }
+};
+
+window.handleKitCheckin = async function (kitCheckoutId) {
+    try {
+        await kitApiPost('checkin', { kitCheckoutId });
+        showAlert('modal-alert', 'Kit checked in.', 'success');
+        _needsReload = true;
+        await refreshModal();
+    } catch (msg) { showAlert('modal-alert', msg || 'Check in failed.', 'danger'); }
+};
+
+window.handleKitLost = async function (kitCheckoutId) {
+    try {
+        await kitApiPost('lost', { kitCheckoutId });
+        showAlert('modal-alert', 'Kit marked as lost.', 'success');
+        _needsReload = true;
+        await refreshModal();
+    } catch (msg) { showAlert('modal-alert', msg || 'Action failed.', 'danger'); }
+};
+
 async function apiPost(handler, data) {
     const token = document.getElementById('af-token').value;
     const body  = new URLSearchParams(data);
@@ -546,12 +736,20 @@ async function openEditModal(id) {
 function populateEditForm(data) {
     const item = data.item;
 
+    activateTab('edit-tab-general-btn');
+
     const typeDisplay = document.getElementById('edit-type-display');
     const isReusable = item.itemType === 'Reusable';
-    typeDisplay.innerHTML = isReusable
-        ? '<span class="badge bg-info fs-6"><i class="bi bi-arrow-repeat me-1"></i>Reusable</span>'
-        : '<span class="badge bg-secondary fs-6"><i class="bi bi-box me-1"></i>Consumable</span>';
-    if (_canWrite) {
+    const isKit = item.itemType === 'Kit';
+    typeDisplay.innerHTML = isKit
+        ? '<span class="badge bg-dark fs-6"><i class="bi bi-box-seam me-1"></i>Kit</span>'
+        : isReusable
+            ? '<span class="badge bg-info fs-6"><i class="bi bi-arrow-repeat me-1"></i>Reusable</span>'
+            : '<span class="badge bg-secondary fs-6"><i class="bi bi-box me-1"></i>Consumable</span>';
+    // Kits never convert to another type, so skip the convert affordance for them.
+    if (isKit) {
+        typeDisplay.innerHTML += '<p class="text-muted small mt-1 mb-0">A kit is a bundle of other items; its type cannot be changed.</p>';
+    } else if (_canWrite) {
         const targetType = isReusable ? 'Consumable' : 'Reusable';
         const out  = isReusable ? (item.checkedOutCount || 0) : 0;
         const lost = isReusable ? (item.lostCount       || 0) : 0;
@@ -577,8 +775,11 @@ function populateEditForm(data) {
     }
 
     // Type-aware fields: reusables track a total pool; expiry only applies to consumables.
+    // Kits hold no stock of their own, so they hide quantity and expiry entirely.
     document.getElementById('edit-quantity-label').textContent = isReusable ? 'Total Quantity' : 'In Stock';
-    document.getElementById('edit-expiry-col').classList.toggle('d-none', isReusable);
+    document.getElementById('edit-quantity-col').classList.toggle('d-none', isKit);
+    document.getElementById('edit-expiry-col').classList.toggle('d-none', isReusable || isKit);
+    setupEditKit(item, isKit);
 
     // Safety context: for reusables, show what's currently out so the total isn't set
     // below outstanding checkouts by accident.
@@ -621,6 +822,7 @@ function populateEditForm(data) {
     _editTagInput = initTagInput('edit-tags', data.tags || [], item.tags || []);
     setupEditSds(item);
     setupEditCost(item);
+    setupEditMaintenance(item);
 }
 
 function initEditCategoryWidget() {
@@ -710,6 +912,104 @@ function initEditCategoryWidget() {
     });
 }
 
+// ── Edit modal: kit contents editor ───────────────────────────────────────────
+
+function setupEditKit(item, isKit) {
+    const block = document.getElementById('edit-kit-block');
+    if (!block) return;
+    block.classList.toggle('d-none', !isKit);
+    if (!isKit) return;
+    document.getElementById('edit-kit-allow-partial').checked = !!item.allowPartial;
+    document.getElementById('edit-kit-search').value = '';
+    hideKitDd();
+    renderKitMembers(item.components || []);
+}
+
+function kitMemberTypeBadge(type) {
+    // type may arrive as a string ('Reusable') from the edit payload or a number from search.
+    const reusable = type === 'Reusable' || type === 1;
+    return reusable
+        ? '<span class="badge bg-info">Reusable</span>'
+        : '<span class="badge bg-secondary">Consumable</span>';
+}
+
+function renderKitMembers(components) {
+    const el = document.getElementById('edit-kit-members');
+    if (!components.length) {
+        el.innerHTML = '<div class="text-muted">No items yet. Search above to add some.</div>';
+        return;
+    }
+    el.innerHTML = components.map(c => `
+        <div class="d-flex align-items-center gap-2 border rounded p-2 mb-1">
+            <span class="flex-grow-1">${esc(c.name)} ${kitMemberTypeBadge(c.itemType)}</span>
+            <input type="number" class="form-control form-control-sm" style="width:72px" value="${c.perKitQuantity}" min="1"
+                   onchange="changeKitMemberQty(${c.componentItemId}, this.value)">
+            <span class="text-muted small">per kit</span>
+            <button class="btn btn-sm btn-outline-danger" title="Remove" onclick="removeKitMember(${c.componentItemId})"><i class="bi bi-x"></i></button>
+        </div>`).join('');
+}
+
+async function refreshKitMembers() {
+    try {
+        const res = await fetch(`/Inventory?handler=KitComponents&id=${_editItemId}`);
+        const data = await res.json();
+        if (data.success) renderKitMembers(data.components || []);
+    } catch { /* leave the current list in place on a transient error */ }
+}
+
+var _kitSearchTimer = null;
+window.onKitSearchInput = function () {
+    clearTimeout(_kitSearchTimer);
+    const q = (document.getElementById('edit-kit-search').value || '').trim();
+    if (q.length < 2) { hideKitDd(); return; }
+    _kitSearchTimer = setTimeout(function () {
+        fetch('/api/inventory/search?q=' + encodeURIComponent(q), { credentials: 'include' })
+            .then(r => r.json())
+            .then(rows => showKitDd(rows || []))
+            .catch(() => hideKitDd());
+    }, 200);
+};
+
+function showKitDd(rows) {
+    // Exclude kits (itemType 2) and the kit being edited; a kit can't contain another kit or itself.
+    const candidates = rows.filter(r => r.itemType !== 2 && r.id !== _editItemId);
+    const dd = document.getElementById('edit-kit-dd');
+    if (!candidates.length) { hideKitDd(); return; }
+    dd.innerHTML = candidates.map(r =>
+        `<div class="px-2 py-1" style="cursor:pointer"
+              onmousedown="addKitMember(${r.id})"
+              onmouseover="this.classList.add('bg-body-secondary')" onmouseout="this.classList.remove('bg-body-secondary')">
+            ${esc(r.name)} <span class="text-muted ms-1">${esc(r.sku || r.sKU || '')}</span>
+        </div>`).join('');
+    dd.classList.remove('d-none');
+}
+
+function hideKitDd() {
+    const dd = document.getElementById('edit-kit-dd');
+    if (dd) dd.classList.add('d-none');
+}
+
+window.addKitMember = async function (componentItemId) {
+    hideKitDd();
+    document.getElementById('edit-kit-search').value = '';
+    const res = await apiPost('KitLink', { kitId: _editItemId, componentItemId, quantity: 1 });
+    if (res.success) { await refreshKitMembers(); }
+    else { showEditAlert(res.error || 'Could not add item to kit.', 'danger'); }
+};
+
+window.removeKitMember = async function (componentItemId) {
+    const res = await apiPost('KitUnlink', { kitId: _editItemId, componentItemId });
+    if (res.success) { await refreshKitMembers(); }
+    else { showEditAlert(res.error || 'Could not remove item.', 'danger'); }
+};
+
+window.changeKitMemberQty = async function (componentItemId, value) {
+    const qty = Math.max(1, parseInt(value) || 1);
+    const res = await apiPost('KitSetQty', { kitId: _editItemId, componentItemId, quantity: qty });
+    if (res.success) { await refreshKitMembers(); }
+    else { showEditAlert(res.error || 'Could not update quantity.', 'danger'); }
+};
+
 async function saveEditItem() {
     const saveBtn = document.getElementById('edit-save-btn');
     saveBtn.disabled = true;
@@ -739,6 +1039,7 @@ async function saveEditItem() {
                 description:       document.getElementById('edit-description').value.trim(),
                 selectedMetadataId: document.getElementById('edit-metadata-id').value,
                 tags:              _editTagInput ? _editTagInput.getTags().join(',') : '',
+                allowPartial:      document.getElementById('edit-kit-allow-partial').checked,
                 __RequestVerificationToken: token
             }).toString()
         });
@@ -805,8 +1106,9 @@ function sdsCardHtml(s) {
 function setupEditSds(item) {
     const section = document.getElementById('edit-sds-section');
     if (!section) return;
-    if (!(window.modules && window.modules.sds)) { section.classList.add('d-none'); return; }
+    if (!(window.modules && window.modules.sds)) { section.classList.add('d-none'); setTabVisible('edit-tab-safety', false); return; }
     section.classList.remove('d-none');
+    setTabVisible('edit-tab-safety', true);
     document.getElementById('edit-sds-name').value = item.name || '';
     document.getElementById('edit-sds-status').innerHTML = '';
     document.getElementById('edit-sds-result').innerHTML = '';
@@ -868,11 +1170,13 @@ function setupViewSds(itemId) {
     if (!block) return;
     _currentSdsRows = [];
     block.classList.add('d-none');
+    setTabVisible('view-tab-safety', false);
     if (!(window.modules && window.modules.sds)) return;
     fetchItemSds(itemId).then(rows => {
         _currentSdsRows = rows || [];
         const has = _currentSdsRows.length > 0;
         block.classList.toggle('d-none', !has);
+        setTabVisible('view-tab-safety', has);
         if (!has) return;
         const signal = (_currentSdsRows.find(r => r.signalWord) || {}).signalWord;
         window.applySignalBadge(document.getElementById('modal-sds-signal'), signal);
@@ -901,8 +1205,9 @@ function fmtMoney(n) {
 function setupEditCost(item) {
     const section = document.getElementById('edit-cost-section');
     if (!section) return;
-    if (!(window.modules && window.modules.cost)) { section.classList.add('d-none'); return; }
+    if (!(window.modules && window.modules.cost)) { section.classList.add('d-none'); setTabVisible('edit-tab-cost', false); return; }
     section.classList.remove('d-none');
+    setTabVisible('edit-tab-cost', true);
     document.getElementById('edit-cost-currency').textContent = moduleCurrency();
     document.getElementById('edit-cost-status').innerHTML = '';
     document.getElementById('edit-cost-unit').value = '';
@@ -992,11 +1297,309 @@ function setupViewCost(s) {
     const block = document.getElementById('modal-cost-block');
     if (!block) return;
     block.classList.add('d-none');
+    setTabVisible('view-tab-cost', false);
     if (!(window.modules && window.modules.cost)) return;
     fetch(`/api/cost/item/${s.id}`).then(r => r.ok ? r.json() : null).then(c => {
         if (!c || c.unitCost == null) return;
         document.getElementById('modal-cost-unit').textContent = fmtMoney(c.unitCost);
         document.getElementById('modal-cost-line').textContent = fmtMoney(c.unitCost * (s.quantity || 0));
         block.classList.remove('d-none');
+        setTabVisible('view-tab-cost', true);
     }).catch(() => {});
+}
+
+// ── Maintenance module ─────────────────────────────────────────────────────────
+
+// 'overdue' when the next-due date is in the past, 'due' when within 14 days, else null.
+function maintenanceDueState(dateStr) {
+    if (!dateStr) return null;
+    const d = new Date(dateStr + 'T00:00:00');
+    if (isNaN(d)) return null;
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const days = Math.round((d - today) / 86400000);
+    if (days < 0) return 'overdue';
+    if (days <= 14) return 'due';
+    return null;
+}
+
+function fmtMaintDate(dateStr) {
+    if (!dateStr) return null;
+    const d = new Date(dateStr + 'T00:00:00');
+    if (isNaN(d)) return esc(dateStr);
+    return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+// Top-of-modal banner: out for maintenance, or due/overdue. Driven by the status fields.
+function applyMaintenanceBanner(s) {
+    const banner = document.getElementById('modal-maintenance-banner');
+    const text   = document.getElementById('modal-maintenance-text');
+    if (!banner) return;
+    banner.classList.add('d-none');
+    if (!(window.modules && window.modules.maintenance)) return;
+    if (s.maintenanceOut) {
+        banner.className = 'alert alert-info d-flex align-items-start gap-2 mb-3';
+        text.innerHTML = '<strong>Out for maintenance.</strong> This item is currently being serviced.';
+        banner.classList.remove('d-none');
+        return;
+    }
+    const state = maintenanceDueState(s.nextMaintenanceDue);
+    if (state === 'overdue') {
+        banner.className = 'alert alert-danger d-flex align-items-start gap-2 mb-3';
+        text.innerHTML = '<strong>Maintenance overdue.</strong> Service was due ' + fmtMaintDate(s.nextMaintenanceDue) + '.';
+        banner.classList.remove('d-none');
+    } else if (state === 'due') {
+        banner.className = 'alert alert-warning d-flex align-items-start gap-2 mb-3';
+        text.innerHTML = '<strong>Maintenance due.</strong> Service is due ' + fmtMaintDate(s.nextMaintenanceDue) + '.';
+        banner.classList.remove('d-none');
+    }
+}
+
+// View modal: maintenance tab (reusable items only) + the due/overdue banner.
+function setupViewMaintenance(s) {
+    setTabVisible('view-tab-maintenance', false);
+    applyMaintenanceBanner(s);
+    if (!(window.modules && window.modules.maintenance)) return;
+    if (s.itemType !== 'Reusable') return;
+    setTabVisible('view-tab-maintenance', true);
+    document.getElementById('modal-maint-last').textContent = '-';
+    document.getElementById('modal-maint-next').textContent = '-';
+    document.getElementById('modal-maintenance-actions').innerHTML = '';
+    fetch('/api/inventory/maintenance/status/' + s.id)
+        .then(r => r.ok ? r.json() : null)
+        .then(m => { if (m) renderViewMaintenance(s, m); })
+        .catch(() => {});
+}
+
+function maintNextBadge(dateStr) {
+    const state = maintenanceDueState(dateStr);
+    const pretty = fmtMaintDate(dateStr);
+    if (state === 'overdue') return `<span class="badge bg-danger">Overdue</span> <span class="text-muted small">${pretty}</span>`;
+    if (state === 'due')     return `<span class="badge bg-warning text-dark">Due soon</span> <span class="text-muted small">${pretty}</span>`;
+    return esc(pretty);
+}
+
+function renderViewMaintenance(s, m) {
+    const canWrite = document.getElementById('view-pane-maintenance').dataset.canWrite === '1';
+    const sched = m.schedule;
+    const visit = m.openVisit;
+
+    document.getElementById('modal-maint-last').textContent =
+        sched && sched.lastMaintainedDate ? fmtMaintDate(sched.lastMaintainedDate) : 'Never';
+    document.getElementById('modal-maint-next').innerHTML =
+        sched && sched.nextDueDate ? maintNextBadge(sched.nextDueDate) : 'Not scheduled';
+
+    const actions = document.getElementById('modal-maintenance-actions');
+    if (visit) {
+        const since  = new Date(visit.outForMaintenanceAt).toLocaleDateString();
+        const vendor = visit.vendorName ? ` to <strong>${esc(visit.vendorName)}</strong>` : '';
+        actions.innerHTML = `
+            <div class="border rounded p-2 mb-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div><i class="bi bi-tools me-1"></i>Out for maintenance${vendor}
+                    <span class="badge bg-secondary ms-1">x${visit.quantity}</span>
+                    <span class="text-muted small ms-2">since ${since}</span></div>
+                ${canWrite ? `<button class="btn btn-sm btn-outline-success" onclick="handleMaintenanceReturn()">
+                    <i class="bi bi-box-arrow-in-down me-1"></i>Return from maintenance</button>` : ''}
+            </div>`;
+        return;
+    }
+
+    if (!canWrite) { actions.innerHTML = '<p class="text-muted small mb-0">This item is not out for maintenance.</p>'; return; }
+    if (s.availableQuantity <= 0) {
+        actions.innerHTML = '<p class="text-muted small mb-0">No units available to send out for maintenance.</p>';
+        return;
+    }
+
+    actions.innerHTML = `
+        <h6 class="fw-semibold mb-2">Send Out for Maintenance</h6>
+        <div class="mb-2">
+            <label class="form-label small mb-1">Vendor <span class="text-muted">(optional)</span></label>
+            <div class="position-relative">
+                <input type="text" id="maint-vendor-input" class="form-control form-control-sm" placeholder="Search vendors…" oninput="onMaintVendorInput()" autocomplete="off" />
+                <input type="hidden" id="maint-vendor-id" />
+                <div id="maint-vendor-dd" class="d-none position-absolute w-100 border rounded bg-body shadow-sm"
+                     style="top:100%;z-index:1060;max-height:180px;overflow-y:auto;font-size:.875rem"></div>
+            </div>
+        </div>
+        <div class="row g-2 mb-1 align-items-end">
+            <div class="col-3"><label class="form-label small mb-1">Qty</label><input type="number" id="maint-qty" class="form-control form-control-sm" value="1" min="1" max="${s.availableQuantity}"></div>
+            <div class="col"><label class="form-label small mb-1">Notes</label><input type="text" id="maint-notes" class="form-control form-control-sm" placeholder="Optional"></div>
+            <div class="col-auto"><button class="btn btn-sm btn-primary" onclick="handleMaintenanceOut()"><i class="bi bi-tools me-1"></i>Send Out</button></div>
+        </div>`;
+}
+
+async function maintApiPost(path, body) {
+    const res = await fetch('/api/inventory/maintenance/' + path, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(body)
+    });
+    if (!res.ok) {
+        let t = (await res.text() || '').trim();
+        if (!t || t.charAt(0) === '<') t = 'Something went wrong (' + res.status + ').';
+        throw t;
+    }
+    return res;
+}
+
+window.handleMaintenanceOut = async function () {
+    const vendorId = parseInt(document.getElementById('maint-vendor-id').value) || null;
+    const qty      = parseInt(document.getElementById('maint-qty').value) || 1;
+    const notes    = (document.getElementById('maint-notes').value || '').trim();
+    try {
+        await maintApiPost('out', { itemId: _currentItemId, quantity: qty, vendorId, notes });
+        showAlert('modal-alert', 'Sent out for maintenance.', 'success');
+        _needsReload = true;
+        await refreshModal();
+    } catch (msg) { showAlert('modal-alert', msg || 'Action failed.', 'danger'); }
+};
+
+window.handleMaintenanceReturn = async function () {
+    try {
+        await maintApiPost('return', { itemId: _currentItemId });
+        showAlert('modal-alert', 'Returned from maintenance.', 'success');
+        _needsReload = true;
+        await refreshModal();
+    } catch (msg) { showAlert('modal-alert', msg || 'Action failed.', 'danger'); }
+};
+
+// Vendor typeahead for the out-for-maintenance panel (mirrors the client typeahead).
+var _maintVendorTimer = null;
+window.onMaintVendorInput = function () {
+    clearTimeout(_maintVendorTimer);
+    document.getElementById('maint-vendor-id').value = '';
+    const q = (document.getElementById('maint-vendor-input').value || '').trim();
+    if (q.length < 1) { hideMaintVendorDd(); return; }
+    _maintVendorTimer = setTimeout(function () {
+        fetch('/api/vendors/search?q=' + encodeURIComponent(q), { credentials: 'include' })
+            .then(r => r.json())
+            .then(vendors => showMaintVendorDd(vendors, q))
+            .catch(() => hideMaintVendorDd());
+    }, 200);
+};
+
+function showMaintVendorDd(vendors, query) {
+    const dd = document.getElementById('maint-vendor-dd');
+    if (!dd) return;
+    const escH = s => s == null ? '' : String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    const rows = (vendors || []).map(v =>
+        '<div class="px-2 py-1" style="cursor:pointer" ' +
+        'onmousedown="selectMaintVendor(' + v.id + ',\'' + escH(v.name).replace(/'/g,"&#39;") + '\')" ' +
+        'onmouseover="this.classList.add(\'bg-body-secondary\')" onmouseout="this.classList.remove(\'bg-body-secondary\')">' +
+        escH(v.name) + (v.phone ? '<span class="text-muted ms-2">' + escH(v.phone) + '</span>' : '') + '</div>');
+    rows.push('<div class="px-2 py-1 text-primary" style="cursor:pointer;border-top:1px solid var(--bs-border-color)" ' +
+        'onmousedown="quickCreateMaintVendor(\'' + escH(query).replace(/'/g,"&#39;") + '\')" ' +
+        'onmouseover="this.classList.add(\'bg-body-secondary\')" onmouseout="this.classList.remove(\'bg-body-secondary\')">' +
+        '<i class="bi bi-plus-circle me-1"></i>Create "' + escH(query) + '"</div>');
+    dd.innerHTML = rows.join('');
+    dd.classList.remove('d-none');
+}
+
+function hideMaintVendorDd() {
+    const dd = document.getElementById('maint-vendor-dd');
+    if (dd) dd.classList.add('d-none');
+}
+
+window.selectMaintVendor = function (id, name) {
+    document.getElementById('maint-vendor-id').value = id;
+    document.getElementById('maint-vendor-input').value = name;
+    hideMaintVendorDd();
+};
+
+window.quickCreateMaintVendor = function (name) {
+    hideMaintVendorDd();
+    fetch('/api/vendors/quick-create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ name: name })
+    })
+    .then(r => r.json())
+    .then(v => selectMaintVendor(v.id, v.name))
+    .catch(() => {});
+};
+
+// Edit modal: maintenance schedule form (reusable items only).
+function setupEditMaintenance(item) {
+    const section = document.getElementById('edit-maintenance-section');
+    if (!section) return;
+    const on = window.modules && window.modules.maintenance && item.itemType === 'Reusable';
+    setTabVisible('edit-tab-maintenance', !!on);
+    if (!on) return;
+    document.getElementById('edit-maint-last').value = '';
+    document.getElementById('edit-maint-interval').value = '';
+    document.getElementById('edit-maint-unit').value = '1';
+    document.getElementById('edit-maint-notes').value = '';
+    document.getElementById('edit-maint-next').textContent = '';
+    document.getElementById('edit-maint-status').innerHTML = '';
+    fetch('/api/inventory/maintenance/status/' + _editItemId)
+        .then(r => r.ok ? r.json() : null)
+        .then(m => {
+            if (!m || !m.schedule) return;
+            const sc = m.schedule;
+            if (sc.lastMaintainedDate) document.getElementById('edit-maint-last').value = sc.lastMaintainedDate.substring(0, 10);
+            document.getElementById('edit-maint-interval').value = sc.intervalValue || '';
+            document.getElementById('edit-maint-unit').value = String(sc.intervalUnit ?? 1);
+            document.getElementById('edit-maint-notes').value = sc.notes || '';
+            updateEditMaintNext();
+        })
+        .catch(() => {});
+}
+
+function updateEditMaintNext() {
+    const el = document.getElementById('edit-maint-next');
+    if (!el) return;
+    const last = document.getElementById('edit-maint-last').value;
+    const val  = parseInt(document.getElementById('edit-maint-interval').value) || 0;
+    const unit = document.getElementById('edit-maint-unit').value;
+    if (!last || val <= 0) { el.textContent = ''; return; }
+    const d = new Date(last + 'T00:00:00');
+    if (isNaN(d)) { el.textContent = ''; return; }
+    if (unit === '0') d.setDate(d.getDate() + val);
+    else if (unit === '1') d.setMonth(d.getMonth() + val);
+    else d.setFullYear(d.getFullYear() + val);
+    el.textContent = 'Next due: ' + d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+async function saveMaintenance() {
+    const status = document.getElementById('edit-maint-status');
+    const btn    = document.getElementById('edit-maint-save-btn');
+    const payload = {
+        itemId: _editItemId,
+        lastMaintainedDate: document.getElementById('edit-maint-last').value || null,
+        intervalValue: parseInt(document.getElementById('edit-maint-interval').value) || 0,
+        intervalUnit: parseInt(document.getElementById('edit-maint-unit').value) || 1,
+        notes: document.getElementById('edit-maint-notes').value.trim() || null
+    };
+    btn.disabled = true;
+    status.innerHTML = '';
+    try {
+        const res = await fetch('/api/inventory/maintenance/schedule', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify(payload)
+        });
+        status.innerHTML = res.ok
+            ? '<span class="text-success"><i class="bi bi-check-lg me-1"></i>Saved.</span>'
+            : '<span class="text-danger">Save failed.</span>';
+        if (res.ok) { updateEditMaintNext(); _needsReload = true; }
+    } catch {
+        status.innerHTML = '<span class="text-danger">Network error.</span>';
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+// Show/hide a nav-tab list item by id, used to gate module tabs (Safety, Cost)
+// the same way their content sections are gated.
+function setTabVisible(tabItemId, visible) {
+    const el = document.getElementById(tabItemId);
+    if (el) el.classList.toggle('d-none', !visible);
+}
+
+// Reset a tabbed modal to its first (General) tab so a reopened modal never
+// lands on a tab that is now hidden.
+function activateTab(btnId) {
+    const btn = document.getElementById(btnId);
+    if (btn && window.bootstrap && bootstrap.Tab) {
+        bootstrap.Tab.getOrCreateInstance(btn).show();
+    }
 }

@@ -29,6 +29,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IItemCostRepository, ItemCostRepository>();
         services.AddScoped<IStockMovementRepository, StockMovementRepository>();
         services.AddScoped<IWebhookEndpointRepository, WebhookEndpointRepository>();
+        services.AddScoped<IKitRepository, KitRepository>();
+        services.AddScoped<IVendorRepository, VendorRepository>();
+        services.AddScoped<IMaintenanceRepository, MaintenanceRepository>();
 
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
 
@@ -40,6 +43,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ISettingsService, SettingsService>();
         services.AddScoped<ICheckoutService, CheckoutService>();
         services.AddScoped<IClientService, ClientService>();
+        services.AddScoped<IKitService, KitService>();
+        services.AddScoped<IVendorService, VendorService>();
+        services.AddScoped<IMaintenanceService, MaintenanceService>();
 
         services.AddScoped<DatabaseInitializer>();
 

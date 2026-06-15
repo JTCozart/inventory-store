@@ -43,6 +43,10 @@
         <option value="/Settings?tab=categories" selected="@(Model.Tab=="categories")">Categories</option>
         <option value="/Settings?tab=tags"       selected="@(Model.Tab=="tags")">Tags</option>
         <option value="/Settings?tab=locations"  selected="@(Model.Tab=="locations")">Locations</option>
+        @if (Model.MaintenanceModuleEnabled)
+        {
+            <option value="/Settings?tab=vendors" selected="@(Model.Tab=="vendors")">Vendors</option>
+        }
     }
     <option value="/Settings?tab=info" selected="@(Model.Tab=="info")">App Info</option>
 </select>
@@ -86,6 +90,12 @@
         <a href="/Settings?tab=locations" class="nav-link @(Model.Tab == "locations" ? "active" : "")">
             <i class="bi bi-geo-alt"></i> Locations
         </a>
+        @if (Model.MaintenanceModuleEnabled)
+        {
+            <a href="/Settings?tab=vendors" class="nav-link @(Model.Tab == "vendors" ? "active" : "")">
+                <i class="bi bi-truck"></i> Vendors
+            </a>
+        }
     }
     <div class="page-sidenav-section">About</div>
     <a href="/Settings?tab=info" class="nav-link @(Model.Tab == "info" ? "active" : "")">
@@ -1619,48 +1629,259 @@
     </div>
 }
 
+@if (Model.Tab == "vendors" && (User.IsInRole("Admin") || User.IsInRole("Manager")) && Model.MaintenanceModuleEnabled)
+{
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <h5 class="mb-0">Maintenance Vendors</h5>
+        <button class="btn btn-primary btn-sm" onclick="openVendorEdit(null)">
+            <i class="bi bi-plus-lg me-1"></i> Add Vendor
+        </button>
+    </div>
+    <p class="text-muted small">Organizations that service items sent out for maintenance.</p>
+
+    <div class="card mb-3">
+        <div class="card-body py-2">
+            <input type="search" id="vendor-search" class="form-control" style="max-width:300px"
+                   placeholder="Search vendors…" oninput="filterVendorRows(this.value)" />
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Name</th>
+                        <th class="d-none d-md-table-cell">Phone</th>
+                        <th class="d-none d-lg-table-cell">Email</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="vendors-tbody">
+                    <tr><td colspan="4" class="text-center text-muted py-4"><span class="spinner-border spinner-border-sm"></span></td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Vendor edit modal -->
+    <div class="modal fade" id="vendorEditModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header py-2">
+                    <h5 class="modal-title fs-6" id="vendor-edit-title">Vendor</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="vendor-edit-alert" class="d-none alert py-2 px-3 mb-3"></div>
+                    <div class="row g-2">
+                        <div class="col-12">
+                            <label class="form-label small mb-1">Name <span class="text-danger">*</span></label>
+                            <input id="vendor-name" type="text" class="form-control form-control-sm" />
+                            <div id="vendor-name-err" class="text-danger small d-none mt-1">Required.</div>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small mb-1">Phone</label>
+                            <input id="vendor-phone" type="tel" class="form-control form-control-sm" />
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small mb-1">Email</label>
+                            <input id="vendor-email" type="email" class="form-control form-control-sm" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small mb-1">Address</label>
+                            <input id="vendor-address" type="text" class="form-control form-control-sm" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small mb-1">Notes</label>
+                            <textarea id="vendor-notes" class="form-control form-control-sm" rows="3"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer py-2">
+                    <button class="btn btn-sm btn-primary" id="vendor-save-btn" onclick="saveVendor()"><i class="bi bi-floppy me-1"></i>Save</button>
+                    <button class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Vendor delete modal -->
+    <div class="modal fade" id="vendorDeleteModal" tabindex="-1">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header py-2">
+                    <h5 class="modal-title fs-6">Delete Vendor</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body small">Delete <strong id="vendor-delete-name"></strong>? This cannot be undone.</div>
+                <div class="modal-footer py-2">
+                    <button class="btn btn-sm btn-danger" onclick="deleteVendor()">Delete</button>
+                    <button class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    var _vendorEditId = null;
+    var _vendorDeleteId = null;
+    var _vendorEditModal = null;
+    var _vendorDeleteModal = null;
+
+    function vEsc(s) { return s == null ? '' : String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    function getVendorEditModal()   { return _vendorEditModal   || (_vendorEditModal   = new bootstrap.Modal(document.getElementById('vendorEditModal'))); }
+    function getVendorDeleteModal() { return _vendorDeleteModal || (_vendorDeleteModal = new bootstrap.Modal(document.getElementById('vendorDeleteModal'))); }
+
+    function loadVendors() {
+        fetch('/api/vendors', { credentials: 'include' })
+            .then(function (r) { return r.json(); })
+            .then(function (vendors) {
+                var tbody = document.getElementById('vendors-tbody');
+                if (!vendors.length) {
+                    tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4">No vendors yet.</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = vendors.map(function (v) {
+                    return '<tr data-search="' + vEsc((v.name + ' ' + (v.phone||'') + ' ' + (v.email||'')).toLowerCase()) + '">' +
+                        '<td class="fw-semibold">' + vEsc(v.name) + '</td>' +
+                        '<td class="text-muted small d-none d-md-table-cell">' + (v.phone ? vEsc(v.phone) : '—') + '</td>' +
+                        '<td class="text-muted small d-none d-lg-table-cell">' + (v.email ? vEsc(v.email) : '—') + '</td>' +
+                        '<td class="text-end">' +
+                            '<button class="btn btn-sm btn-outline-secondary me-1" onclick="openVendorEdit(' + v.id + ')" title="Edit"><i class="bi bi-pencil"></i></button>' +
+                            '<button class="btn btn-sm btn-outline-danger" onclick="confirmDeleteVendor(' + v.id + ',\'' + vEsc(v.name).replace(/'/g,"&#39;") + '\')" title="Delete"><i class="bi bi-trash"></i></button>' +
+                        '</td></tr>';
+                }).join('');
+            })
+            .catch(function () {
+                document.getElementById('vendors-tbody').innerHTML = '<tr><td colspan="4" class="text-danger text-center py-4">Failed to load vendors.</td></tr>';
+            });
+    }
+
+    window.filterVendorRows = function (val) {
+        var q = (val || '').toLowerCase().trim();
+        document.querySelectorAll('#vendors-tbody tr').forEach(function (row) {
+            var s = row.dataset.search || '';
+            row.style.display = (!q || s.indexOf(q) !== -1) ? '' : 'none';
+        });
+    };
+
+    window.openVendorEdit = function (id) {
+        _vendorEditId = id;
+        document.getElementById('vendor-edit-title').textContent = id ? 'Edit Vendor' : 'Add Vendor';
+        document.getElementById('vendor-edit-alert').classList.add('d-none');
+        document.getElementById('vendor-name-err').classList.add('d-none');
+        ['vendor-name','vendor-phone','vendor-email','vendor-address','vendor-notes'].forEach(function (x) { document.getElementById(x).value = ''; });
+        if (id) {
+            fetch('/api/vendors/' + id, { credentials: 'include' })
+                .then(function (r) { return r.json(); })
+                .then(function (v) {
+                    document.getElementById('vendor-name').value    = v.name    || '';
+                    document.getElementById('vendor-phone').value   = v.phone   || '';
+                    document.getElementById('vendor-email').value   = v.email   || '';
+                    document.getElementById('vendor-address').value = v.address || '';
+                    document.getElementById('vendor-notes').value   = v.notes   || '';
+                }).catch(function () {});
+        }
+        getVendorEditModal().show();
+    };
+
+    window.saveVendor = function () {
+        var name = document.getElementById('vendor-name').value.trim();
+        var err = document.getElementById('vendor-name-err');
+        if (!name) { err.classList.remove('d-none'); document.getElementById('vendor-name').focus(); return; }
+        err.classList.add('d-none');
+        var body = {
+            name: name,
+            phone:   document.getElementById('vendor-phone').value.trim()   || null,
+            email:   document.getElementById('vendor-email').value.trim()   || null,
+            address: document.getElementById('vendor-address').value.trim() || null,
+            notes:   document.getElementById('vendor-notes').value.trim()   || null
+        };
+        var btn = document.getElementById('vendor-save-btn');
+        btn.disabled = true;
+        var url    = _vendorEditId ? '/api/vendors/' + _vendorEditId : '/api/vendors';
+        var method = _vendorEditId ? 'PUT' : 'POST';
+        fetch(url, { method: method, headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'include', body: JSON.stringify(body) })
+            .then(function (r) {
+                if (r.status === 403) throw 'You do not have permission to do that.';
+                if (!r.ok) throw 'Server error ' + r.status;
+                getVendorEditModal().hide();
+                showFlashToast(_vendorEditId ? 'Vendor saved.' : 'Vendor added.');
+                loadVendors();
+            })
+            .catch(function (msg) {
+                var al = document.getElementById('vendor-edit-alert');
+                al.className = 'alert alert-danger py-2 px-3 mb-3';
+                al.textContent = typeof msg === 'string' ? msg : 'Failed to save.';
+                al.classList.remove('d-none');
+            })
+            .finally(function () { btn.disabled = false; });
+    };
+
+    window.confirmDeleteVendor = function (id, name) {
+        _vendorDeleteId = id;
+        document.getElementById('vendor-delete-name').textContent = name;
+        getVendorDeleteModal().show();
+    };
+
+    window.deleteVendor = function () {
+        if (!_vendorDeleteId) return;
+        fetch('/api/vendors/' + _vendorDeleteId, { method: 'DELETE', credentials: 'include' })
+            .then(function () { getVendorDeleteModal().hide(); showFlashToast('Vendor deleted.', 'secondary'); loadVendors(); })
+            .catch(function () {});
+    };
+
+    document.addEventListener('DOMContentLoaded', loadVendors);
+    </script>
+}
+
 @if (Model.Tab == "modules" && User.IsInRole("Admin") && string.IsNullOrEmpty(Model.ModuleSection))
 {
     @* ── Module list (registry-driven) ──────────────────────────── *@
     <p class="text-muted mb-3" style="max-width: 720px;">
         Optional add-ons. Turn one on to reveal its features; while it is off it stays out of everyone's way.
     </p>
-    @foreach (var mod in Model.Modules)
-    {
-        var on = Model.IsModuleEnabled(mod.Key);
-        <div class="card mb-3" style="max-width: 720px;">
-            <div class="card-body">
-                <div class="d-flex align-items-start gap-3">
-                    <i class="bi @mod.Icon fs-4 text-secondary mt-1"></i>
-                    <div class="flex-grow-1">
-                        <div class="fw-semibold">@mod.Name</div>
-                        <p class="text-muted small mb-2">@mod.Description</p>
-                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
-                            <form method="post" asp-page-handler="ToggleModule">
-                                <input type="hidden" name="key" value="@mod.Key" />
-                                <input type="hidden" name="enabled" value="@(on ? "false" : "true")" />
-                                <div class="form-check form-switch mb-0">
-                                    <input class="form-check-input" type="checkbox" role="switch"
-                                           @(on ? "checked" : "") onchange="this.form.submit()" />
-                                    <label class="form-check-label">@(on ? "Enabled" : "Disabled")</label>
+    <div class="row g-3" style="max-width: 1140px;">
+        @foreach (var mod in Model.Modules)
+        {
+            var on = Model.IsModuleEnabled(mod.Key);
+            <div class="col-12 col-md-6 col-xl-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="d-flex align-items-start gap-3">
+                            <i class="bi @mod.Icon fs-4 text-secondary mt-1"></i>
+                            <div class="flex-grow-1">
+                                <div class="fw-semibold">@mod.Name</div>
+                                <p class="text-muted small mb-2">@mod.Description</p>
+                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                    <form method="post" asp-page-handler="ToggleModule">
+                                        <input type="hidden" name="key" value="@mod.Key" />
+                                        <input type="hidden" name="enabled" value="@(on ? "false" : "true")" />
+                                        <div class="form-check form-switch mb-0">
+                                            <input class="form-check-input" type="checkbox" role="switch"
+                                                   @(on ? "checked" : "") onchange="this.form.submit()" />
+                                            <label class="form-check-label">@(on ? "Enabled" : "Disabled")</label>
+                                        </div>
+                                    </form>
+                                    @if (mod.HasConfigure && on)
+                                    {
+                                        <a href="/Settings?tab=modules&section=@mod.Key" class="btn btn-sm btn-outline-secondary" title="Configure" aria-label="Configure @mod.Name">
+                                            <i class="bi bi-gear"></i>
+                                        </a>
+                                    }
+                                    else if (mod.HasConfigure)
+                                    {
+                                        <span class="text-muted small">Enable to configure</span>
+                                    }
                                 </div>
-                            </form>
-                            @if (mod.HasConfigure && on)
-                            {
-                                <a href="/Settings?tab=modules&section=@mod.Key" class="btn btn-sm btn-outline-secondary">
-                                    <i class="bi bi-gear me-1"></i>Configure
-                                </a>
-                            }
-                            else if (mod.HasConfigure)
-                            {
-                                <span class="text-muted small">Enable to configure</span>
-                            }
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-    }
+        }
+    </div>
 }
 
 @if (Model.Tab == "modules" && User.IsInRole("Admin") && Model.ModuleSection == "sds")
@@ -1760,6 +1981,34 @@
                         <tbody id="val-tbody"></tbody>
                     </table>
                 </div>
+            </div>
+        </div>
+    }
+}
+
+@if (Model.Tab == "modules" && User.IsInRole("Admin") && Model.ModuleSection == "maintenance")
+{
+    <div class="mb-3">
+        <a href="/Settings?tab=modules" class="text-decoration-none small"><i class="bi bi-arrow-left me-1"></i>Modules</a>
+    </div>
+    @if (!Model.IsModuleEnabled("maintenance"))
+    {
+        <div class="alert alert-warning" style="max-width: 1080px;">
+            The Maintenance module is disabled. <a href="/Settings?tab=modules">Enable it</a> to configure.
+        </div>
+    }
+    else
+    {
+        <div class="card mb-3" style="max-width: 720px;">
+            <div class="card-header fw-semibold"><i class="bi bi-tools me-2"></i>Maintenance</div>
+            <div class="card-body">
+                <p class="text-muted small mb-2">
+                    Set a service schedule on a reusable item under its <strong>Edit &rsaquo; Maintenance</strong> tab,
+                    then send it out for service from the item's view. Due and overdue items show a warning on scan,
+                    checkout, and the Terminal.
+                </p>
+                <a href="/Settings?tab=vendors" class="btn btn-sm btn-outline-secondary"><i class="bi bi-truck me-1"></i>Manage Vendors</a>
+                <a href="/Reports?tab=maintenance" class="btn btn-sm btn-outline-secondary"><i class="bi bi-bar-chart me-1"></i>Maintenance Due Report</a>
             </div>
         </div>
     }

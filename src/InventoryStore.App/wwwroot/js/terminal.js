@@ -25,6 +25,8 @@
         ['term-result', 'term-notfound', 'term-picker'].forEach(function (id) { $(id).classList.add('d-none'); });
     }
 
+    var termCanRestock = ($('term-kit') && $('term-kit').dataset.canRestock === '1') || window.termCanRestock;
+
     // ── Search / lookup ───────────────────────────────────────────────
     // One omni search box: try an exact SKU match first, then fall back to a name search.
     window.termSearch = function () {
@@ -138,24 +140,48 @@
             $('term-warning').classList.add('d-none');
         }
 
+        // Maintenance due/overdue warning (shares the scanner's logic).
+        var termMaint = $('term-maintenance-warning');
+        if (termMaint) {
+            termMaint.classList.add('d-none');
+            var mw = (window.modules && window.modules.maintenance && window.maintenanceWarning)
+                ? window.maintenanceWarning(item) : null;
+            if (mw) {
+                $('term-maintenance-text').textContent = mw.text;
+                termMaint.className = 'alert ' + mw.cls + ' py-2 px-3 mb-2';
+                termMaint.classList.remove('d-none');
+            }
+        }
+
         updateStockBadge(item);
 
         var statsEl = $('term-stats');
         var isReusable = item.itemType === 1;
-        var avail = isReusable ? item.availableQuantity : item.quantity;
+        var isKit = item.itemType === 2;
+        var avail = (isReusable || isKit) ? item.availableQuantity : item.quantity;
         var outOfStock = avail <= 0;
 
         // Prominent out-of-stock banner at the top of the card.
         if (outOfStock) {
-            $('term-stock-warning-text').textContent = isReusable
-                ? 'Out of stock — no units are available to check out.'
-                : 'Out of stock — there is nothing left to use.';
+            $('term-stock-warning-text').textContent = isKit
+                ? 'No complete kits available right now.'
+                : isReusable
+                    ? 'Out of stock — no units are available to check out.'
+                    : 'Out of stock — there is nothing left to use.';
             $('term-stock-warning').classList.remove('d-none');
         } else {
             $('term-stock-warning').classList.add('d-none');
         }
 
-        if (isReusable) {
+        if (isKit) {
+            statsEl.innerHTML =
+                statCell(item.buildableQuantity, 'Kits', item.buildableQuantity > 0 ? 'text-success' : 'text-danger') +
+                statCell((item.components || []).length, 'Items', 'text-muted');
+            $('term-reusable').classList.add('d-none');
+            $('term-consumable').classList.add('d-none');
+            $('term-kit').classList.remove('d-none');
+            renderKitTerminal(item);
+        } else if (isReusable) {
             var html =
                 statCell(item.quantity, 'Total', '') +
                 statCell(item.availableQuantity, 'Available', 'text-success') +
@@ -164,6 +190,7 @@
             statsEl.innerHTML = html;
             $('term-reusable').classList.remove('d-none');
             $('term-consumable').classList.add('d-none');
+            $('term-kit').classList.add('d-none');
             renderActive(item);
             resetCheckoutInputs();
             // Nothing available means nothing to hand out.
@@ -175,6 +202,7 @@
                 statCell(item.minimumQuantity, 'Min Qty', 'text-muted');
             $('term-reusable').classList.add('d-none');
             $('term-consumable').classList.remove('d-none');
+            $('term-kit').classList.add('d-none');
             $('term-adjust-qty').value = '1';
             // Can't use stock that isn't there; restock (+) stays enabled.
             $('term-consume-btn').disabled = outOfStock;
@@ -189,7 +217,7 @@
 
     function updateStockBadge(item) {
         var badge = $('term-stock-badge');
-        var avail = item.itemType === 1 ? item.availableQuantity : item.quantity;
+        var avail = (item.itemType === 1 || item.itemType === 2) ? item.availableQuantity : item.quantity;
         if (avail <= 0) { badge.className = 'badge fs-6 bg-danger'; badge.textContent = 'Out of stock'; }
         else if (item.isLowStock) { badge.className = 'badge fs-6 bg-warning text-dark'; badge.textContent = 'Low stock'; }
         else { badge.className = 'badge fs-6 d-none'; badge.textContent = ''; }
@@ -335,6 +363,131 @@
             .then(function (r) { return r.json(); })
             .then(function (c) { termSelectClient(c.id, c.displayName); })
             .catch(function () { showAlert('Could not create borrower.'); });
+    };
+
+    // ── Kits ──────────────────────────────────────────────────────────
+    // Builds the kit panel: contents summary, big checkout/consume/restock buttons, and any
+    // kits currently out (with check-in). Members are never acted on individually here.
+    function renderKitTerminal(item) {
+        var comps = item.components || [];
+        var checkouts = item.activeKitCheckouts || [];
+        var hasConsumables = comps.some(function (c) { return c.itemType === 0; });
+        var avail = item.availableQuantity;
+
+        var members = comps.map(function (c) {
+            var short = c.availableQuantity < c.perKitQuantity;
+            return '<div class="d-flex justify-content-between border-bottom py-1">' +
+                '<span>' + esc(c.name) + '</span>' +
+                '<span class="' + (short ? 'text-danger fw-semibold' : 'text-muted') + '">' +
+                c.perKitQuantity + ' needed · ' + c.availableQuantity + ' avail</span></div>';
+        }).join('');
+
+        var checkoutsHtml = checkouts.length ? '<div class="mt-3"><div class="fw-semibold fs-6 mb-1">Kits out</div>' +
+            checkouts.map(function (k) {
+                return '<div class="d-flex align-items-center justify-content-between border rounded p-2 mb-2 term-co-item">' +
+                    '<div><span class="fw-semibold">' + esc(k.checkedOutBy) + '</span>' +
+                    '<span class="text-muted ms-1">×' + k.quantity + '</span></div>' +
+                    '<button class="btn btn-success term-btn px-3" onclick="termKitCheckin(' + k.id + ')">' +
+                    '<i class="bi bi-box-arrow-in-down me-1"></i>Check In</button></div>';
+            }).join('') + '</div>' : '';
+
+        var useRow = hasConsumables ?
+            '<div class="mt-3"><label class="form-label fs-6 fw-semibold mb-1">Use / restock</label>' +
+            '<div class="input-group" style="max-width:320px">' +
+            '<button class="btn btn-danger term-step-btn" type="button" onclick="termKitConsume()" title="Use one kit\'s worth"><i class="bi bi-dash-lg"></i></button>' +
+            '<input type="number" id="term-kit-qty" class="form-control term-step-input" value="1" min="1">' +
+            (termCanRestock ? '<button class="btn btn-success term-step-btn" type="button" onclick="termKitRestock()" title="Restock"><i class="bi bi-plus-lg"></i></button>' : '') +
+            '</div></div>' : '';
+
+        $('term-kit').innerHTML =
+            '<div id="term-kit-alert" class="alert d-none py-2 px-3 fs-6"></div>' +
+            '<div class="mb-2">' + (members || '<span class="text-muted">This kit has no items.</span>') + '</div>' +
+            '<label class="form-label fs-6 fw-semibold mb-1">Borrower</label>' +
+            '<input type="text" id="term-kit-by" class="form-control term-input mb-2" placeholder="Name" autocomplete="off">' +
+            '<div class="d-flex align-items-center gap-2 mb-2">' +
+            '<div class="input-group" style="max-width:200px">' +
+            '<button class="btn btn-outline-secondary term-step-btn" type="button" onclick="termStep(\'term-kit-co-qty\',-1)">−</button>' +
+            '<input type="number" id="term-kit-co-qty" class="form-control term-step-input" value="1" min="1">' +
+            '<button class="btn btn-outline-secondary term-step-btn" type="button" onclick="termStep(\'term-kit-co-qty\',1)">+</button>' +
+            '</div></div>' +
+            '<button class="btn btn-primary term-btn term-btn-lg w-100" onclick="termKitCheckout()" ' + (avail <= 0 ? 'disabled' : '') + '>' +
+            '<i class="bi bi-box-arrow-up-right me-1"></i> Check Out Kit</button>' +
+            useRow + checkoutsHtml;
+    }
+
+    function kitAlert(msg, type) {
+        var el = $('term-kit-alert');
+        if (!el) { showAlert(msg, type); return; }
+        el.className = 'alert py-2 px-3 fs-6 alert-' + (type || 'danger');
+        el.innerHTML = msg;
+        el.classList.remove('d-none');
+    }
+
+    function kitShortageList(result) {
+        return '<div class="fw-semibold mb-1">Some items are short:</div><ul class="mb-0">' +
+            (result.shortages || []).map(function (s) {
+                return '<li>' + esc(s.name) + ': need ' + s.required + ', ' + s.available + ' avail</li>';
+            }).join('') + '</ul>';
+    }
+
+    // Runs a kit checkout/consume, surfacing the cancel / proceed-with-available choice on shortages.
+    function runKitAction(path, body, okMsg) {
+        apiPost('/api/inventory/kit/' + path, body)
+            .then(function (r) { return r.json(); })
+            .then(function (result) {
+                if (result.needsConfirmation) {
+                    if (!result.allowPartial) {
+                        kitAlert(kitShortageList(result) + '<div class="mt-1">This kit must be complete.</div>', 'danger');
+                        return;
+                    }
+                    kitAlert(kitShortageList(result) +
+                        '<div class="mt-2 d-flex gap-2">' +
+                        '<button class="btn btn-warning" id="term-kit-partial">Use what\'s available</button>' +
+                        '<button class="btn btn-outline-secondary" onclick="$id(\'term-kit-alert\').classList.add(\'d-none\')">Cancel</button>' +
+                        '</div>', 'warning');
+                    $('term-kit-partial').onclick = function () {
+                        body.allowPartialFallback = true;
+                        apiPost('/api/inventory/kit/' + path, body)
+                            .then(function () { showAlert(okMsg, 'success'); refresh(); })
+                            .catch(function (m) { kitAlert(m || 'Action failed.', 'danger'); });
+                    };
+                    return;
+                }
+                showAlert(okMsg, 'success');
+                refresh();
+            })
+            .catch(function (m) { kitAlert(m || 'Action failed.', 'danger'); });
+    }
+
+    // Small helper so inline onclick can reach elements without polluting globals further.
+    window.$id = function (id) { return document.getElementById(id); };
+
+    window.termKitCheckout = function () {
+        if (!currentItem) return;
+        var by = ($('term-kit-by').value || '').trim();
+        var qty = parseInt($('term-kit-co-qty').value) || 1;
+        if (!by) { kitAlert('Enter a borrower name first.', 'warning'); $('term-kit-by').focus(); return; }
+        runKitAction('checkout', { kitId: currentItem.id, quantity: qty, checkedOutBy: by }, 'Kit checked out to ' + by + '.');
+    };
+
+    window.termKitConsume = function () {
+        if (!currentItem) return;
+        var qty = parseInt($('term-kit-qty').value) || 1;
+        runKitAction('consume', { kitId: currentItem.id, quantity: qty }, 'Used ' + qty + ' kit(s).');
+    };
+
+    window.termKitRestock = function () {
+        if (!currentItem || !termCanRestock) return;
+        var qty = parseInt($('term-kit-qty').value) || 1;
+        apiPost('/api/inventory/kit/restock', { kitId: currentItem.id, quantity: qty })
+            .then(function () { showAlert('Restocked ' + qty + ' kit(s) worth.', 'success'); refresh(); })
+            .catch(function (m) { kitAlert(m || 'Restock failed.', 'danger'); });
+    };
+
+    window.termKitCheckin = function (kitCheckoutId) {
+        apiPost('/api/inventory/kit/checkin', { kitCheckoutId: kitCheckoutId })
+            .then(function () { showAlert('Kit checked in.', 'success'); refresh(); })
+            .catch(function (m) { kitAlert(m || 'Check in failed.', 'danger'); });
     };
 
     // ── Camera scanning ───────────────────────────────────────────────

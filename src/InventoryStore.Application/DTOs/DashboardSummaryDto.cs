@@ -82,3 +82,29 @@ public record TakeInventoryRow(
     int CheckedOutCount,
     int LostCount
 );
+
+// Kits that can't currently be assembled as a whole (buildable count is zero), with the
+// members responsible for the shortfall.
+public record IncompleteKitsReportDto(
+    IEnumerable<IncompleteKitRow> Items,
+    int TotalIncomplete,
+    DateTime GeneratedAt
+);
+
+public record IncompleteKitRow(
+    int KitId,
+    string KitName,
+    string? SKU,
+    string? Location,
+    int Buildable,
+    int MemberCount,
+    IReadOnlyList<KitShortfallRow> Shortfalls
+);
+
+public record KitShortfallRow(
+    string ItemName,
+    string ItemType,
+    int PerKit,
+    int Available,
+    int Shortfall
+);

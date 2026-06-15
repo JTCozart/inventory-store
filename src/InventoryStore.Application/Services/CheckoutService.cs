@@ -13,6 +13,8 @@ public class CheckoutService : ICheckoutService
     private readonly ICheckoutRepository _checkoutRepo;
     private readonly IActivityLogRepository _activityRepo;
     private readonly IStockMovementRepository _stockMovementRepo;
+    private readonly IKitRepository _kitRepo;
+    private readonly IMaintenanceRepository _maintenanceRepo;
     private readonly INtfyService _ntfy;
     private readonly IWebhookService _webhooks;
 
@@ -26,6 +28,8 @@ public class CheckoutService : ICheckoutService
         ICheckoutRepository checkoutRepo,
         IActivityLogRepository activityRepo,
         IStockMovementRepository stockMovementRepo,
+        IKitRepository kitRepo,
+        IMaintenanceRepository maintenanceRepo,
         INtfyService ntfy,
         IWebhookService webhooks)
     {
@@ -33,6 +37,8 @@ public class CheckoutService : ICheckoutService
         _checkoutRepo      = checkoutRepo;
         _activityRepo      = activityRepo;
         _stockMovementRepo = stockMovementRepo;
+        _kitRepo           = kitRepo;
+        _maintenanceRepo   = maintenanceRepo;
         _ntfy              = ntfy;
         _webhooks          = webhooks;
     }
@@ -348,9 +354,28 @@ public class CheckoutService : ICheckoutService
         var (itemType, checkedOut, lost) = item switch
         {
             ReusableItem r  => (ItemType.Reusable,  r.CheckedOutCount, r.LostCount),
+            KitItem         => (ItemType.Kit,        0,                 0),
             ConsumableItem  => (ItemType.Consumable, 0,                 0),
             _               => throw new InvalidOperationException($"Unknown item type: {item.GetType().Name}")
         };
+
+        // Kit extras: member lines + buildable count, plus any kit checkouts currently out.
+        var (allowPartial, buildable, components) = InventoryService.KitFields(item);
+        IReadOnlyList<KitCheckoutDto>? activeKitCheckouts = null;
+        if (item is KitItem)
+        {
+            activeKitCheckouts = (await _kitRepo.GetActiveByKitAsync(item.Id))
+                .Select(k => new KitCheckoutDto(
+                    k.Id, k.KitItemId, k.CheckedOutBy, k.Quantity,
+                    k.CheckedOutAt, k.CheckedInAt, k.IsLost, k.Notes, k.ClientId))
+                .ToList();
+        }
+
+        // Maintenance module: surface the next-due date and whether the item is currently out, so
+        // every status consumer (view modal, scanner, terminal) can show due/overdue warnings.
+        var schedule  = await _maintenanceRepo.GetScheduleAsync(item.Id);
+        var openVisit = await _maintenanceRepo.GetOpenVisitAsync(item.Id);
+        var outForMaint = item is ReusableItem rm ? rm.OutForMaintenanceCount : 0;
 
         return new ItemStatusDto(
             item.Id, item.Name, item.SKU, item.Location,
@@ -361,7 +386,9 @@ public class CheckoutService : ICheckoutService
             lostRecords.Select(r => MapRecord(r, item.Name)),
             item.ExpiryDate, item.Category?.Name, item.Category?.Color,
             item.Tags.OrderBy(t => t.Name).Select(t => new TagDto(t.Id, t.Name)).ToList(),
-            item.SelectedMetadata?.ImageUrl, item.SelectedMetadata?.Brand, item.SelectedMetadata?.Category, item.SelectedMetadata?.Description
+            item.SelectedMetadata?.ImageUrl, item.SelectedMetadata?.Brand, item.SelectedMetadata?.Category, item.SelectedMetadata?.Description,
+            AllowPartial: allowPartial, BuildableQuantity: buildable, Components: components, ActiveKitCheckouts: activeKitCheckouts,
+            OutForMaintenanceCount: outForMaint, NextMaintenanceDue: schedule?.NextDueDate, MaintenanceOut: openVisit is not null
         );
     }
 

@@ -27,7 +27,11 @@ public record InventoryItemDto(
     string? MetadataImageUrl = null,
     string? MetadataBrand = null,
     string? MetadataCategory = null,
-    string? MetadataDescription = null
+    string? MetadataDescription = null,
+    // Kit-only fields (ignored for Consumable/Reusable items).
+    bool AllowPartial = false,
+    int BuildableQuantity = 0,
+    IReadOnlyList<KitComponentDto>? Components = null
 );
 
 public record CreateInventoryItemDto(
@@ -42,7 +46,8 @@ public record CreateInventoryItemDto(
     int? CategoryId,
     DateOnly? ExpiryDate,
     int? SelectedMetadataId = null,
-    IReadOnlyList<string>? Tags = null
+    IReadOnlyList<string>? Tags = null,
+    bool AllowPartial = false
 );
 
 public record LocationSummaryDto(string Name, int Count);
@@ -59,5 +64,6 @@ public record UpdateInventoryItemDto(
     int? CategoryId,
     DateOnly? ExpiryDate,
     int? SelectedMetadataId = null,
-    IReadOnlyList<string>? Tags = null
+    IReadOnlyList<string>? Tags = null,
+    bool AllowPartial = false
 );

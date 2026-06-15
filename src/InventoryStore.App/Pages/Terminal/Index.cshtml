@@ -110,6 +110,10 @@
                     <i class="bi bi-exclamation-triangle-fill me-1"></i><span id="term-warning-text"></span>
                 </div>
 
+                <div id="term-maintenance-warning" class="alert alert-warning d-none py-2 px-3 fs-6">
+                    <i class="bi bi-tools me-1"></i><span id="term-maintenance-text"></span>
+                </div>
+
                 <div id="term-stats" class="row g-2 text-center mb-3"></div>
 
                 <!-- Reusable: checkout + active checkouts -->
@@ -155,6 +159,9 @@
                     </div>
                     <div class="form-text">Tap <span class="text-danger fw-semibold">−</span> to use stock@(Model.CanRestock ? ", + to add stock" : "").</div>
                 </div>
+
+                <!-- Kit: built dynamically by terminal.js (renderKitTerminal). -->
+                <div id="term-kit" class="d-none" data-can-restock="@(Model.CanRestock ? "1" : "0")"></div>
 
                 <button class="btn btn-outline-secondary term-btn w-100 mt-3" onclick="termReset()">
                     <i class="bi bi-arrow-left me-1"></i> Next item

@@ -116,6 +116,10 @@ else
                                 {
                                     <span class="badge bg-info">Reusable</span>
                                 }
+                                else if (item.ItemType == InventoryStore.Domain.Enums.ItemType.Kit)
+                                {
+                                    <span class="badge bg-dark">Kit</span>
+                                }
                                 else
                                 {
                                     <span class="badge bg-secondary">Consumable</span>
@@ -276,8 +280,9 @@ else
                         </div>
                         <div class="col-12">
                             <label class="form-label">Item Type <span class="text-danger">*</span></label>
+                            @{ var typeColClass = Model.KitsEnabled ? "col-sm-4" : "col-sm-6"; }
                             <div class="row g-2">
-                                <div class="col-sm-6">
+                                <div class="@typeColClass">
                                     <input class="btn-check" type="radio" name="add-item-type" id="add-type-consumable" value="Consumable" checked autocomplete="off" onchange="applyAddItemType()" />
                                     <label class="type-option" for="add-type-consumable">
                                         <i class="bi bi-box"></i>
@@ -287,7 +292,7 @@ else
                                         </div>
                                     </label>
                                 </div>
-                                <div class="col-sm-6">
+                                <div class="@typeColClass">
                                     <input class="btn-check" type="radio" name="add-item-type" id="add-type-reusable" value="Reusable" autocomplete="off" onchange="applyAddItemType()" />
                                     <label class="type-option" for="add-type-reusable">
                                         <i class="bi bi-arrow-repeat"></i>
@@ -297,6 +302,28 @@ else
                                         </div>
                                     </label>
                                 </div>
+                                @if (Model.KitsEnabled)
+                                {
+                                    <div class="col-sm-4">
+                                        <input class="btn-check" type="radio" name="add-item-type" id="add-type-kit" value="Kit" autocomplete="off" onchange="applyAddItemType()" />
+                                        <label class="type-option" for="add-type-kit">
+                                            <i class="bi bi-box-seam"></i>
+                                            <div>
+                                                <div class="fw-semibold">Kit</div>
+                                                <div class="text-muted small">Bundles other items together</div>
+                                            </div>
+                                        </label>
+                                    </div>
+                                }
+                            </div>
+                            <div id="add-kit-options" class="mt-2 d-none">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="add-kit-allow-partial" />
+                                    <label class="form-check-label" for="add-kit-allow-partial">
+                                        Allow checking out / using a partial kit when some items are short
+                                    </label>
+                                </div>
+                                <div class="form-text"><i class="bi bi-info-circle me-1"></i>Save the kit first, then add items to it from its Edit screen.</div>
                             </div>
                         </div>
                         <div class="col-md-6">
@@ -639,9 +666,14 @@ async function openAddItemModal() {
 // Show only the fields relevant to the chosen item type.
 function applyAddItemType() {
     var isReusable = document.getElementById('add-type-reusable').checked;
+    var kitRadio = document.getElementById('add-type-kit');   // absent when the Kits module is off
+    var isKit = kitRadio ? kitRadio.checked : false;
     document.getElementById('add-quantity-label').innerHTML =
         (isReusable ? 'Total Quantity' : 'In Stock') + ' <span class="text-danger">*</span>';
-    document.getElementById('add-expiry-col').classList.toggle('d-none', isReusable);
+    // A kit holds no stock of its own — hide the quantity/expiry fields and show its options.
+    document.getElementById('add-quantity').closest('.col-md-6').classList.toggle('d-none', isKit);
+    document.getElementById('add-expiry-col').classList.toggle('d-none', isReusable || isKit);
+    document.getElementById('add-kit-options').classList.toggle('d-none', !isKit);
 }
 
 function initAddCatSwatches() {
@@ -738,6 +770,7 @@ async function saveAddItem() {
             scanWarning: document.getElementById('add-scan-warning').value.trim(),
             description: document.getElementById('add-description').value.trim(),
             tags: _addTagInput ? _addTagInput.getTags().join(',') : '',
+            allowPartial: document.getElementById('add-kit-allow-partial').checked,
             __RequestVerificationToken: token
         };
         const res = await fetch('/Inventory?handler=CreateItem', {

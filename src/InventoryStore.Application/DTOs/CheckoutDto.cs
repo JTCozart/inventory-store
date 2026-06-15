@@ -37,7 +37,16 @@ public record ItemStatusDto(
     string? MetadataImageUrl = null,
     string? MetadataBrand = null,
     string? MetadataCategory = null,
-    string? MetadataDescription = null
+    string? MetadataDescription = null,
+    // Kit-only fields (null/empty for Consumable/Reusable items).
+    bool AllowPartial = false,
+    int BuildableQuantity = 0,
+    IReadOnlyList<KitComponentDto>? Components = null,
+    IReadOnlyList<KitCheckoutDto>? ActiveKitCheckouts = null,
+    // Maintenance module fields (defaults when the module is off / item has no schedule).
+    int OutForMaintenanceCount = 0,
+    DateOnly? NextMaintenanceDue = null,
+    bool MaintenanceOut = false
 );
 
 public record CheckOutItemDto(

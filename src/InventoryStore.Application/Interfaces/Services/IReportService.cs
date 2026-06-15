@@ -8,6 +8,8 @@ public interface IReportService
     Task<CheckedOutReportDto>   GetCheckedOutReportAsync();
     Task<LostItemsReportDto>    GetLostItemsReportAsync();
     Task<TakeInventoryReportDto> GetTakeInventoryReportAsync();
+    Task<IncompleteKitsReportDto> GetIncompleteKitsReportAsync();
+    Task<MaintenanceReportDto>  GetMaintenanceDueReportAsync();
     Task<IEnumerable<ActivityLogDto>> GetActivityReportAsync(DateTime? fromUtc = null, DateTime? toUtc = null);
     Task<DashboardSummaryDto>   GetDashboardSummaryAsync();
 }

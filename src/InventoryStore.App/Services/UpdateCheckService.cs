@@ -1,4 +1,4 @@
-using System.Diagnostics;
+using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -26,8 +26,12 @@ public class UpdateCheckService : BackgroundService
         _config = config;
         _logger = logger;
 
-        // Version is injected at build time via appsettings ("AppVersion": "20260606.1430")
-        // Falls back to assembly file version if not set.
+        // Version comes from one of two places, in order:
+        //  1. appsettings ("AppVersion") - the Windows installer rewrites this at install time.
+        //  2. The assembly's InformationalVersion - stamped into both the Windows and Linux
+        //     builds by the release workflow (-p:InformationalVersion=...). We read it from the
+        //     assembly attribute rather than FileVersionInfo because Assembly.Location is empty
+        //     in a single-file published app (the Linux build), which would otherwise fall to "dev".
         var configured = config["AppVersion"];
         if (!string.IsNullOrWhiteSpace(configured) && configured != "dev")
         {
@@ -35,13 +39,20 @@ public class UpdateCheckService : BackgroundService
         }
         else
         {
-            try
-            {
-                var fvi = FileVersionInfo.GetVersionInfo(typeof(UpdateCheckService).Assembly.Location);
-                _info.CurrentVersion = fvi.ProductVersion?.Split('+')[0].TrimStart('v') ?? "dev";
-            }
-            catch { _info.CurrentVersion = "dev"; }
+            _info.CurrentVersion = ReadAssemblyVersion() ?? "dev";
         }
+    }
+
+    private static string? ReadAssemblyVersion()
+    {
+        // The release workflow stamps this (-p:InformationalVersion=YYYYMMDD.HHMM) on both the
+        // Windows and Linux builds. Unset in local dev, where it defaults to the assembly version
+        // ("1.0.0"); treat that as no version so dev shows "dev". May carry a "+<commit>" suffix.
+        var info = typeof(UpdateCheckService).Assembly
+            .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?
+            .InformationalVersion?.Split('+')[0].TrimStart('v');
+
+        return string.IsNullOrWhiteSpace(info) || info == "1.0.0" || info == "0.0.0" ? null : info;
     }
 
     protected override async Task ExecuteAsync(CancellationToken ct)

@@ -17,11 +17,15 @@ public class IndexModel : PageModel
     public string Tab { get; private set; } = "stock";
     public bool CostEnabled { get; private set; }
     public bool ForecastEnabled { get; private set; }
+    public bool KitsEnabled { get; private set; }
+    public bool MaintenanceEnabled { get; private set; }
+    public MaintenanceReportDto? MaintenanceReport { get; private set; }
 
     public StockReportDto?        StockReport     { get; private set; }
     public CheckedOutReportDto?   CheckedOut      { get; private set; }
     public LostItemsReportDto?    LostItems       { get; private set; }
     public TakeInventoryReportDto? TakeInventory  { get; private set; }
+    public IncompleteKitsReportDto? IncompleteKits { get; private set; }
     public IEnumerable<ActivityLogDto> ActivityLogs { get; private set; } = [];
     public IEnumerable<InventoryItemDto> BarcodeItems { get; private set; } = [];
 
@@ -52,6 +56,11 @@ public class IndexModel : PageModel
         Tab = tab;
         CostEnabled     = await _modules.IsEnabledAsync("cost");
         ForecastEnabled = await _modules.IsEnabledAsync("forecast");
+        KitsEnabled     = await _modules.IsEnabledAsync("kits");
+        MaintenanceEnabled = await _modules.IsEnabledAsync("maintenance");
+        // Don't serve the kit report when the module is off — fall back to the default tab.
+        if (tab == "kits" && !KitsEnabled) { Tab = tab = "stock"; }
+        if (tab == "maintenance" && !MaintenanceEnabled) { Tab = tab = "stock"; }
         switch (tab)
         {
             case "checkout":
@@ -62,6 +71,12 @@ public class IndexModel : PageModel
                 break;
             case "inventory":
                 TakeInventory = await _reportService.GetTakeInventoryReportAsync();
+                break;
+            case "kits":
+                IncompleteKits = await _reportService.GetIncompleteKitsReportAsync();
+                break;
+            case "maintenance":
+                MaintenanceReport = await _reportService.GetMaintenanceDueReportAsync();
                 break;
             case "expiry":
                 var allItems  = await _inventoryService.GetAllItemsAsync();

@@ -190,6 +190,7 @@
   <div class="nav-links">
     <a href="index.html#features">Features</a>
     <a href="index.html#how-it-works">How it works</a>
+    <a href="services.html">Services</a>
     <a href="user-guide.html">User Guide</a>
     <a href="release-notes.html">Release Notes</a>
     <a href="https://github.com/JTCozart/inventory-store" target="_blank" rel="noopener noreferrer">GitHub</a>
@@ -203,6 +204,7 @@
   <div class="nav-mobile" role="menu">
     <a href="index.html#features"><i class="fa-solid fa-star fa-fw"></i> Features</a>
     <a href="index.html#how-it-works"><i class="fa-solid fa-list-check fa-fw"></i> How it works</a>
+    <a href="services.html"><i class="fa-solid fa-headset fa-fw"></i> Services</a>
     <a href="user-guide.html"><i class="fa-solid fa-book fa-fw"></i> User Guide</a>
     <a href="release-notes.html"><i class="fa-solid fa-rocket fa-fw"></i> Release Notes</a>
     <a href="https://github.com/JTCozart/inventory-store" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-github fa-fw"></i> GitHub</a>
@@ -245,6 +247,7 @@
       <li><a href="#cost-valuation">Cost &amp; Valuation</a></li>
       <li><a href="#forecasting">Consumption Forecasting</a></li>
       <li><a href="#webhooks">Webhooks &amp; Integrations</a></li>
+      <li><a href="#kits">Kits &amp; Bundles</a></li>
 
       <li class="section-label">Reports</li>
       <li><a href="#reports">All Reports</a></li>
@@ -391,6 +394,7 @@ sudo systemctl restart inventorystore</code></pre>
         </tr>
       </table>
       <p><strong>Available Quantity</strong> for Reusable items reflects how many units are physically on hand (not checked out or lost). For Consumables it is the same as the total quantity.</p>
+      <p>There is also a third type, the <strong>Kit</strong>, which bundles several other items together so you can hand them out or use them up in one step. Kits are an optional feature you switch on under <strong>Settings &rarr; Modules &rarr; Kits &amp; Bundles</strong>. When the module is on, Kit becomes a choice when you add an item. See <a href="#kits">Kits &amp; Bundles</a> for the full walkthrough.</p>
 
       <h3 id="changing-type">Changing an item's type</h3>
       <p>If you set the wrong type, or an item's use changes, you can switch it between Reusable and Consumable. Open the item, click <strong>Edit</strong>, and use the <strong>Convert to …</strong> link shown under the type badge (Admin or Manager only). To prevent mistakes you click it once to arm it, then click <strong>Confirm</strong> to apply.</p>
@@ -745,6 +749,52 @@ sudo systemctl restart inventorystore</code></pre>
       <p>Each message is sent as JSON and includes the event name, a timestamp, and details of the item. When you set a shared secret, the app adds a signature header (<code>X-InventoryStore-Signature</code>) so the receiving system can confirm the message really came from your app and was not changed in transit.</p>
     </section>
 
+    <section id="kits">
+      <h2><i class="fa-solid fa-box-open"></i> Kits &amp; Bundles</h2>
+      <p>The optional <strong>Kits &amp; Bundles</strong> module lets you group several items into a single <strong>kit</strong>, so you can hand them out or use them up all at once instead of one item at a time. Think of a kit as a shell that points to other items, for example a "New Hire Kit" that contains a laptop, a charger, and a welcome pack. Turn it on under <strong>Settings &rarr; Modules &rarr; Kits &amp; Bundles</strong>.</p>
+      <p>A kit can mix item types freely. It can hold reusable items (which come back), consumable items (which get used up), or both. A kit does not hold any stock of its own. What it can do depends entirely on the items inside it.</p>
+
+      <h3>Creating a kit</h3>
+      <ol>
+        <li>On the <strong>Inventory</strong> page, click <strong>Add Item</strong> (Admin or Manager)</li>
+        <li>Choose <strong>Kit</strong> as the item type, give it a name, and save</li>
+        <li>Open the new kit, click <strong>Edit</strong>, and use the <strong>Kit Items</strong> box to search for items and add them</li>
+        <li>For each item, set how many are needed for one kit (the "per kit" amount)</li>
+      </ol>
+      <p>You add the items in the Edit screen because the kit needs to exist first before you can link things to it. You can add or remove items, and change the per-kit amounts, any time. A kit cannot contain another kit.</p>
+
+      <h3>How many kits you can build</h3>
+      <p>The kit's <strong>Available</strong> number tells you how many complete kits you could put together right now. It is set by the item you have the least of. For example, if one kit needs 2 of an item and you only have 5 in stock, you can build 2 kits from that item. The scarcest item always decides the total.</p>
+
+      <h3>Checking out a kit</h3>
+      <p>Open the kit, enter a borrower, choose how many kits, and click <strong>Check Out Kit</strong>. The app then does the right thing for each item inside:</p>
+      <ul>
+        <li><strong>Reusable items</strong> are checked out and tracked, so they can be returned later.</li>
+        <li><strong>Consumable items</strong> are used up straight away, the same as if you had consumed them on their own.</li>
+      </ul>
+      <p>When you <strong>check the kit back in</strong>, every reusable item inside comes back in one step. Consumable items are not restored, because they were used when the kit went out. You can also <strong>mark a whole kit as lost</strong>, which marks all of its reusable items lost together.</p>
+
+      <h3>Using and restocking a kit</h3>
+      <p>If you just want to draw down a kit's worth of supplies without lending anything, use the <strong>Consume</strong> button. This reduces only the consumable items inside the kit. The <strong>Restock All</strong> button does the opposite and tops the consumable items back up by a kit's worth. Reusable items are never changed by Consume or Restock.</p>
+
+      <h3>When stock runs short</h3>
+      <p>If you ask for more kits than you can build, the app stops and shows you exactly which items are short. What happens next depends on a per-kit setting called <strong>Allow partial</strong>, which an Admin or Manager sets on the kit's Edit screen:</p>
+      <ul>
+        <li><strong>Allow partial is off</strong> (the default): a kit must be complete to go out. You are told what is missing and can cancel.</li>
+        <li><strong>Allow partial is on</strong>: you can choose to take what is available, and the app hands out or uses only the items that are in stock.</li>
+      </ul>
+
+      <h3>Kits on the Terminal</h3>
+      <p>Kits work on the <a href="#terminal">Terminal</a> too. Staff can scan or search for a kit and check it out or use it as a single unit, with the same low-stock prompts. The individual items inside a kit are not handled separately on the Terminal; the kit is always treated as one thing.</p>
+
+      <h3>Incomplete Kits report</h3>
+      <p>While the module is on, <strong>Reports</strong> gains an <strong>Incomplete Kits</strong> tab. It lists every kit that cannot be built right now, along with the exact items that are short and how many more you need. Kits with no items added yet show up here too. It is a quick way to see what to reorder so your kits are ready when you need them.</p>
+      <div class="callout">
+        <i class="fa-solid fa-circle-info"></i>
+        Turning the module off later does not delete any kits you already made; it just hides the Kit option and the kit report. Switch it back on to manage them again.
+      </div>
+    </section>
+
     <section id="csv">
       <h2><i class="fa-solid fa-file-csv"></i> CSV Import &amp; Export</h2>
       <h3>Exporting</h3>
@@ -758,7 +808,7 @@ sudo systemctl restart inventorystore</code></pre>
       <pre><code>Type,Name,Quantity,MinimumQuantity,SKU,Location,Category,ExpiryDate,Description,ScanWarning,Tags</code></pre>
       <table>
         <tr><th>Column</th><th>Required</th><th>Notes</th></tr>
-        <tr><td>Type</td><td>Yes</td><td><code>Reusable</code> or <code>Consumable</code> (case-insensitive)</td></tr>
+        <tr><td>Type</td><td>Yes</td><td><code>Reusable</code> or <code>Consumable</code> (case-insensitive). Kits cannot be imported from CSV; build them in the app instead.</td></tr>
         <tr><td>Name</td><td>Yes</td><td>Item name</td></tr>
         <tr><td>Quantity</td><td>Yes</td><td>Whole number, 0 or higher</td></tr>
         <tr><td>MinimumQuantity</td><td>No</td><td>Defaults to 0</td></tr>
@@ -786,6 +836,7 @@ sudo systemctl restart inventorystore</code></pre>
         <tr><td><strong>Checked Out</strong></td><td>All active checkout records - who has what, for how long.</td></tr>
         <tr><td><strong>Lost Items</strong></td><td>Items marked lost, with the last person who checked them out.</td></tr>
         <tr><td><strong>Take Inventory</strong></td><td>Printable checklist for physical stock counts - SKU, location, expected quantity, and a blank field for actual count.</td></tr>
+        <tr><td><strong>Incomplete Kits</strong></td><td>Kits that cannot be built right now, with the items that are short. Shown only when the <a href="#kits">Kits &amp; Bundles</a> module is on.</td></tr>
         <tr><td><strong>Expiry</strong></td><td>Expired items and items expiring within 90 days, grouped and color-coded by urgency.</td></tr>
         <tr><td><strong>Barcode Sheet</strong></td><td>Printable barcode grid for all items that have a SKU.</td></tr>
         <tr><td><strong>Activity Log</strong></td><td>Full audit trail. Filter by date range and action type. Timestamps shown as date.</td></tr>

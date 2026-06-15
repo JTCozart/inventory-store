@@ -14,6 +14,7 @@ public class InventoryService : IInventoryService
     private readonly ICategoryRepository _categoryRepository;
     private readonly ITagRepository _tagRepository;
     private readonly ICheckoutRepository _checkoutRepository;
+    private readonly IKitRepository _kitRepository;
     private readonly IWebhookService _webhooks;
 
     public InventoryService(
@@ -22,6 +23,7 @@ public class InventoryService : IInventoryService
         ICategoryRepository categoryRepository,
         ITagRepository tagRepository,
         ICheckoutRepository checkoutRepository,
+        IKitRepository kitRepository,
         IWebhookService webhooks)
     {
         _inventoryRepository  = inventoryRepository;
@@ -29,6 +31,7 @@ public class InventoryService : IInventoryService
         _categoryRepository   = categoryRepository;
         _tagRepository        = tagRepository;
         _checkoutRepository   = checkoutRepository;
+        _kitRepository        = kitRepository;
         _webhooks             = webhooks;
     }
 
@@ -49,9 +52,12 @@ public class InventoryService : IInventoryService
 
     public async Task<InventoryItemDto> CreateItemAsync(CreateInventoryItemDto dto, int userId, string username)
     {
-        InventoryItem item = dto.ItemType == ItemType.Reusable
-            ? new ReusableItem()
-            : new ConsumableItem();
+        InventoryItem item = dto.ItemType switch
+        {
+            ItemType.Reusable => new ReusableItem(),
+            ItemType.Kit      => new KitItem { AllowPartial = dto.AllowPartial },
+            _                 => new ConsumableItem()
+        };
 
         item.Name            = dto.Name.Trim();
         item.Quantity        = dto.Quantity;
@@ -91,6 +97,10 @@ public class InventoryService : IInventoryService
         if (item is ReusableItem reusable && dto.Quantity < reusable.CheckedOutCount)
             throw new InvalidOperationException(
                 $"Cannot set Quantity to {dto.Quantity}: {reusable.CheckedOutCount} unit(s) are currently checked out.");
+
+        // A kit holds no stock of its own; only its AllowPartial flag is editable here.
+        if (item is KitItem kit)
+            kit.AllowPartial = dto.AllowPartial;
 
         item.Name            = dto.Name.Trim();
         item.Quantity        = dto.Quantity;
@@ -135,6 +145,21 @@ public class InventoryService : IInventoryService
         var item = await _inventoryRepository.GetByIdAsync(id)
             ?? throw new KeyNotFoundException($"Inventory item {id} not found.");
 
+        // A kit can't be deleted while it is out as a unit — its members would stay checked out
+        // with no way to return them.
+        if (item is KitItem)
+        {
+            var active = await _kitRepository.GetActiveByKitAsync(id);
+            if (active.Any())
+                throw new InvalidOperationException(
+                    "This kit is currently checked out. Check it in before deleting.");
+            // Drop its checkout-group history (member lines cascade with the kit row).
+            await _kitRepository.DeleteByKitItemIdAsync(id);
+        }
+
+        // If this item is a member of any kit, remove those links first (the FK is RESTRICT).
+        await _kitRepository.RemoveComponentsReferencingItemAsync(id);
+
         // Remove the item's checkout history first; otherwise those records (active or lost) become
         // orphaned and show up as "Unknown" in reports with no way to clear them.
         await _checkoutRepository.DeleteByInventoryItemIdAsync(id);
@@ -170,9 +195,12 @@ public class InventoryService : IInventoryService
         var (itemType, checkedOut, lost) = item switch
         {
             ReusableItem r  => (ItemType.Reusable,   r.CheckedOutCount, r.LostCount),
+            KitItem         => (ItemType.Kit,         0,                 0),
             ConsumableItem  => (ItemType.Consumable,  0,                 0),
             _               => throw new InvalidOperationException($"Unknown item type: {item.GetType().Name}")
         };
+
+        var (allowPartial, buildable, components) = KitFields(item);
 
         return new InventoryItemDto(
             item.Id, item.Name, item.Quantity, item.AvailableQuantity,
@@ -182,9 +210,37 @@ public class InventoryService : IInventoryService
             item.CategoryId, item.Category?.Name, item.ExpiryDate,
             item.IsPublic, item.Category?.Color,
             item.Tags.OrderBy(t => t.Name).Select(t => new TagDto(t.Id, t.Name)).ToList(),
-            item.SelectedMetadata?.ImageUrl, item.SelectedMetadata?.Brand, item.SelectedMetadata?.Category, item.SelectedMetadata?.Description
+            item.SelectedMetadata?.ImageUrl, item.SelectedMetadata?.Brand, item.SelectedMetadata?.Category, item.SelectedMetadata?.Description,
+            AllowPartial: allowPartial, BuildableQuantity: buildable, Components: components
         );
     }
+
+    // Maps a kit's member lines (with each member's standalone availability) for the DTO layer.
+    // Returns defaults for non-kit items.
+    internal static (bool AllowPartial, int Buildable, IReadOnlyList<KitComponentDto>? Components) KitFields(InventoryItem item)
+    {
+        if (item is not KitItem kit) return (false, 0, null);
+
+        var components = kit.Components
+            .OrderBy(c => c.ComponentItem?.Name)
+            .Select(c => new KitComponentDto(
+                c.ComponentItemId,
+                c.ComponentItem?.Name ?? "Unknown",
+                c.ComponentItem?.SKU,
+                ComponentItemType(c.ComponentItem),
+                c.Quantity,
+                c.ComponentItem?.AvailableQuantity ?? 0))
+            .ToList();
+
+        return (kit.AllowPartial, kit.AvailableQuantity, components);
+    }
+
+    private static ItemType ComponentItemType(InventoryItem? item) => item switch
+    {
+        ReusableItem => ItemType.Reusable,
+        KitItem      => ItemType.Kit,
+        _            => ItemType.Consumable
+    };
 
     public async Task<IEnumerable<LocationSummaryDto>> GetAllLocationsAsync()
     {
@@ -290,7 +346,12 @@ public class InventoryService : IInventoryService
         sb.AppendLine("Type,Name,Quantity,MinimumQuantity,SKU,Location,Category,ExpiryDate,Description,ScanWarning,Tags");
         foreach (var item in items)
         {
-            var type = item is ReusableItem ? "Reusable" : "Consumable";
+            var type = item switch
+            {
+                ReusableItem => "Reusable",
+                KitItem      => "Kit",
+                _            => "Consumable"
+            };
             sb.AppendLine(string.Join(",",
                 CsvEscape(type),
                 CsvEscape(item.Name),
@@ -366,6 +427,12 @@ public class InventoryService : IInventoryService
                 itemType = ItemType.Reusable;
             else if (string.Equals(typeStr, "Consumable", StringComparison.OrdinalIgnoreCase))
                 itemType = ItemType.Consumable;
+            else if (string.Equals(typeStr, "Kit", StringComparison.OrdinalIgnoreCase))
+            {
+                errors.Add($"Row {lineNum}: Kits can't be imported from CSV; build them in the app.");
+                failed++;
+                continue;
+            }
             else
             {
                 errors.Add($"Row {lineNum}: Type must be 'Reusable' or 'Consumable' (got '{typeStr}').");
@@ -421,6 +488,9 @@ public class InventoryService : IInventoryService
     {
         var item = await _inventoryRepository.GetByIdAsync(id)
             ?? throw new KeyNotFoundException($"Inventory item {id} not found.");
+
+        if (item is KitItem)
+            throw new InvalidOperationException("Kits cannot be converted to another item type.");
 
         string oldType, newType;
         int newTypeValue;

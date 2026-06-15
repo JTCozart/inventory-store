@@ -24,10 +24,17 @@ namespace InventoryStore.App;
 internal record CheckOutRequest(int ItemId, string CheckedOutBy, int Quantity, string? Notes, int? ClientId = null);
 internal record QuickAddRequest(string Name, int Quantity, int ItemType, string? Location, string? Sku, int? MetadataId = null);
 internal record QuickCreateClientRequest(string Name);
+internal record QuickCreateVendorRequest(string Name);
+internal record MaintenanceOutRequest(int ItemId, int Quantity = 1, int? VendorId = null, string? Notes = null);
+internal record MaintenanceReturnRequest(int ItemId, string? Notes = null);
+internal record MaintenanceScheduleRequest(int ItemId, string? LastMaintainedDate, int IntervalValue, int IntervalUnit, string? Notes);
 internal record CheckInRequest(int RecordId, string? Notes);
 internal record MarkLostRequest(int RecordId, string? Notes);
 internal record ConsumeRequest(int ItemId, int Quantity, string? Notes);
 internal record RestockRequest(int ItemId, int Quantity, string? Notes);
+internal record KitActionRequest(int KitId, int Quantity = 1, string? CheckedOutBy = null, int? ClientId = null, string? Notes = null, bool AllowPartialFallback = false);
+internal record KitCheckoutRefRequest(int KitCheckoutId);
+internal record KitRestockRequest(int KitId, int Quantity = 1);
 internal record CostInput(decimal UnitCost, string? PurchaseDate, int? UsefulLifeMonths);
 internal record WebhookInput(string Url, string? Events, string? Secret);
 internal record UsageReportRequest(string? HowHeard, bool OptOut);
@@ -1125,6 +1132,99 @@ internal class Program
                 }
             });
 
+            // ── Kits API ──────────────────────────────────────────────────
+            // Whole-kit checkout/consume return { completed, needsConfirmation, allowPartial, shortages[] }
+            // so the caller can offer cancel / proceed-with-available when a member is short.
+            endpoints.MapGet("/api/inventory/kit/status/{id:int}", [Authorize] async (int id, ICheckoutService svc) =>
+            {
+                try { var status = await svc.GetItemStatusAsync(id); return Results.Ok(status); }
+                catch { return Results.Ok((object?)null); }
+            });
+
+            endpoints.MapPost("/api/inventory/kit/checkout", [Authorize(Roles = "Admin,Manager,Staff")] async (HttpContext ctx, IKitService svc) =>
+            {
+                var dto = await ctx.Request.ReadFromJsonAsync<KitActionRequest>();
+                if (dto is null) return Results.BadRequest();
+                if (string.IsNullOrWhiteSpace(dto.CheckedOutBy))
+                    return Results.Text("Enter a borrower name first.", "text/plain", null, StatusCodes.Status400BadRequest);
+                var (uid, uname) = HttpContextExtensions.GetUser(ctx);
+                try
+                {
+                    var result = await svc.CheckOutKitAsync(
+                        new Application.DTOs.KitActionDto(dto.KitId, dto.Quantity, dto.CheckedOutBy, dto.ClientId, dto.Notes, dto.AllowPartialFallback), uid, uname);
+                    return Results.Ok(result);
+                }
+                catch (Exception ex) when (ex is InvalidOperationException or KeyNotFoundException)
+                {
+                    return Results.Text(ex.Message, "text/plain", null, StatusCodes.Status400BadRequest);
+                }
+            });
+
+            endpoints.MapPost("/api/inventory/kit/consume", [Authorize(Roles = "Admin,Manager,Staff")] async (HttpContext ctx, IKitService svc) =>
+            {
+                var dto = await ctx.Request.ReadFromJsonAsync<KitActionRequest>();
+                if (dto is null) return Results.BadRequest();
+                var (uid, uname) = HttpContextExtensions.GetUser(ctx);
+                try
+                {
+                    var result = await svc.ConsumeKitAsync(
+                        new Application.DTOs.KitActionDto(dto.KitId, dto.Quantity, dto.CheckedOutBy, dto.ClientId, dto.Notes, dto.AllowPartialFallback), uid, uname);
+                    return Results.Ok(result);
+                }
+                catch (Exception ex) when (ex is InvalidOperationException or KeyNotFoundException)
+                {
+                    return Results.Text(ex.Message, "text/plain", null, StatusCodes.Status400BadRequest);
+                }
+            });
+
+            endpoints.MapPost("/api/inventory/kit/checkin", [Authorize(Roles = "Admin,Manager,Staff")] async (HttpContext ctx, IKitService svc) =>
+            {
+                var dto = await ctx.Request.ReadFromJsonAsync<KitCheckoutRefRequest>();
+                if (dto is null) return Results.BadRequest();
+                var (uid, uname) = HttpContextExtensions.GetUser(ctx);
+                try
+                {
+                    await svc.CheckInKitAsync(dto.KitCheckoutId, uid, uname);
+                    return Results.Ok();
+                }
+                catch (Exception ex) when (ex is InvalidOperationException or KeyNotFoundException)
+                {
+                    return Results.Text(ex.Message, "text/plain", null, StatusCodes.Status400BadRequest);
+                }
+            });
+
+            endpoints.MapPost("/api/inventory/kit/lost", [Authorize(Roles = "Admin,Manager")] async (HttpContext ctx, IKitService svc) =>
+            {
+                var dto = await ctx.Request.ReadFromJsonAsync<KitCheckoutRefRequest>();
+                if (dto is null) return Results.BadRequest();
+                var (uid, uname) = HttpContextExtensions.GetUser(ctx);
+                try
+                {
+                    await svc.MarkKitLostAsync(dto.KitCheckoutId, uid, uname);
+                    return Results.Ok();
+                }
+                catch (Exception ex) when (ex is InvalidOperationException or KeyNotFoundException)
+                {
+                    return Results.Text(ex.Message, "text/plain", null, StatusCodes.Status400BadRequest);
+                }
+            });
+
+            endpoints.MapPost("/api/inventory/kit/restock", [Authorize(Roles = "Admin,Manager")] async (HttpContext ctx, IKitService svc) =>
+            {
+                var dto = await ctx.Request.ReadFromJsonAsync<KitRestockRequest>();
+                if (dto is null) return Results.BadRequest();
+                var (uid, uname) = HttpContextExtensions.GetUser(ctx);
+                try
+                {
+                    await svc.RestockKitAsync(dto.KitId, dto.Quantity, uid, uname);
+                    return Results.Ok();
+                }
+                catch (Exception ex) when (ex is InvalidOperationException or KeyNotFoundException)
+                {
+                    return Results.Text(ex.Message, "text/plain", null, StatusCodes.Status400BadRequest);
+                }
+            });
+
             // ── Clients API ───────────────────────────────────────────────
             endpoints.MapGet("/api/clients/search", [Authorize] async (string? q, IClientService svc) =>
             {
@@ -1176,6 +1276,126 @@ internal class Program
             {
                 var history = await svc.GetClientHistoryAsync(id);
                 return Results.Ok(history);
+            });
+
+            // ── Vendors API (Maintenance module) ──────────────────────────
+            // Mirrors the Clients API: searchable, case-insensitive, quick-create.
+            endpoints.MapGet("/api/vendors/search", [Authorize] async (string? q, IVendorService svc) =>
+            {
+                if (string.IsNullOrWhiteSpace(q)) return Results.Ok(Array.Empty<object>());
+                var vendors = await svc.SearchAsync(q);
+                return Results.Ok(vendors.Select(v => new { v.Id, v.Name, v.Phone, v.Email }));
+            });
+
+            endpoints.MapGet("/api/vendors", [Authorize] async (IVendorService svc) =>
+                Results.Ok(await svc.GetAllAsync()));
+
+            endpoints.MapGet("/api/vendors/{id:int}", [Authorize] async (int id, IVendorService svc) =>
+            {
+                var vendor = await svc.GetByIdAsync(id);
+                return vendor is not null ? Results.Ok(vendor) : Results.NotFound();
+            });
+
+            endpoints.MapPost("/api/vendors", [Authorize(Roles = "Admin,Manager")] async (HttpContext ctx, IVendorService svc) =>
+            {
+                var dto = await ctx.Request.ReadFromJsonAsync<Application.DTOs.CreateVendorDto>();
+                if (dto is null || string.IsNullOrWhiteSpace(dto.Name))
+                    return Results.BadRequest(new { error = "Name is required." });
+                var vendor = await svc.CreateAsync(dto);
+                return Results.Ok(vendor);
+            });
+
+            endpoints.MapPut("/api/vendors/{id:int}", [Authorize(Roles = "Admin,Manager")] async (int id, HttpContext ctx, IVendorService svc) =>
+            {
+                var dto = await ctx.Request.ReadFromJsonAsync<Application.DTOs.UpdateVendorDto>();
+                if (dto is null || string.IsNullOrWhiteSpace(dto.Name))
+                    return Results.BadRequest(new { error = "Name is required." });
+                try { await svc.UpdateAsync(id, dto); return Results.Ok(); }
+                catch (KeyNotFoundException) { return Results.NotFound(); }
+            });
+
+            endpoints.MapDelete("/api/vendors/{id:int}", [Authorize(Roles = "Admin,Manager")] async (int id, IVendorService svc) =>
+            {
+                await svc.DeleteAsync(id);
+                return Results.Ok();
+            });
+
+            endpoints.MapPost("/api/vendors/quick-create", [Authorize(Roles = "Admin,Manager,Staff")] async (HttpContext ctx, IVendorService svc) =>
+            {
+                var body = await ctx.Request.ReadFromJsonAsync<QuickCreateVendorRequest>();
+                if (body is null || string.IsNullOrWhiteSpace(body.Name))
+                    return Results.BadRequest(new { error = "Name is required." });
+                var vendor = await svc.QuickCreateAsync(body.Name);
+                return Results.Ok(vendor);
+            });
+
+            // ── Maintenance module ────────────────────────────────────────
+            // All endpoints 404 when the module is disabled, matching the SDS/Cost modules.
+            endpoints.MapGet("/api/inventory/maintenance/status/{id:int}", [Authorize] async (
+                int id, IModuleRegistry modules, IMaintenanceService svc) =>
+            {
+                if (!await modules.IsEnabledAsync("maintenance")) return Results.NotFound();
+                return Results.Ok(await svc.GetItemStatusAsync(id));
+            });
+
+            endpoints.MapPost("/api/inventory/maintenance/schedule", [Authorize(Roles = "Admin,Manager")] async (
+                HttpContext ctx, IModuleRegistry modules, IMaintenanceService svc) =>
+            {
+                if (!await modules.IsEnabledAsync("maintenance")) return Results.NotFound();
+                var dto = await ctx.Request.ReadFromJsonAsync<MaintenanceScheduleRequest>();
+                if (dto is null) return Results.BadRequest();
+                var (uid, uname) = HttpContextExtensions.GetUser(ctx);
+                DateOnly? last = DateOnly.TryParse(dto.LastMaintainedDate, out var d) ? d : null;
+                var unit = Enum.IsDefined(typeof(InventoryStore.Domain.Enums.MaintenanceIntervalUnit), dto.IntervalUnit)
+                    ? (InventoryStore.Domain.Enums.MaintenanceIntervalUnit)dto.IntervalUnit
+                    : InventoryStore.Domain.Enums.MaintenanceIntervalUnit.Months;
+                try
+                {
+                    await svc.SaveScheduleAsync(
+                        new Application.DTOs.SaveMaintenanceScheduleDto(dto.ItemId, last, dto.IntervalValue, unit, dto.Notes), uid, uname);
+                    return Results.Ok(new { success = true });
+                }
+                catch (Exception ex) when (ex is InvalidOperationException or KeyNotFoundException)
+                {
+                    return Results.Text(ex.Message, "text/plain", null, StatusCodes.Status400BadRequest);
+                }
+            });
+
+            endpoints.MapPost("/api/inventory/maintenance/out", [Authorize(Roles = "Admin,Manager,Staff")] async (
+                HttpContext ctx, IModuleRegistry modules, IMaintenanceService svc) =>
+            {
+                if (!await modules.IsEnabledAsync("maintenance")) return Results.NotFound();
+                var dto = await ctx.Request.ReadFromJsonAsync<MaintenanceOutRequest>();
+                if (dto is null) return Results.BadRequest();
+                var (uid, uname) = HttpContextExtensions.GetUser(ctx);
+                try
+                {
+                    await svc.MarkOutAsync(
+                        new Application.DTOs.MarkOutForMaintenanceDto(dto.ItemId, dto.Quantity, dto.VendorId, dto.Notes), uid, uname);
+                    return Results.Ok();
+                }
+                catch (Exception ex) when (ex is InvalidOperationException or KeyNotFoundException)
+                {
+                    return Results.Text(ex.Message, "text/plain", null, StatusCodes.Status400BadRequest);
+                }
+            });
+
+            endpoints.MapPost("/api/inventory/maintenance/return", [Authorize(Roles = "Admin,Manager,Staff")] async (
+                HttpContext ctx, IModuleRegistry modules, IMaintenanceService svc) =>
+            {
+                if (!await modules.IsEnabledAsync("maintenance")) return Results.NotFound();
+                var dto = await ctx.Request.ReadFromJsonAsync<MaintenanceReturnRequest>();
+                if (dto is null) return Results.BadRequest();
+                var (uid, uname) = HttpContextExtensions.GetUser(ctx);
+                try
+                {
+                    await svc.ReturnAsync(dto.ItemId, dto.Notes, uid, uname);
+                    return Results.Ok();
+                }
+                catch (Exception ex) when (ex is InvalidOperationException or KeyNotFoundException)
+                {
+                    return Results.Text(ex.Message, "text/plain", null, StatusCodes.Status400BadRequest);
+                }
             });
 
             endpoints.MapPost("/api/ntfy/test", [Authorize(Roles = "Admin")] async (INtfyService ntfy) =>

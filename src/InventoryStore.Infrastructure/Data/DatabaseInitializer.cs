@@ -67,6 +67,21 @@ public class DatabaseInitializer
         await EnsureItemCostsTableAsync(conn);
         await EnsureStockMovementsTableAsync(conn);
         await EnsureWebhookEndpointsTableAsync(conn);
+
+        // Kit ("bundle") support: a per-kit AllowPartial flag, the member + checkout-group tables,
+        // and a link column so a checkout record can belong to a kit checkout.
+        await AddColumnIfMissingAsync(conn, "InventoryItems",  "AllowPartial",  "INTEGER NOT NULL DEFAULT 0");
+        await AddColumnIfMissingAsync(conn, "CheckoutRecords", "KitCheckoutId", "INTEGER NULL");
+        await EnsureKitComponentsTableAsync(conn);
+        await EnsureKitCheckoutsTableAsync(conn);
+
+        // Maintenance module: vendors, the per-item schedule, the out-for-maintenance visits, and an
+        // availability column that maintenance draws down the same way checkouts do.
+        await AddColumnIfMissingAsync(conn, "InventoryItems", "OutForMaintenanceCount", "INTEGER NOT NULL DEFAULT 0");
+        await EnsureVendorsTableAsync(conn);
+        await EnsureMaintenanceSchedulesTableAsync(conn);
+        await EnsureMaintenanceVisitsTableAsync(conn);
+
         await BackfillActivityLogUsernamesAsync(conn);
         await CleanupOrphanedCheckoutRecordsAsync(conn);
     }
@@ -195,10 +210,11 @@ public class DatabaseInitializer
 
     private static readonly HashSet<string> _allowedTables = new(StringComparer.OrdinalIgnoreCase)
         { "Users", "InventoryItems", "CheckoutRecords", "Clients", "ProductMetadata", "SafetyDataSheets",
-          "ItemCosts", "StockMovements", "WebhookEndpoints" };
+          "ItemCosts", "StockMovements", "WebhookEndpoints", "KitComponents", "KitCheckouts",
+          "Vendors", "MaintenanceSchedules", "MaintenanceVisits" };
 
     private static readonly HashSet<string> _allowedColumns = new(StringComparer.OrdinalIgnoreCase)
-        { "FirstName", "LastName", "ItemType", "CheckedOutCount", "LostCount", "ScanWarning", "CategoryId", "ExpiryDate", "IsPublic", "ClientId", "Email", "IsMetadataMatched", "MetadataSource", "SelectedMetadataId", "Size", "Weight" };
+        { "FirstName", "LastName", "ItemType", "CheckedOutCount", "LostCount", "ScanWarning", "CategoryId", "ExpiryDate", "IsPublic", "ClientId", "Email", "IsMetadataMatched", "MetadataSource", "SelectedMetadataId", "Size", "Weight", "AllowPartial", "KitCheckoutId", "OutForMaintenanceCount" };
 
     private static async Task AddColumnIfMissingAsync(
         SqliteConnection conn, string table, string column, string definition)
@@ -365,6 +381,98 @@ public class DatabaseInitializer
                 LastStatus TEXT    NULL,
                 LastSentAt TEXT    NULL
             );";
+        await cmd.ExecuteNonQueryAsync();
+    }
+
+    private static async Task EnsureKitComponentsTableAsync(SqliteConnection conn)
+    {
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+            CREATE TABLE IF NOT EXISTS KitComponents (
+                Id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                KitItemId       INTEGER NOT NULL,
+                ComponentItemId INTEGER NOT NULL,
+                Quantity        INTEGER NOT NULL DEFAULT 1,
+                FOREIGN KEY (KitItemId)       REFERENCES InventoryItems (Id) ON DELETE CASCADE,
+                FOREIGN KEY (ComponentItemId) REFERENCES InventoryItems (Id) ON DELETE RESTRICT
+            );
+            CREATE INDEX IF NOT EXISTS IX_KitComponents_KitItemId       ON KitComponents (KitItemId);
+            CREATE INDEX IF NOT EXISTS IX_KitComponents_ComponentItemId ON KitComponents (ComponentItemId);";
+        await cmd.ExecuteNonQueryAsync();
+    }
+
+    private static async Task EnsureKitCheckoutsTableAsync(SqliteConnection conn)
+    {
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+            CREATE TABLE IF NOT EXISTS KitCheckouts (
+                Id           INTEGER PRIMARY KEY AUTOINCREMENT,
+                KitItemId    INTEGER NOT NULL,
+                CheckedOutBy TEXT    NOT NULL,
+                Quantity     INTEGER NOT NULL DEFAULT 1,
+                CheckedOutAt TEXT    NOT NULL,
+                CheckedInAt  TEXT    NULL,
+                IsLost       INTEGER NOT NULL DEFAULT 0,
+                Notes        TEXT    NULL,
+                ClientId     INTEGER NULL
+            );
+            CREATE INDEX IF NOT EXISTS IX_KitCheckouts_KitItemId ON KitCheckouts (KitItemId);";
+        await cmd.ExecuteNonQueryAsync();
+    }
+
+    private static async Task EnsureVendorsTableAsync(SqliteConnection conn)
+    {
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+            CREATE TABLE IF NOT EXISTS Vendors (
+                Id        INTEGER PRIMARY KEY AUTOINCREMENT,
+                Name      TEXT    NOT NULL,
+                Phone     TEXT    NULL,
+                Email     TEXT    NULL,
+                Address   TEXT    NULL,
+                Notes     TEXT    NULL,
+                CreatedAt TEXT    NOT NULL,
+                UpdatedAt TEXT    NOT NULL
+            );";
+        await cmd.ExecuteNonQueryAsync();
+    }
+
+    private static async Task EnsureMaintenanceSchedulesTableAsync(SqliteConnection conn)
+    {
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+            CREATE TABLE IF NOT EXISTS MaintenanceSchedules (
+                Id                 INTEGER PRIMARY KEY AUTOINCREMENT,
+                InventoryItemId    INTEGER NOT NULL,
+                LastMaintainedDate TEXT    NULL,
+                IntervalValue      INTEGER NOT NULL DEFAULT 0,
+                IntervalUnit       INTEGER NOT NULL DEFAULT 1,
+                Notes              TEXT    NULL,
+                UpdatedAt          TEXT    NOT NULL,
+                FOREIGN KEY (InventoryItemId) REFERENCES InventoryItems (Id) ON DELETE CASCADE
+            );
+            CREATE UNIQUE INDEX IF NOT EXISTS IX_MaintenanceSchedules_InventoryItemId
+                ON MaintenanceSchedules (InventoryItemId);";
+        await cmd.ExecuteNonQueryAsync();
+    }
+
+    private static async Task EnsureMaintenanceVisitsTableAsync(SqliteConnection conn)
+    {
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+            CREATE TABLE IF NOT EXISTS MaintenanceVisits (
+                Id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+                InventoryItemId     INTEGER NOT NULL,
+                Quantity            INTEGER NOT NULL DEFAULT 1,
+                VendorId            INTEGER NULL,
+                OutForMaintenanceAt TEXT    NOT NULL,
+                ReturnedAt          TEXT    NULL,
+                Notes               TEXT    NULL,
+                FOREIGN KEY (InventoryItemId) REFERENCES InventoryItems (Id) ON DELETE CASCADE,
+                FOREIGN KEY (VendorId)        REFERENCES Vendors (Id)        ON DELETE SET NULL
+            );
+            CREATE INDEX IF NOT EXISTS IX_MaintenanceVisits_InventoryItemId
+                ON MaintenanceVisits (InventoryItemId);";
         await cmd.ExecuteNonQueryAsync();
     }
 

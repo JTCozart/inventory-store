@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Primary meta -->
+  <title>Professional Services | Inventory Store</title>
+  <meta name="description" content="Inventory Store is free to run and self-host forever. Prefer a managed, hosted option with your own custom domain? Reach out about our limited pilot program." />
+  <meta name="keywords" content="inventory store hosting, managed inventory management, hosted self-hosted app, custom domain, pilot program" />
+  <meta name="author" content="Jake Cozart" />
+  <meta name="robots" content="index, follow" />
+  <meta name="theme-color" content="#2563eb" />
+  <link rel="canonical" href="https://inventorystore.app/services.html" />
+
+  <!-- Open Graph -->
+  <meta property="og:type"        content="website" />
+  <meta property="og:url"         content="https://inventorystore.app/services.html" />
+  <meta property="og:title"       content="Professional Services | Inventory Store" />
+  <meta property="og:description" content="Free to run and self-host forever. Prefer a managed, hosted option with a custom domain? Ask about our limited pilot program." />
+  <meta property="og:site_name"   content="Inventory Store" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card"        content="summary" />
+  <meta name="twitter:title"       content="Professional Services | Inventory Store" />
+  <meta name="twitter:description" content="Free to run and self-host forever. Prefer a managed, hosted option with a custom domain? Ask about our limited pilot program." />
+
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" />
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue:   #2563eb;
+      --blue-d: #1d4ed8;
+      --dark:   #0f172a;
+      --gray:   #64748b;
+      --light:  #f8fafc;
+      --border: #e2e8f0;
+      --radius: 12px;
+    }
+
+    body { font-family: 'Inter', sans-serif; color: var(--dark); background: #fff; line-height: 1.6; }
+
+    a { color: var(--blue); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* Nav */
+    nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 2rem; border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; background: rgba(255,255,255,.95);
+      backdrop-filter: blur(8px); z-index: 100;
+    }
+    .nav-brand {
+      display: flex; align-items: center; gap: .6rem;
+      font-weight: 700; font-size: 1.1rem; color: var(--dark); text-decoration: none;
+    }
+    .it-badge {
+      width: 32px; height: 32px; border-radius: 8px;
+      background: var(--blue); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: .85rem; letter-spacing: -.5px; flex-shrink: 0;
+    }
+    .nav-links { display: flex; gap: 1.5rem; align-items: center; }
+    .nav-links a { color: var(--gray); font-size: .9rem; font-weight: 500; }
+    .nav-links a:hover, .nav-links a.active { color: var(--dark); text-decoration: none; }
+    .btn-nav {
+      background: var(--blue); color: #fff !important;
+      padding: .45rem 1rem; border-radius: 8px; font-weight: 600;
+    }
+    .btn-nav:hover { background: var(--blue-d); }
+    .nav-toggle {
+      display: none; background: none; border: none; cursor: pointer;
+      padding: .35rem; color: var(--dark); font-size: 1.35rem; line-height: 1;
+    }
+    .nav-mobile {
+      display: none; position: absolute; top: 100%; left: 0; right: 0;
+      background: #fff; border-bottom: 1px solid var(--border);
+      padding: .75rem 1.5rem 1rem; flex-direction: column;
+      box-shadow: 0 6px 16px rgba(0,0,0,.08);
+    }
+    .nav-mobile.open { display: flex; }
+    .nav-mobile a {
+      color: var(--gray); font-size: .95rem; font-weight: 500;
+      padding: .65rem .25rem; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: .5rem;
+    }
+    .nav-mobile a:hover { color: var(--dark); text-decoration: none; }
+    .nav-mobile .btn-nav {
+      margin-top: .5rem; border-bottom: none; border-radius: 8px;
+      padding: .65rem 1rem; justify-content: center;
+    }
+
+    /* Hero */
+    .hero {
+      text-align: center; padding: 5rem 2rem 4rem;
+      background: linear-gradient(160deg, #eff6ff 0%, #fff 60%);
+    }
+    .hero-tag {
+      display: inline-block; background: #dbeafe; color: var(--blue);
+      font-size: .78rem; font-weight: 600; padding: .25rem .75rem;
+      border-radius: 99px; margin-bottom: 1.5rem; letter-spacing: .04em; text-transform: uppercase;
+    }
+    .hero h1 {
+      font-size: clamp(2rem, 5vw, 3.25rem); font-weight: 800;
+      line-height: 1.15; max-width: 780px; margin: 0 auto 1.25rem;
+    }
+    .hero h1 span { color: var(--blue); }
+    .hero p {
+      font-size: 1.15rem; color: var(--gray);
+      max-width: 600px; margin: 0 auto 2.5rem;
+    }
+    .hero-cta { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+
+    .btn-primary {
+      background: var(--blue); color: #fff; padding: .75rem 1.75rem;
+      border-radius: 10px; font-weight: 700; font-size: 1rem;
+      display: inline-flex; align-items: center; gap: .5rem;
+      box-shadow: 0 4px 14px rgba(37,99,235,.35);
+    }
+    .btn-primary:hover { background: var(--blue-d); text-decoration: none; }
+    .btn-secondary {
+      background: #fff; color: var(--dark); padding: .75rem 1.75rem;
+      border-radius: 10px; font-weight: 600; font-size: 1rem;
+      border: 1.5px solid var(--border); display: inline-flex; align-items: center; gap: .5rem;
+    }
+    .btn-secondary:hover { border-color: var(--blue); text-decoration: none; }
+
+    /* Sections */
+    section { padding: 4.5rem 2rem; }
+    .container { max-width: 1100px; margin: 0 auto; }
+    .narrow { max-width: 760px; }
+    .section-tag { color: var(--blue); font-size: .8rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; margin-bottom: .75rem; }
+    h2 { font-size: clamp(1.6rem, 3vw, 2.25rem); font-weight: 800; margin-bottom: 1rem; }
+    .section-sub { color: var(--gray); font-size: 1.05rem; max-width: 620px; margin-bottom: 3rem; }
+    .lead p { color: var(--gray); font-size: 1.05rem; margin-bottom: 1rem; }
+    .lead p strong { color: var(--dark); }
+
+    /* Pilot banner */
+    .pilot-banner {
+      max-width: 1100px; margin: 0 auto; display: flex; gap: 1rem; align-items: flex-start;
+      background: #fffbeb; border: 1.5px solid #fde68a; border-radius: var(--radius);
+      padding: 1.25rem 1.5rem;
+    }
+    .pilot-banner .pilot-icon {
+      width: 42px; height: 42px; border-radius: 10px; flex-shrink: 0;
+      background: #fef3c7; color: #b45309;
+      display: flex; align-items: center; justify-content: center; font-size: 1.1rem;
+    }
+    .pilot-banner h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: .25rem; }
+    .pilot-banner p { color: var(--gray); font-size: .95rem; }
+
+    /* Tiers */
+    .tier-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; }
+    .tier-card {
+      border: 1.5px solid var(--border); border-radius: var(--radius);
+      padding: 2rem; display: flex; flex-direction: column;
+    }
+    .tier-card.featured { border-color: var(--blue); box-shadow: 0 10px 40px rgba(37,99,235,.12); position: relative; }
+    .tier-flag {
+      position: absolute; top: -12px; left: 2rem; background: var(--blue); color: #fff;
+      font-size: .68rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+      padding: .25rem .7rem; border-radius: 99px;
+    }
+    .tier-name { font-size: 1.15rem; font-weight: 800; margin-bottom: .35rem; }
+    .tier-price { font-size: 2rem; font-weight: 800; line-height: 1; margin-bottom: .25rem; }
+    .tier-price small { font-size: .9rem; font-weight: 600; color: var(--gray); }
+    .tier-desc { color: var(--gray); font-size: .92rem; margin-bottom: 1.5rem; }
+    .tier-list { list-style: none; margin: 0 0 1.75rem; display: flex; flex-direction: column; gap: .65rem; }
+    .tier-list li { display: flex; align-items: flex-start; gap: .6rem; font-size: .92rem; }
+    .tier-list i { color: #16a34a; margin-top: .2rem; flex-shrink: 0; }
+    .tier-card .btn-primary, .tier-card .btn-secondary { justify-content: center; margin-top: auto; }
+
+    /* FAQ */
+    .faq { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem 2.5rem; }
+    .faq-item h3 { font-size: 1rem; font-weight: 700; margin-bottom: .4rem; }
+    .faq-item p { color: var(--gray); font-size: .92rem; }
+
+    /* Embedded form */
+    .form-embed {
+      border: 1px solid var(--border); border-radius: var(--radius);
+      overflow: hidden; background: #fff; box-shadow: 0 10px 40px rgba(0,0,0,.06);
+    }
+    .form-embed iframe { display: block; width: 100%; min-height: 920px; border: 0; }
+
+    /* CTA */
+    .cta-section { background: var(--dark); color: #fff; text-align: center; padding: 5rem 2rem; }
+    .cta-section h2 { color: #fff; margin-bottom: 1rem; }
+    .cta-section p { color: #94a3b8; max-width: 520px; margin: 0 auto 2rem; }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--border); padding: 2rem;
+      display: flex; justify-content: space-between; align-items: center;
+      flex-wrap: wrap; gap: 1rem; color: var(--gray); font-size: .85rem;
+    }
+    footer a { color: var(--gray); }
+
+    @media (max-width: 640px) {
+      nav { padding: 1rem; }
+      .nav-links { display: none; }
+      .nav-toggle { display: block; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-brand" href="index.html">
+    <div class="it-badge">IS</div>
+    Inventory Store
+  </a>
+  <div class="nav-links">
+    <a href="index.html#features">Features</a>
+    <a href="index.html#how-it-works">How it works</a>
+    <a href="services.html" class="active">Services</a>
+    <a href="user-guide.html">User Guide</a>
+    <a href="release-notes.html">Release Notes</a>
+    <a href="https://github.com/JTCozart/inventory-store" target="_blank" rel="noopener noreferrer">GitHub</a>
+    <a href="https://github.com/JTCozart/inventory-store/releases/latest" class="btn-nav" target="_blank" rel="noopener noreferrer">
+      <i class="fa-solid fa-download"></i> Download
+    </a>
+  </div>
+  <button class="nav-toggle" aria-label="Open menu" aria-expanded="false">
+    <i class="fa-solid fa-bars"></i>
+  </button>
+  <div class="nav-mobile" role="menu">
+    <a href="index.html#features"><i class="fa-solid fa-star fa-fw"></i> Features</a>
+    <a href="index.html#how-it-works"><i class="fa-solid fa-list-check fa-fw"></i> How it works</a>
+    <a href="services.html"><i class="fa-solid fa-headset fa-fw"></i> Services</a>
+    <a href="user-guide.html"><i class="fa-solid fa-book fa-fw"></i> User Guide</a>
+    <a href="release-notes.html"><i class="fa-solid fa-rocket fa-fw"></i> Release Notes</a>
+    <a href="https://github.com/JTCozart/inventory-store" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-github fa-fw"></i> GitHub</a>
+    <a href="https://github.com/JTCozart/inventory-store/releases/latest" class="btn-nav" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-download"></i> Download</a>
+  </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="hero-tag">Pilot Program &nbsp;·&nbsp; Limited Spots</div>
+  <h1>Free to run yourself, or <span>let us host it for you</span></h1>
+  <p>Inventory Store is free to download, install, and use for as long as you like. If you would rather not run it yourself, we are piloting a fully managed hosted option with your own custom domain.</p>
+  <div class="hero-cta">
+    <a href="#contact" class="btn-primary">
+      <i class="fa-solid fa-paper-plane"></i> Ask about hosting
+    </a>
+    <a href="https://github.com/JTCozart/inventory-store/releases/latest" class="btn-secondary" target="_blank" rel="noopener noreferrer">
+      <i class="fa-solid fa-download"></i> Download for free
+    </a>
+  </div>
+</section>
+
+<!-- Free to run -->
+<section style="background:var(--light)">
+  <div class="container narrow lead">
+    <div class="section-tag">Always free</div>
+    <h2>The app is free, and it stays that way</h2>
+    <p>Inventory Store is open source. You can download it, install it on a single PC on your network, and use every feature without any license fee or subscription. <strong>That is not a trial, and it is not going away.</strong></p>
+    <p>When you self-host, your data lives on your own machine. There are no cloud accounts to create, nothing is billed, and you are never locked in. For many teams, that is all they will ever need, and that is exactly how it should be.</p>
+  </div>
+</section>
+
+<!-- Hosted option -->
+<section>
+  <div class="container narrow lead">
+    <div class="section-tag">Hosted option</div>
+    <h2>Prefer not to run a server? We can host it for you</h2>
+    <p>Running your own machine, keeping it online, setting up a domain, and handling backups is not for everyone. If you would rather skip all of that, we offer a managed hosted option where we run Inventory Store for you and you reach it at <strong>your own custom domain</strong>.</p>
+    <p>You get the same app you already know, with the day to day server work handled on your behalf. To keep things simple while the program is small, pricing and details are shared one to one, so <strong>reach out and we will walk you through it</strong>.</p>
+    <p><a href="#contact"><i class="fa-solid fa-paper-plane"></i> Reach out for hosted details</a></p>
+  </div>
+</section>
+
+<!-- Pilot banner -->
+<section style="background:var(--light); padding-top:3rem; padding-bottom:3rem;">
+  <div class="pilot-banner">
+    <div class="pilot-icon"><i class="fa-solid fa-flask"></i></div>
+    <div>
+      <h3>This is a pilot program, and spots are limited</h3>
+      <p>Hosting is brand new and we are taking on a small number of teams to start, so we can give each one real attention and get the setup right. Early teams help shape where the hosted service goes next. Once the pilot spots are filled, new requests join a waitlist.</p>
+    </div>
+  </div>
+</section>
+
+<!-- Tiers -->
+<section>
+  <div class="container">
+    <div class="section-tag">Two ways to run it</div>
+    <h2>Pick what fits your team</h2>
+    <p class="section-sub">Self-host for free forever, or apply for a managed hosted spot in the pilot.</p>
+    <div class="tier-grid">
+
+      <div class="tier-card">
+        <div class="tier-name">Self-Hosted</div>
+        <div class="tier-price">Free <small>forever</small></div>
+        <p class="tier-desc">Run it yourself on a PC on your network. Every feature, no fees.</p>
+        <ul class="tier-list">
+          <li><i class="fa-solid fa-check"></i> All features included</li>
+          <li><i class="fa-solid fa-check"></i> Your data stays on your machine</li>
+          <li><i class="fa-solid fa-check"></i> Windows installer or Linux setup</li>
+          <li><i class="fa-solid fa-check"></i> Free remote access tunnels and HTTPS</li>
+          <li><i class="fa-solid fa-check"></i> Community support on GitHub</li>
+        </ul>
+        <a href="https://github.com/JTCozart/inventory-store/releases/latest" class="btn-secondary" target="_blank" rel="noopener noreferrer">
+          <i class="fa-solid fa-download"></i> Download installer
+        </a>
+      </div>
+
+      <div class="tier-card featured">
+        <div class="tier-flag">Pilot &middot; Limited spots</div>
+        <div class="tier-name">Hosted by us</div>
+        <div class="tier-price">Let's talk</div>
+        <p class="tier-desc">We run it for you and you reach it at your own custom domain.</p>
+        <ul class="tier-list">
+          <li><i class="fa-solid fa-check"></i> Everything in Self-Hosted</li>
+          <li><i class="fa-solid fa-check"></i> Your own custom domain</li>
+          <li><i class="fa-solid fa-check"></i> Managed hosting, updates, and HTTPS</li>
+          <li><i class="fa-solid fa-check"></i> Routine backups handled for you</li>
+          <li><i class="fa-solid fa-check"></i> Direct help with setup and onboarding</li>
+        </ul>
+        <a href="#contact" class="btn-primary">
+          <i class="fa-solid fa-paper-plane"></i> Request a spot
+        </a>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section style="background:var(--light)">
+  <div class="container">
+    <div class="section-tag">Good to know</div>
+    <h2>Common questions</h2>
+    <div class="faq" style="margin-top:2rem">
+      <div class="faq-item">
+        <h3>Is the free version really free?</h3>
+        <p>Yes. The downloadable app is free and open source, with every feature included. Hosting is the only paid, optional service.</p>
+      </div>
+      <div class="faq-item">
+        <h3>What does hosting include?</h3>
+        <p>We run Inventory Store for you on your own custom domain and take care of the server, updates, HTTPS, and routine backups, so you can just use the app.</p>
+      </div>
+      <div class="faq-item">
+        <h3>Why are spots limited?</h3>
+        <p>The hosted option is a pilot. We are starting with a small number of teams so we can set each one up carefully and learn what matters most before opening it more widely.</p>
+      </div>
+      <div class="faq-item">
+        <h3>Can I move between the two?</h3>
+        <p>Yes. You can start self-hosted and ask about hosting later, or move your data back to self-hosting at any time. You are never locked in.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Contact form -->
+<section id="contact">
+  <div class="container narrow" style="text-align:center">
+    <div class="section-tag">Get in touch</div>
+    <h2>Request a hosted spot</h2>
+    <p class="section-sub" style="margin:0 auto 2.5rem">Fill out the short form below and we will get back to you with hosting details. Pilot spots are limited.</p>
+    <div class="form-embed">
+      <iframe
+        src="https://docs.google.com/forms/d/e/1FAIpQLSfzNqVNeQNn0uca-lgh_NTf39oX3fb1rzn8JnPiJ-qvlaJitw/viewform?embedded=true"
+        width="100%" height="920" frameborder="0" marginheight="0" marginwidth="0"
+        title="Inventory Store hosting request form" loading="lazy">Loading the form...</iframe>
+    </div>
+    <p style="margin-top:1rem;font-size:.9rem">
+      Having trouble seeing the form?
+      <a href="https://forms.gle/22jnTEdfHnPvFex77" target="_blank" rel="noopener noreferrer">Open it in a new tab</a>.
+    </p>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <h2>Want us to host it for you?</h2>
+  <p>Spots in the pilot are limited. Fill out the form and we will share the details and see if it is a fit for your team.</p>
+  <a href="#contact" class="btn-primary" style="display:inline-flex">
+    <i class="fa-solid fa-paper-plane"></i> Request a hosted spot
+  </a>
+</section>
+
+<footer>
+  <div>
+    <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.25rem">
+      <div class="it-badge" style="width:24px;height:24px;font-size:.65rem;border-radius:5px">IS</div>
+      <strong style="color:#0f172a">Inventory Store</strong>
+    </div>
+    <span>MIT License &middot; &copy; 2026 Jake Cozart</span>
+  </div>
+  <div style="display:flex;gap:1.5rem;flex-wrap:wrap">
+    <a href="services.html"><i class="fa-solid fa-headset"></i> Services</a>
+    <a href="user-guide.html"><i class="fa-solid fa-book"></i> User Guide</a>
+    <a href="https://github.com/JTCozart/inventory-store" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-github"></i> GitHub</a>
+    <a href="https://github.com/JTCozart/inventory-store/releases" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-tag"></i> Releases</a>
+    <a href="https://linktr.ee/jtczrt" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-tree"></i> Linktree</a>
+  </div>
+</footer>
+
+<script>
+  (function () {
+    var toggle = document.querySelector('.nav-toggle');
+    var menu   = document.querySelector('.nav-mobile');
+    toggle.addEventListener('click', function () {
+      var open = menu.classList.toggle('open');
+      toggle.setAttribute('aria-expanded', open);
+      toggle.querySelector('i').className = open ? 'fa-solid fa-xmark' : 'fa-solid fa-bars';
+    });
+    document.addEventListener('click', function (e) {
+      if (!e.target.closest('nav')) {
+        menu.classList.remove('open');
+        toggle.setAttribute('aria-expanded', 'false');
+        toggle.querySelector('i').className = 'fa-solid fa-bars';
+      }
+    });
+    menu.querySelectorAll('a').forEach(function (a) {
+      a.addEventListener('click', function () {
+        menu.classList.remove('open');
+        toggle.setAttribute('aria-expanded', 'false');
+        toggle.querySelector('i').className = 'fa-solid fa-bars';
+      });
+    });
+  })();
+</script>
+</body>
+</html>
