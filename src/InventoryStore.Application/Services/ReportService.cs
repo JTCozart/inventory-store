@@ -14,6 +14,8 @@ public class ReportService : IReportService
     private readonly IClientRepository     _clientRepo;
     private readonly IMaintenanceRepository _maintenanceRepo;
     private readonly IVendorRepository     _vendorRepo;
+    private readonly IUserRepository       _userRepo;
+    private readonly IHostingMode          _hostingMode;
 
     public ReportService(
         IInventoryRepository inventoryRepo,
@@ -21,7 +23,9 @@ public class ReportService : IReportService
         ICheckoutRepository checkoutRepo,
         IClientRepository clientRepo,
         IMaintenanceRepository maintenanceRepo,
-        IVendorRepository vendorRepo)
+        IVendorRepository vendorRepo,
+        IUserRepository userRepo,
+        IHostingMode hostingMode)
     {
         _inventoryRepo   = inventoryRepo;
         _activityRepo    = activityRepo;
@@ -29,13 +33,23 @@ public class ReportService : IReportService
         _clientRepo      = clientRepo;
         _maintenanceRepo = maintenanceRepo;
         _vendorRepo      = vendorRepo;
+        _userRepo        = userRepo;
+        _hostingMode     = hostingMode;
     }
+
+    // In professional-services hosted mode the locked first-admin account is shown as "SYSTEM" in
+    // activity logs. Returns its id so log rows by that user can be relabelled; null otherwise.
+    private async Task<int?> GetLockedAdminIdAsync() =>
+        _hostingMode.IsProfessionalServicesHosted
+            ? (await _userRepo.GetAdminAsync())?.Id
+            : null;
 
     public async Task<DashboardSummaryDto> GetDashboardSummaryAsync()
     {
+        var lockedAdminId   = await GetLockedAdminIdAsync();
         var allItems        = (await _inventoryRepo.GetAllAsync()).ToList();
         var lowStock        = allItems.Where(i => i.IsLowStock).Select(InventoryService.MapToDto).ToList();
-        var recentActivity  = (await _activityRepo.GetRecentAsync(10)).Select(MapLog).ToList();
+        var recentActivity  = (await _activityRepo.GetRecentAsync(10)).Select(l => MapLog(l, lockedAdminId)).ToList();
         var activeRecords   = (await _checkoutRepo.GetAllActiveAsync()).ToList();
         var lostRecords     = (await _checkoutRepo.GetAllLostAsync()).ToList();
 
@@ -268,10 +282,13 @@ public class ReportService : IReportService
         {
             logs = await _activityRepo.GetAllAsync(pageSize: 500);
         }
-        return logs.Select(MapLog);
+        var lockedAdminId = await GetLockedAdminIdAsync();
+        return logs.Select(l => MapLog(l, lockedAdminId));
     }
 
-    private static ActivityLogDto MapLog(ActivityLog l) => new(
-        l.Id, l.Username, l.Action, l.EntityType, l.EntityId, l.Details, l.Timestamp
+    private static ActivityLogDto MapLog(ActivityLog l, int? lockedAdminId = null) => new(
+        l.Id,
+        lockedAdminId is not null && l.UserId == lockedAdminId ? "SYSTEM" : l.Username,
+        l.Action, l.EntityType, l.EntityId, l.Details, l.Timestamp
     );
 }

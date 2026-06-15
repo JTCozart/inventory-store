@@ -159,10 +159,16 @@
                     {
                         <tr class="@(!user.IsActive ? "table-secondary text-muted" : "")">
                             <td>
-                                <div class="fw-semibold">@user.DisplayName</div>
-                                @if (user.DisplayName != user.Username)
+                                <div class="fw-semibold">
+                                    @user.DisplayName
+                                    @if (user.IsSystemLocked)
+                                    {
+                                        <span class="badge bg-dark ms-1" title="Protected system account"><i class="bi bi-lock-fill me-1"></i>System</span>
+                                    }
+                                </div>
+                                @if (user.DisplayName != user.DisplayUsername)
                                 {
-                                    <div class="text-muted small">@user.Username</div>
+                                    <div class="text-muted small">@user.DisplayUsername</div>
                                 }
                             </td>
                             <td class="small">@(user.Email ?? "—")</td>
@@ -185,6 +191,12 @@
                                 @(user.LastLoginAt.HasValue ? user.LastLoginAt.Value.ToLocalTime().ToString("MMM d, yyyy h:mm tt") : "Never")
                             </td>
                             <td class="text-end">
+                                @if (user.IsSystemLocked)
+                                {
+                                    <span class="text-muted small"><i class="bi bi-lock-fill me-1"></i>Protected</span>
+                                }
+                                else
+                                {
                                 <button class="btn btn-sm btn-outline-secondary me-1 js-edit-user"
                                         data-id="@user.Id"
                                         data-username="@user.Username"
@@ -214,6 +226,7 @@
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </form>
+                                }
                                 }
                             </td>
                         </tr>

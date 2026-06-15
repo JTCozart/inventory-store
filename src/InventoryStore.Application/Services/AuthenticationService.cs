@@ -11,15 +11,31 @@ public class AuthenticationService : IUserAuthService
     private readonly IUserRepository _userRepository;
     private readonly IActivityLogRepository _activityLogRepository;
     private readonly IPasswordHasher _passwordHasher;
+    private readonly IHostingMode _hostingMode;
 
     public AuthenticationService(
         IUserRepository userRepository,
         IActivityLogRepository activityLogRepository,
-        IPasswordHasher passwordHasher)
+        IPasswordHasher passwordHasher,
+        IHostingMode hostingMode)
     {
         _userRepository = userRepository;
         _activityLogRepository = activityLogRepository;
         _passwordHasher = passwordHasher;
+        _hostingMode = hostingMode;
+    }
+
+    // In professional-services hosted mode the first admin account is locked. Returns its id so it
+    // can be protected from changes and presented as a SYSTEM account; null when not in that mode.
+    private async Task<int?> GetLockedAdminIdAsync() =>
+        _hostingMode.IsProfessionalServicesHosted
+            ? (await _userRepository.GetAdminAsync())?.Id
+            : null;
+
+    private async Task GuardLockedAccountAsync(int id, string action)
+    {
+        if (await GetLockedAdminIdAsync() == id)
+            throw new InvalidOperationException($"This is a protected system account and cannot be {action}.");
     }
 
     public async Task<bool> IsSetupRequiredAsync() => !await _userRepository.AnyAsync();
@@ -94,13 +110,14 @@ public class AuthenticationService : IUserAuthService
     public async Task<UserDto?> GetUserAsync(int id)
     {
         var user = await _userRepository.GetByIdAsync(id);
-        return user is null ? null : MapToDto(user);
+        return user is null ? null : MapToDto(user, await GetLockedAdminIdAsync());
     }
 
     public async Task<IEnumerable<UserDto>> GetAllUsersAsync()
     {
         var users = await _userRepository.GetAllAsync();
-        return users.Select(MapToDto);
+        var lockedAdminId = await GetLockedAdminIdAsync();
+        return users.Select(u => MapToDto(u, lockedAdminId)).ToList();
     }
 
     public async Task<UserDto> CreateUserAsync(CreateUserDto dto)
@@ -139,6 +156,7 @@ public class AuthenticationService : IUserAuthService
 
     public async Task UpdateUserAsync(int id, UpdateUserDto dto)
     {
+        await GuardLockedAccountAsync(id, "modified");
         var user = await _userRepository.GetByIdAsync(id)
             ?? throw new KeyNotFoundException($"User {id} not found.");
 
@@ -169,6 +187,7 @@ public class AuthenticationService : IUserAuthService
 
     public async Task SetUserSuspendedAsync(int id, bool suspended)
     {
+        await GuardLockedAccountAsync(id, suspended ? "suspended" : "changed");
         var user = await _userRepository.GetByIdAsync(id)
             ?? throw new KeyNotFoundException($"User {id} not found.");
 
@@ -189,6 +208,7 @@ public class AuthenticationService : IUserAuthService
 
     public async Task DeleteUserAsync(int id)
     {
+        await GuardLockedAccountAsync(id, "deleted");
         var user = await _userRepository.GetByIdAsync(id)
             ?? throw new KeyNotFoundException($"User {id} not found.");
 
@@ -196,7 +216,7 @@ public class AuthenticationService : IUserAuthService
         await _userRepository.DeleteAsync(id);
     }
 
-    private static UserDto MapToDto(User user) => new(
+    private static UserDto MapToDto(User user, int? lockedAdminId = null) => new(
         user.Id,
         user.Username,
         user.FirstName,
@@ -205,6 +225,7 @@ public class AuthenticationService : IUserAuthService
         user.Role,
         user.IsActive,
         user.CreatedAt,
-        user.LastLoginAt
+        user.LastLoginAt,
+        IsSystemLocked: lockedAdminId == user.Id
     );
 }

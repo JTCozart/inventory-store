@@ -480,6 +480,10 @@ internal class Program
 
         services.AddScoped<InventoryStore.App.Modules.IModuleRegistry, InventoryStore.App.Modules.ModuleRegistry>();
 
+        // Deployment flags read from environment variables (e.g. PROFESSIONAL_SERVICES_HOSTED).
+        services.AddSingleton<InventoryStore.Application.Interfaces.Services.IHostingMode,
+                              InventoryStore.App.Services.HostingMode>();
+
         services.AddSingleton<TunnelService>();
         services.AddSingleton<UpdateInfo>();
         services.AddSingleton<UpdateCheckService>();

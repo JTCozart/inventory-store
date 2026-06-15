@@ -123,6 +123,30 @@ Go to **Settings → Remote Access** and choose:
 
 ---
 
+## Professional services (hosted mode)
+
+When you run Inventory Store as a managed, hosted instance for a customer, set the environment variable `PROFESSIONAL_SERVICES_HOSTED=true` before starting the app. It is read once at startup.
+
+In this mode the **first admin account** (the earliest-created admin) becomes a protected system account that the customer cannot tamper with:
+
+- It cannot be edited, suspended, or deleted from **Settings → Users**. The same actions are rejected on the server, not just hidden in the UI.
+- It is presented as **SYSTEM USER** with a login name of **SYSTEM** (including in the activity log), without changing the account's stored name or username.
+
+Create your provider admin first so it becomes the protected account, then create a separate admin for the customer.
+
+Set the variable wherever the service environment is defined. On Linux, add it to the systemd unit:
+
+```ini
+[Service]
+Environment=PROFESSIONAL_SERVICES_HOSTED=true
+```
+
+On Windows, add it to the service's environment (for example via the registry `Environment` value for the service, or a machine environment variable) and restart the service.
+
+Leave the variable unset, or set to any value other than `true`, for normal self-hosted use; the first admin then behaves like any other admin.
+
+---
+
 ## Development
 
 ### Prerequisites

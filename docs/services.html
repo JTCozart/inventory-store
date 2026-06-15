@@ -160,9 +160,10 @@
     .tier-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; }
     .tier-card {
       border: 1.5px solid var(--border); border-radius: var(--radius);
-      padding: 2rem; display: flex; flex-direction: column;
+      padding: 2rem; display: flex; flex-direction: column; position: relative;
     }
-    .tier-card.featured { border-color: var(--blue); box-shadow: 0 10px 40px rgba(37,99,235,.12); position: relative; }
+    .tier-card.featured { border-color: var(--blue); box-shadow: 0 10px 40px rgba(37,99,235,.12); }
+    .tier-flag.flag-muted { background: #475569; }
     .tier-flag {
       position: absolute; top: -12px; left: 2rem; background: var(--blue); color: #fff;
       font-size: .68rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
@@ -291,9 +292,9 @@
 <!-- Tiers -->
 <section>
   <div class="container">
-    <div class="section-tag">Two ways to run it</div>
+    <div class="section-tag">Three ways to run it</div>
     <h2>Pick what fits your team</h2>
-    <p class="section-sub">Self-host for free forever, or apply for a managed hosted spot in the pilot.</p>
+    <p class="section-sub">Self-host for free, get hands-on help with a one-time setup, or apply for a fully managed hosted spot in the pilot.</p>
     <div class="tier-grid">
 
       <div class="tier-card">
@@ -309,6 +310,23 @@
         </ul>
         <a href="https://github.com/JTCozart/inventory-store/releases/latest" class="btn-secondary" target="_blank" rel="noopener noreferrer">
           <i class="fa-solid fa-download"></i> Download installer
+        </a>
+      </div>
+
+      <div class="tier-card">
+        <div class="tier-flag flag-muted">Pilot &middot; Limited spots</div>
+        <div class="tier-name">Self-Hosted + Setup</div>
+        <div class="tier-price">One-time fee</div>
+        <p class="tier-desc">You still run it on your own environment, but we get it stood up and running for you.</p>
+        <ul class="tier-list">
+          <li><i class="fa-solid fa-check"></i> Everything in Self-Hosted</li>
+          <li><i class="fa-solid fa-check"></i> We install and configure it in your environment</li>
+          <li><i class="fa-solid fa-check"></i> We get your team up and running</li>
+          <li><i class="fa-solid fa-check"></i> Paid once, no ongoing cost</li>
+          <li><i class="fa-solid fa-check"></i> No continued support after handoff</li>
+        </ul>
+        <a href="#contact" class="btn-secondary">
+          <i class="fa-solid fa-paper-plane"></i> Request setup help
         </a>
       </div>
 
@@ -348,12 +366,16 @@
         <p>We run Inventory Store for you on your own custom domain and take care of the server, updates, HTTPS, and routine backups, so you can just use the app.</p>
       </div>
       <div class="faq-item">
-        <h3>Why are spots limited?</h3>
-        <p>The hosted option is a pilot. We are starting with a small number of teams so we can set each one up carefully and learn what matters most before opening it more widely.</p>
+        <h3>What is the professional setup option?</h3>
+        <p>For a one-time fee, we get Inventory Store installed and running in your own environment and help your team get started. After the handoff you run it yourself, so this option does not include continued support.</p>
       </div>
       <div class="faq-item">
-        <h3>Can I move between the two?</h3>
-        <p>Yes. You can start self-hosted and ask about hosting later, or move your data back to self-hosting at any time. You are never locked in.</p>
+        <h3>Why are spots limited?</h3>
+        <p>The professional setup and hosted options are both pilots. We are starting with a small number of teams so we can set each one up carefully and learn what matters most before opening it more widely.</p>
+      </div>
+      <div class="faq-item">
+        <h3>Can I move between the options?</h3>
+        <p>Yes. You can start self-hosted and ask about setup help or hosting later, or move your data back to self-hosting at any time. You are never locked in.</p>
       </div>
     </div>
   </div>
