@@ -16,6 +16,7 @@ public class ReportService : IReportService
     private readonly IVendorRepository     _vendorRepo;
     private readonly IUserRepository       _userRepo;
     private readonly IHostingMode          _hostingMode;
+    private readonly IAppTimeZone          _clock;
 
     public ReportService(
         IInventoryRepository inventoryRepo,
@@ -25,7 +26,8 @@ public class ReportService : IReportService
         IMaintenanceRepository maintenanceRepo,
         IVendorRepository vendorRepo,
         IUserRepository userRepo,
-        IHostingMode hostingMode)
+        IHostingMode hostingMode,
+        IAppTimeZone clock)
     {
         _inventoryRepo   = inventoryRepo;
         _activityRepo    = activityRepo;
@@ -35,6 +37,7 @@ public class ReportService : IReportService
         _vendorRepo      = vendorRepo;
         _userRepo        = userRepo;
         _hostingMode     = hostingMode;
+        _clock           = clock;
     }
 
     // In professional-services hosted mode the locked first-admin account is shown as "SYSTEM" in
@@ -234,7 +237,7 @@ public class ReportService : IReportService
             .Union(openVisits.Select(v => v.InventoryItemId))
             .Distinct();
 
-        var today = DateOnly.FromDateTime(DateTime.Today);
+        var today = _clock.Today();
         var scheduleByItem = schedules.ToDictionary(s => s.InventoryItemId);
 
         var rows = new List<MaintenanceReportRow>();

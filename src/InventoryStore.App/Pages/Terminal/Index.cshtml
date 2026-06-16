@@ -1,5 +1,6 @@
 @page
 @model InventoryStore.App.Pages.Terminal.IndexModel
+@inject InventoryStore.App.Services.AppTimeZone AppTimeZone
 @{
     Layout = null;
 }
@@ -196,6 +197,10 @@
     </script>
     <script src="~/lib/bootstrap/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@@zxing/library@@0.21.3/umd/index.min.js"></script>
+    <!-- Configured display time zone + shared fmtUtc helper (site.js) so the terminal renders times
+         through the same single client-side authority as the rest of the app. -->
+    <script>window.APP_TZ = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(AppTimeZone.Id));</script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
     <script src="~/js/tag-input.js" asp-append-version="true"></script>
     <script src="~/js/terminal.js" asp-append-version="true"></script>
 </body>

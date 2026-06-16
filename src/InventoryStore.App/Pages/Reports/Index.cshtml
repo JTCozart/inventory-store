@@ -85,7 +85,7 @@
 {
     var mr = Model.MaintenanceReport;
     var todayD = DateOnly.FromDateTime(DateTime.Today);
-    <div class="print-title d-none">Maintenance Due Report - @mr.GeneratedAt.ToLocalTime().ToString("MMM d, yyyy")</div>
+    <div class="print-title d-none">Maintenance Due Report - <utc-time value="@mr.GeneratedAt" fmt="date" /></div>
     <div class="row g-2 g-sm-3 mb-4 no-print">
         <div class="col-4"><div class="card text-center p-2 p-sm-3"><div class="fs-4 fw-bold text-danger">@mr.OverdueCount</div><div class="text-muted small">Overdue</div></div></div>
         <div class="col-4"><div class="card text-center p-2 p-sm-3"><div class="fs-4 fw-bold text-warning">@mr.DueSoonCount</div><div class="text-muted small">Due Soon</div></div></div>
@@ -155,7 +155,7 @@
 
 @if (Model.Tab == "stock" && Model.StockReport is not null)
 {
-    <div class="print-title d-none">Stock Levels Report - @Model.StockReport.GeneratedAt.ToLocalTime().ToString("MMM d, yyyy")</div>
+    <div class="print-title d-none">Stock Levels Report - <utc-time value="@Model.StockReport.GeneratedAt" fmt="date" /></div>
     <div class="row g-2 g-sm-3 mb-4 no-print">
         <div class="col-4"><div class="card text-center p-2 p-sm-3"><div class="fs-4 fs-sm-1 fw-bold text-primary">@Model.StockReport.TotalItems</div><div class="text-muted small">Total Items</div></div></div>
         <div class="col-4"><div class="card text-center p-2 p-sm-3"><div class="fs-4 fw-bold text-success">@Model.StockReport.TotalQuantity</div><div class="text-muted small">In Stock</div></div></div>
@@ -255,7 +255,7 @@
 
 @if (Model.Tab == "checkout" && Model.CheckedOut is not null)
 {
-    <div class="print-title d-none">Checked Out Items - @Model.CheckedOut.GeneratedAt.ToLocalTime().ToString("MMM d, yyyy")</div>
+    <div class="print-title d-none">Checked Out Items - <utc-time value="@Model.CheckedOut.GeneratedAt" fmt="date" /></div>
     <div class="alert @(Model.CheckedOut.TotalCheckedOut == 0 ? "alert-success" : "alert-warning") mb-4">
         @if (Model.CheckedOut.TotalCheckedOut == 0)
         {
@@ -310,7 +310,7 @@
                                 <td>@row.CheckedOutBy</td>
                                 <td class="text-muted small d-none d-md-table-cell">@(row.ClientName ?? "—")</td>
                                 <td class="text-end d-none d-sm-table-cell">@row.Quantity</td>
-                                <td class="small d-none d-md-table-cell">@row.CheckedOutAt.ToLocalTime().ToString("MMM d, yyyy")</td>
+                                <td class="small d-none d-md-table-cell"><utc-time value="@row.CheckedOutAt" fmt="date" /></td>
                                 <td class="@(row.DaysOut > 7 ? "text-end text-warning fw-bold" : "text-end")">@row.DaysOut</td>
                             </tr>
                         }
@@ -337,7 +337,7 @@
 
 @if (Model.Tab == "lost" && Model.LostItems is not null)
 {
-    <div class="print-title d-none">Lost Items Report - @Model.LostItems.GeneratedAt.ToLocalTime().ToString("MMM d, yyyy")</div>
+    <div class="print-title d-none">Lost Items Report - <utc-time value="@Model.LostItems.GeneratedAt" fmt="date" /></div>
     <div class="alert @(Model.LostItems.TotalLost == 0 ? "alert-success" : "alert-danger") mb-4">
         @if (Model.LostItems.TotalLost == 0)
         {
@@ -374,7 +374,7 @@
                                 <td>@row.LastCheckedOutBy</td>
                                 <td class="text-muted small d-none d-md-table-cell">@(row.ClientName ?? "—")</td>
                                 <td class="text-end text-danger fw-bold">@row.Quantity</td>
-                                <td class="small">@row.LostAt.ToLocalTime().ToString("MMM d, yyyy")</td>
+                                <td class="small"><utc-time value="@row.LostAt" fmt="date" /></td>
                             </tr>
                         }
                     </tbody>
@@ -404,7 +404,7 @@
         .Select(i => i.Location).Where(l => !string.IsNullOrEmpty(l))
         .Distinct().OrderBy(l => l).ToList();
 
-    <div class="print-title">Take Inventory - @Model.TakeInventory.GeneratedAt.ToLocalTime().ToString("MMM d, yyyy h:mm tt")</div>
+    <div class="print-title">Take Inventory - <utc-time value="@Model.TakeInventory.GeneratedAt" fmt="datetime" /></div>
     <p class="text-muted small no-print">Print this page and walk the warehouse to confirm quantities.</p>
 
     <div class="row g-2 mb-3 no-print">
@@ -494,7 +494,7 @@
 
 @if (Model.Tab == "kits" && Model.IncompleteKits is not null)
 {
-    <div class="print-title">Incomplete Kits - @Model.IncompleteKits.GeneratedAt.ToLocalTime().ToString("MMM d, yyyy h:mm tt")</div>
+    <div class="print-title">Incomplete Kits - <utc-time value="@Model.IncompleteKits.GeneratedAt" fmt="datetime" /></div>
     <p class="text-muted small no-print">Kits that can't be assembled right now. Each one is missing stock for at least one of its items (or has no items yet).</p>
 
     @if (!Model.IncompleteKits.Items.Any())
@@ -661,7 +661,7 @@
         .Select(i => i.Location).Where(l => !string.IsNullOrEmpty(l))
         .Distinct().OrderBy(l => l).ToList();
 
-    <div class="print-title">Barcode Sheet - @genTime.ToLocalTime().ToString("MMM d, yyyy")</div>
+    <div class="print-title">Barcode Sheet - <utc-time value="@genTime" fmt="date" /></div>
     @if (!Model.BarcodeItems.Any())
     {
         <div class="alert alert-info">
@@ -715,7 +715,7 @@
     var fromVal = Model.ActivityFrom?.ToString("yyyy-MM-dd") ?? string.Empty;
     var toVal   = Model.ActivityTo?.ToString("yyyy-MM-dd")   ?? string.Empty;
 
-    <div class="print-title d-none">Activity Log - @genTime.ToLocalTime().ToString("MMM d, yyyy")</div>
+    <div class="print-title d-none">Activity Log - <utc-time value="@genTime" fmt="date" /></div>
 
     <form method="get" class="card card-body py-2 mb-3 no-print">
         <input type="hidden" name="tab" value="activity" />
@@ -773,7 +773,7 @@
                     {
                         <tr data-action="@log.Action"
                             data-search="@log.Username @log.Details">
-                            <td class="text-muted small text-nowrap">@log.Timestamp.ToLocalTime().ToString("MMM d, yyyy")</td>
+                            <td class="text-muted small text-nowrap"><utc-time value="@log.Timestamp" fmt="date" /></td>
                             <td class="fw-semibold small">@log.Username</td>
                             <td><span class="badge bg-secondary">@log.Action</span></td>
                             <td class="small">@log.Details</td>

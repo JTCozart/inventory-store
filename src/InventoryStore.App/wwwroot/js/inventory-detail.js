@@ -269,7 +269,7 @@ function buildLostCheckouts(checkouts) {
     section.classList.remove('d-none');
     const list = document.getElementById('lost-checkouts-list');
     list.innerHTML = checkouts.map(c => {
-        const lostAt = c.checkedInAt ? new Date(c.checkedInAt).toLocaleDateString() : '-';
+        const lostAt = c.checkedInAt ? window.fmtUtc(c.checkedInAt, 'date') : '-';
         return `
         <div class="border rounded p-2 mb-2 border-danger-subtle">
             <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
@@ -432,7 +432,7 @@ function populateKitView(s) {
     const checkoutsHtml = checkouts.length ? `
         <h6 class="fw-semibold mb-2">Checked-out Kits</h6>
         <div class="mb-3">${checkouts.map(k => {
-            const when = new Date(k.checkedOutAt).toLocaleDateString();
+            const when = window.fmtUtc(k.checkedOutAt, 'date');
             return `<div class="border rounded p-2 mb-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <div><strong>${esc(k.checkedOutBy)}</strong>
                     <span class="badge bg-secondary ms-1">x${k.quantity}</span>
@@ -1390,7 +1390,7 @@ function renderViewMaintenance(s, m) {
 
     const actions = document.getElementById('modal-maintenance-actions');
     if (visit) {
-        const since  = new Date(visit.outForMaintenanceAt).toLocaleDateString();
+        const since  = window.fmtUtc(visit.outForMaintenanceAt, 'date');
         const vendor = visit.vendorName ? ` to <strong>${esc(visit.vendorName)}</strong>` : '';
         actions.innerHTML = `
             <div class="border rounded p-2 mb-2 d-flex justify-content-between align-items-center flex-wrap gap-2">

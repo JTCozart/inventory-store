@@ -13,6 +13,7 @@ public class IndexModel : PageModel
     private readonly IReportService _reportService;
     private readonly IInventoryService _inventoryService;
     private readonly InventoryStore.App.Modules.IModuleRegistry _modules;
+    private readonly IAppTimeZone _clock;
 
     public string Tab { get; private set; } = "stock";
     public bool CostEnabled { get; private set; }
@@ -33,11 +34,12 @@ public class IndexModel : PageModel
     public DateTime? ActivityTo   { get; private set; }
 
     public IndexModel(IReportService reportService, IInventoryService inventoryService,
-        InventoryStore.App.Modules.IModuleRegistry modules)
+        InventoryStore.App.Modules.IModuleRegistry modules, IAppTimeZone clock)
     {
         _reportService    = reportService;
         _inventoryService = inventoryService;
         _modules          = modules;
+        _clock            = clock;
     }
 
     public async Task<IActionResult> OnGetExportCsvAsync()
@@ -80,7 +82,7 @@ public class IndexModel : PageModel
                 break;
             case "expiry":
                 var allItems  = await _inventoryService.GetAllItemsAsync();
-                var today     = DateOnly.FromDateTime(DateTime.Today);
+                var today     = _clock.Today();
                 ExpiredItems  = allItems.Where(i => i.ExpiryDate.HasValue && i.ExpiryDate.Value < today)
                                         .OrderBy(i => i.ExpiryDate).ToList();
                 ExpiringItems = allItems.Where(i => i.ExpiryDate.HasValue && i.ExpiryDate.Value >= today

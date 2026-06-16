@@ -38,8 +38,8 @@ jobs:
           name="InventoryStore-linux-x64-${{ steps.ver.outputs.VERSION }}"
           mkdir -p "stage/$name/app"
           cp -r publish/linux-app/. "stage/$name/app/"
-          cp linux/install.sh linux/inventorystore.service "stage/$name/"
-          chmod +x "stage/$name/install.sh" "stage/$name/app/InventoryStore.App"
+          cp linux/install.sh linux/update.sh linux/autobackup.sh linux/setup-autobackup.sh linux/inventorystore.service "stage/$name/"
+          chmod +x "stage/$name/install.sh" "stage/$name/update.sh" "stage/$name/autobackup.sh" "stage/$name/setup-autobackup.sh" "stage/$name/app/InventoryStore.App"
           tar czf "$name.tar.gz" -C stage "$name"
 
       - name: Upload tarball artifact
@@ -153,6 +153,10 @@ jobs:
             1. Download and extract `InventoryStore-linux-x64-${{ steps.ver.outputs.VERSION }}.tar.gz`
             2. Run `sudo ./install.sh` from inside the extracted folder
             3. The installer registers a systemd service and starts it automatically
+
+            To get the newest version later, run `sudo ./update.sh`. It saves a copy of your data first, then updates everything for you.
+
+            To have a fresh copy of your data saved automatically every night, run `sudo ./setup-autobackup.sh` once.
 
             The web interface is available at **http://localhost:5050** after installation.
           files: |

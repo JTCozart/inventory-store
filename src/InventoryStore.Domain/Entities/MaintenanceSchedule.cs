@@ -29,6 +29,4 @@ public class MaintenanceSchedule
             };
         }
     }
-
-    public bool IsOverdue => NextDueDate is { } due && due < DateOnly.FromDateTime(DateTime.Today);
 }

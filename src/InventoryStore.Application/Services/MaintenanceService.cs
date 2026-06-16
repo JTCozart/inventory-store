@@ -16,6 +16,7 @@ public class MaintenanceService : IMaintenanceService
     private readonly IVendorRepository _vendorRepo;
     private readonly IActivityLogRepository _activityRepo;
     private readonly IWebhookService _webhooks;
+    private readonly IAppTimeZone _clock;
 
     private static readonly ConcurrentDictionary<int, SemaphoreSlim> _itemLocks = new();
     private static SemaphoreSlim GetItemLock(int itemId) =>
@@ -26,13 +27,15 @@ public class MaintenanceService : IMaintenanceService
         IMaintenanceRepository maintenanceRepo,
         IVendorRepository vendorRepo,
         IActivityLogRepository activityRepo,
-        IWebhookService webhooks)
+        IWebhookService webhooks,
+        IAppTimeZone clock)
     {
         _inventoryRepo   = inventoryRepo;
         _maintenanceRepo = maintenanceRepo;
         _vendorRepo      = vendorRepo;
         _activityRepo    = activityRepo;
         _webhooks        = webhooks;
+        _clock           = clock;
     }
 
     public async Task<MaintenanceItemStatusDto> GetItemStatusAsync(int inventoryItemId)
@@ -141,7 +144,7 @@ public class MaintenanceService : IMaintenanceService
             // Returning from service updates the last-maintained date so the next-due date rolls forward.
             var schedule = await _maintenanceRepo.GetScheduleAsync(inventoryItemId)
                 ?? new MaintenanceSchedule { InventoryItemId = inventoryItemId };
-            schedule.LastMaintainedDate = DateOnly.FromDateTime(DateTime.Today);
+            schedule.LastMaintainedDate = _clock.Today();
             schedule.UpdatedAt = DateTime.UtcNow;
             await _maintenanceRepo.UpsertScheduleAsync(schedule);
 
@@ -163,9 +166,13 @@ public class MaintenanceService : IMaintenanceService
             Action = action, EntityType = "InventoryItem", EntityId = itemId, Details = details
         });
 
-    private static MaintenanceScheduleDto MapSchedule(MaintenanceSchedule s) => new(
-        s.InventoryItemId, s.LastMaintainedDate, s.IntervalValue, s.IntervalUnit,
-        s.Notes, s.NextDueDate, s.IsOverdue);
+    private MaintenanceScheduleDto MapSchedule(MaintenanceSchedule s)
+    {
+        // Overdue is judged against "today" in the account's configured zone, not the server's.
+        var isOverdue = s.NextDueDate is { } due && due < _clock.Today();
+        return new(s.InventoryItemId, s.LastMaintainedDate, s.IntervalValue, s.IntervalUnit,
+            s.Notes, s.NextDueDate, isOverdue);
+    }
 
     private static MaintenanceVisitDto MapVisit(MaintenanceVisit v, string? vendorName) => new(
         v.Id, v.InventoryItemId, v.Quantity, v.VendorId, vendorName,

@@ -4,11 +4,14 @@ using InventoryStore.App.Utilities;
 using InventoryStore.Application.DTOs;
 using InventoryStore.Application.Interfaces.Services;
 using InventoryStore.Domain.Enums;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Data.Sqlite;
+using System.Security.Claims;
 
 namespace InventoryStore.App.Pages.Settings;
 
@@ -18,6 +21,7 @@ public class IndexModel : PageModel
 {
     private readonly IUserAuthService _authService;
     private readonly ISettingsService _settingsService;
+    private readonly AppTimeZone _appTimeZone;
     private readonly TunnelService _tunnel;
     private readonly ICategoryService _categoryService;
     private readonly ITagService _tagService;
@@ -55,6 +59,12 @@ public class IndexModel : PageModel
     // Current user id — used to prevent self-modification in user management
     public int CurrentUserId               { get; private set; }
 
+    // General tab — the instance-wide display time zone (the account's physical location).
+    // Empty means "no zone set" — the browser uses each viewer's own device zone.
+    public string TimeZoneId { get; private set; } = string.Empty;
+    public IReadOnlyList<InventoryStore.App.Utilities.TimeZones.TzOption> AvailableTimeZones
+        => InventoryStore.App.Utilities.TimeZones.Options;
+
     // HTTPS tab
     public bool    HttpsEnabled       { get; private set; }
     public int     HttpsPort          { get; private set; } = 443;
@@ -85,13 +95,15 @@ public class IndexModel : PageModel
     public bool    NtfyOnLowStock  { get; private set; }
     public bool    NtfyOnLogin     { get; private set; }
 
-    public IndexModel(IUserAuthService authService, ISettingsService settingsService, TunnelService tunnel,
+    public IndexModel(IUserAuthService authService, ISettingsService settingsService, AppTimeZone appTimeZone,
+        TunnelService tunnel,
         ICategoryService categoryService, ITagService tagService, IInventoryService inventoryService,
         IHttpContextAccessor httpContextAccessor, InventoryStore.App.Modules.IModuleRegistry modules,
         ILogger<IndexModel> logger)
     {
         _authService          = authService;
         _settingsService      = settingsService;
+        _appTimeZone          = appTimeZone;
         _tunnel               = tunnel;
         _categoryService      = categoryService;
         _tagService           = tagService;
@@ -109,6 +121,10 @@ public class IndexModel : PageModel
         LocalIpAddress = NetworkUtility.GetLocalIpAddress();
         CurrentUserId  = User.GetIdentity().userId;
         MaintenanceModuleEnabled = await _modules.IsEnabledAsync("maintenance");
+
+        if (tab == "general")
+            // Empty means "no override" — fall back to the server's local zone.
+            TimeZoneId = await _settingsService.GetAsync(AppTimeZone.SettingKey) ?? string.Empty;
 
         if (tab == "users")
             Users = await _authService.GetAllUsersAsync();
@@ -171,6 +187,23 @@ public class IndexModel : PageModel
                 ? $"{req.Scheme}://{req.Host}/public"
                 : "/public";
         }
+    }
+
+    public async Task<IActionResult> OnPostSaveGeneralAsync(string? timeZoneId)
+    {
+        if (!User.IsInRole("Admin")) return Forbid();
+
+        timeZoneId = timeZoneId?.Trim();
+        // Empty clears the setting — the browser then uses each viewer's own device zone.
+        if (!string.IsNullOrEmpty(timeZoneId) && !InventoryStore.App.Utilities.TimeZones.IsValid(timeZoneId))
+            return RedirectWithMessage("general", error: "Please choose a valid time zone.");
+
+        await _settingsService.SetAsync(AppTimeZone.SettingKey, string.IsNullOrEmpty(timeZoneId) ? null : timeZoneId);
+        _appTimeZone.Set(timeZoneId);
+
+        return RedirectWithMessage("general", success: string.IsNullOrEmpty(timeZoneId)
+            ? "Time zone cleared. Times now follow each viewer's device."
+            : "Time zone saved. Times now display in the selected zone.");
     }
 
     public async Task<IActionResult> OnPostSaveNotificationsAsync(
@@ -574,7 +607,7 @@ public class IndexModel : PageModel
             }
 
             var bytes    = await System.IO.File.ReadAllBytesAsync(tempPath);
-            var filename = $"inventory_backup_{DateTime.Now:yyyyMMdd_HHmmss}.db";
+            var filename = $"inventory_backup_{_appTimeZone.Now():yyyyMMdd_HHmmss}.db";
             return File(bytes, "application/octet-stream", filename);
         }
         finally

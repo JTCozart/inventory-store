@@ -8,6 +8,6 @@ internal static class AppJsonOptions
     internal static readonly JsonSerializerOptions Web = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        Converters = { new JsonStringEnumConverter() }
+        Converters = { new JsonStringEnumConverter(), new UtcDateTimeConverter() }
     };
 }

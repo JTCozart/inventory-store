@@ -1,6 +1,7 @@
 @page
 @model InventoryStore.App.Pages.Public.IndexModel
 @using InventoryStore.Domain.Enums
+@inject InventoryStore.App.Services.AppTimeZone AppTimeZone
 @{
     Layout = null;
     var byCategory = Model.Items
@@ -66,7 +67,7 @@
     <span class="pub-badge-box">IS</span>
     Inventory Store
   </div>
-  <span class="pub-updated">Updated @DateTime.Now.ToString("MMM d, h:mm tt")</span>
+  <span class="pub-updated">Updated <utc-time value="@DateTime.UtcNow" fmt="datetime-short" /></span>
 </div>
 
 @if (!Model.IsEnabled)
@@ -155,6 +156,10 @@ else
   </div>
 }
 
+<!-- Configured display time zone + shared fmtUtc helper, so the "Updated" stamp localizes through
+     the same single client-side authority used across the app. -->
+<script>window.APP_TZ = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(AppTimeZone.Id));</script>
+<script src="~/js/site.js" asp-append-version="true"></script>
 <script>
 (function(){
   var _rows = Array.from(document.querySelectorAll('.item-row'));

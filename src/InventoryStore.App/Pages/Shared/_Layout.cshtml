@@ -1,5 +1,6 @@
 @inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
 @inject InventoryStore.App.Services.UpdateInfo UpdateInfo
+@inject InventoryStore.App.Services.AppTimeZone AppTimeZone
 @inject InventoryStore.Application.Interfaces.Services.ISettingsService Settings
 @inject InventoryStore.App.Modules.IModuleRegistry Modules
 <!DOCTYPE html>
@@ -142,6 +143,9 @@ else
 }
 
 <div id="toast-container" class="position-fixed bottom-0 end-0 p-3" style="z-index:1200"></div>
+<!-- Configured display time zone (IANA id, "" = use the viewer's own device zone). The browser is
+     the single authority that renders UTC timestamps into this zone. -->
+<script>window.APP_TZ = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(AppTimeZone.Id));</script>
 <script src="~/lib/bootstrap/js/bootstrap.bundle.min.js"></script>
 <script src="~/js/site.js"></script>
 @if (User.Identity?.IsAuthenticated == true)

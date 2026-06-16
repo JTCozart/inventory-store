@@ -1,3 +1,37 @@
+// ── Time zone rendering ───────────────────────────────────────────────────────
+// The server stores and sends all timestamps in UTC. The browser is the single authority that
+// renders them into the configured display zone (window.APP_TZ, an IANA id set by the layout).
+// When APP_TZ is empty, the viewer's own device zone is used.
+
+// Format a UTC instant (ISO-8601 string or Date) into the configured zone.
+// fmt: 'date' (default) | 'datetime' | 'datetime-short' | 'time'.
+window.fmtUtc = function (utc, fmt) {
+    if (!utc) return '';
+    var d = (utc instanceof Date) ? utc : new Date(utc);
+    if (isNaN(d.getTime())) return '';
+    var opts;
+    switch (fmt) {
+        case 'datetime':       opts = { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }; break;
+        case 'datetime-short': opts = { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }; break;
+        case 'time':           opts = { hour: 'numeric', minute: '2-digit' }; break;
+        default:               opts = { year: 'numeric', month: 'short', day: 'numeric' }; break; // 'date'
+    }
+    if (window.APP_TZ) opts.timeZone = window.APP_TZ;
+    try { return new Intl.DateTimeFormat(undefined, opts).format(d); }
+    catch (e) { /* invalid configured zone — fall back to the device zone */
+        delete opts.timeZone;
+        return new Intl.DateTimeFormat(undefined, opts).format(d);
+    }
+};
+
+// Replace the text of every <time class="js-dt" datetime="…Z" data-fmt="…"> under `root` with the
+// value rendered in the configured zone. Safe to call repeatedly (e.g. after inserting rows).
+window.hydrateDates = function (root) {
+    (root || document).querySelectorAll('time.js-dt[datetime]').forEach(function (el) {
+        el.textContent = window.fmtUtc(el.getAttribute('datetime'), el.getAttribute('data-fmt'));
+    });
+};
+
 // ── Shared utilities ─────────────────────────────────────────────────────────
 
 window.escHtml = function(s) {
@@ -102,6 +136,9 @@ function applyThemeButton(theme) {
 // ── Bootstrap DOMContentLoaded ────────────────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', function () {
+    // Localize all server-rendered UTC timestamps into the configured display zone.
+    window.hydrateDates();
+
     // Show any queued flash toast from a previous page action
     try {
         var flash = sessionStorage.getItem('_flash');

@@ -48,11 +48,34 @@
                         <input asp-for="Input.ConfirmPassword" class="form-control" type="password" autocomplete="new-password" />
                         <span asp-validation-for="Input.ConfirmPassword" class="text-danger small"></span>
                     </div>
+                    <div class="col-12">
+                        <label asp-for="Input.TimeZoneId" class="form-label">Time Zone</label>
+                        <select asp-for="Input.TimeZoneId" class="form-select" id="setup-timezone">
+                            <option value="">Use each viewer's device time zone</option>
+                            @foreach (var z in Model.AvailableTimeZones)
+                            {
+                                <option value="@z.Id">@z.Display</option>
+                            }
+                        </select>
+                        <div class="form-text">Times across the app are shown in this zone. You can change it later in Settings.</div>
+                    </div>
                     <div class="col-12 mt-2">
                         <button type="submit" class="btn btn-primary w-100">Create Admin Account</button>
                     </div>
                 </div>
             </form>
+            <script>
+                // Pre-select the browser's detected time zone for convenience (only if it's offered).
+                (function () {
+                    try {
+                        var tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                        var sel = document.getElementById('setup-timezone');
+                        if (tz && sel && [].some.call(sel.options, function (o) { return o.value === tz; })) {
+                            sel.value = tz;
+                        }
+                    } catch (e) { /* leave default */ }
+                }());
+            </script>
         </div>
     </div>
 </div>

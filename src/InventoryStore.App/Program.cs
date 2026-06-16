@@ -450,7 +450,13 @@ internal class Program
         Directory.CreateDirectory(Path.GetDirectoryName(dbPath)!);
 
         services.AddInfrastructure($"Data Source={dbPath}");
-        services.AddRazorPages();
+        // Emit every DateTime as explicit UTC (trailing 'Z') so the browser — the single authority
+        // for time-zone rendering — parses them correctly. Covers MVC/Razor JsonResult responses…
+        services.AddRazorPages().AddJsonOptions(o =>
+            o.JsonSerializerOptions.Converters.Add(new InventoryStore.App.Infrastructure.UtcDateTimeConverter()));
+        // …and the minimal-API endpoints that return via Results.Ok.
+        services.ConfigureHttpJsonOptions(o =>
+            o.SerializerOptions.Converters.Add(new InventoryStore.App.Infrastructure.UtcDateTimeConverter()));
         services.AddHttpContextAccessor();
         services.AddHttpClient("ntfy");
         services.AddHttpClient("barcode", c =>
@@ -485,6 +491,10 @@ internal class Program
                               InventoryStore.App.Services.HostingMode>();
 
         services.AddSingleton<TunnelService>();
+        services.AddSingleton<AppTimeZone>();
+        // Same instance behind the Application-layer interface so services share one source of truth.
+        services.AddSingleton<InventoryStore.Application.Interfaces.Services.IAppTimeZone>(
+            sp => sp.GetRequiredService<AppTimeZone>());
         services.AddSingleton<UpdateInfo>();
         services.AddSingleton<UpdateCheckService>();
         services.AddHostedService(sp => sp.GetRequiredService<UpdateCheckService>());

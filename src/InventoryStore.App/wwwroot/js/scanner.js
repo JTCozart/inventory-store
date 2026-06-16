@@ -535,7 +535,7 @@
                 return '<div class="d-flex align-items-center justify-content-between border rounded p-1 mb-1 small">' +
                     '<div><span class="fw-semibold">' + escHtml(c.checkedOutBy) + '</span>' +
                     '<span class="text-muted ms-1">x' + c.quantity + '</span>' +
-                    '<div class="text-muted" style="font-size:0.7rem">' + new Date(c.checkedOutAt).toLocaleDateString() + '</div></div>' +
+                    '<div class="text-muted" style="font-size:0.7rem">' + window.fmtUtc(c.checkedOutAt, 'date') + '</div></div>' +
                     '<div class="d-flex gap-1">' +
                     '<button class="btn btn-xs btn-outline-success py-0 px-1" onclick="doCheckin(' + c.id + ')" title="Check In"><i class="bi bi-box-arrow-in-down"></i></button>' +
                     '<button class="btn btn-xs btn-outline-danger py-0 px-1" onclick="doMarkLost(' + c.id + ')" title="Mark Lost"><i class="bi bi-x-circle"></i></button>' +

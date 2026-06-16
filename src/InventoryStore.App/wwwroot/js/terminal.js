@@ -233,7 +233,7 @@
             return '<div class="d-flex align-items-center justify-content-between border rounded p-2 mb-2 term-co-item">' +
                 '<div><span class="fw-semibold">' + esc(c.checkedOutBy) + '</span>' +
                 '<span class="text-muted ms-1">×' + c.quantity + '</span>' +
-                '<div class="text-muted small">' + new Date(c.checkedOutAt).toLocaleDateString() + '</div></div>' +
+                '<div class="text-muted small">' + window.fmtUtc(c.checkedOutAt, 'date') + '</div></div>' +
                 '<button class="btn btn-success term-btn px-3" onclick="termCheckin(' + c.id + ')">' +
                 '<i class="bi bi-box-arrow-in-down me-1"></i>Check In</button>' +
                 '</div>';

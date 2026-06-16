@@ -232,7 +232,6 @@ public class AppDbContext : DbContext
             e.HasKey(s => s.Id);
             e.HasIndex(s => s.InventoryItemId).IsUnique();
             e.Ignore(s => s.NextDueDate);
-            e.Ignore(s => s.IsOverdue);
             e.HasOne<InventoryItem>()
              .WithMany()
              .HasForeignKey(s => s.InventoryItemId)

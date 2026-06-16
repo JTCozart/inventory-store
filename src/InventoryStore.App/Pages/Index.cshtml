@@ -245,7 +245,7 @@
                                     </td>
                                     <td class="small">@row.LastCheckedOutBy</td>
                                     <td class="text-end text-danger fw-bold">@row.Quantity</td>
-                                    <td class="small text-muted text-nowrap">@row.LostAt.ToLocalTime().ToString("MMM d, yyyy")</td>
+                                    <td class="small text-muted text-nowrap"><utc-time value="@row.LostAt" fmt="date" /></td>
                                 </tr>
                             }
                         </tbody>
@@ -291,7 +291,7 @@
                                 <div class="flex-grow-1 small">
                                     <span class="fw-semibold">@log.Username</span>
                                     <span class="text-muted">: @log.Details</span>
-                                    <div class="text-muted" style="font-size:0.75rem">@log.Timestamp.ToLocalTime().ToString("MMM d, h:mm tt")</div>
+                                    <div class="text-muted" style="font-size:0.75rem"><utc-time value="@log.Timestamp" fmt="datetime-short" /></div>
                                 </div>
                             </div>
                         }

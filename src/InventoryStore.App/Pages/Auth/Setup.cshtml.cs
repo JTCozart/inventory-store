@@ -11,15 +11,23 @@ namespace InventoryStore.App.Pages.Auth;
 public class SetupModel : PageModel
 {
     private readonly IUserAuthService _authService;
+    private readonly ISettingsService _settings;
+    private readonly InventoryStore.App.Services.AppTimeZone _appTimeZone;
 
     [BindProperty]
     public SetupInputModel Input { get; set; } = new();
 
     public string? ErrorMessage { get; set; }
 
-    public SetupModel(IUserAuthService authService)
+    public IReadOnlyList<InventoryStore.App.Utilities.TimeZones.TzOption> AvailableTimeZones
+        => InventoryStore.App.Utilities.TimeZones.Options;
+
+    public SetupModel(IUserAuthService authService, ISettingsService settings,
+        InventoryStore.App.Services.AppTimeZone appTimeZone)
     {
         _authService = authService;
+        _settings    = settings;
+        _appTimeZone = appTimeZone;
     }
 
     public async Task<IActionResult> OnGetAsync()
@@ -43,6 +51,14 @@ public class SetupModel : PageModel
         {
             var user = await _authService.SetupAdminAsync(
                 Input.Username.Trim(), Input.Email, Input.Password, Input.FirstName, Input.LastName);
+
+            // Persist the account's time zone chosen during setup (empty = use each viewer's device).
+            var tz = Input.TimeZoneId?.Trim();
+            if (!string.IsNullOrEmpty(tz) && InventoryStore.App.Utilities.TimeZones.IsValid(tz))
+            {
+                await _settings.SetAsync(InventoryStore.App.Services.AppTimeZone.SettingKey, tz);
+                _appTimeZone.Set(tz);
+            }
 
             var claims = new List<Claim>
             {
@@ -79,5 +95,8 @@ public class SetupModel : PageModel
 
         [Required]
         public string ConfirmPassword { get; set; } = string.Empty;
+
+        // IANA time zone id for the account's location (empty = use each viewer's device zone).
+        public string? TimeZoneId { get; set; }
     }
 }
