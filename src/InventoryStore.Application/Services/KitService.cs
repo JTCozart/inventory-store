@@ -8,7 +8,7 @@ using InventoryStore.Domain.Interfaces.Repositories;
 namespace InventoryStore.Application.Services;
 
 // Whole-kit operations: editing a kit's contents and acting on the kit as a unit
-// (checkout / consume / restock / check-in / lost). Reuses the same stock primitives the
+// (checkout / check-in / reconcile / lost). Reuses the same stock primitives the
 // per-item CheckoutService uses, applied across every member in one go.
 public class KitService : IKitService
 {
@@ -165,11 +165,20 @@ public class KitService : IKitService
                 }
                 else if (component is ConsumableItem consumable)
                 {
-                    // A kit being checked out consumes its consumable members permanently.
+                    // A kit being checked out draws down its consumable members. We record how much
+                    // was allocated so the unused remainder can be returned when the kit is checked
+                    // back in and someone counts what was actually used.
                     consumable.Quantity  = Math.Max(0, consumable.Quantity - actual);
                     consumable.UpdatedAt = DateTime.UtcNow;
                     await _inventoryRepo.UpdateAsync(consumable);
                     await RecordConsumeAsync(consumable, actual, userId, username, $"Kit '{kit.Name}' checkout");
+                    await _kitRepo.AddAllocationAsync(new KitConsumableAllocation
+                    {
+                        KitCheckoutId     = kitCheckout.Id,
+                        ConsumableItemId  = consumable.Id,
+                        AllocatedQuantity = actual,
+                        UsedQuantity      = actual
+                    });
                 }
             }
 
@@ -187,95 +196,8 @@ public class KitService : IKitService
         return new KitActionResultDto(true, false, kit.AllowPartial, Array.Empty<KitShortageDto>());
     }
 
-    public async Task<KitActionResultDto> ConsumeKitAsync(KitActionDto dto, int userId, string username)
-    {
-        var kit = await GetKitAsync(dto.KitItemId);
-        var consumables = kit.Components.Where(c => c.ComponentItem is ConsumableItem).ToList();
-        if (consumables.Count == 0)
-            throw new InvalidOperationException("This kit has no consumable items to use.");
-
-        var qty = Math.Max(1, dto.Quantity);
-
-        var shortages = ComputeShortages(consumables, qty, consumablesOnly: true);
-        if (shortages.Count > 0)
-        {
-            if (!kit.AllowPartial)
-                return new KitActionResultDto(false, true, false, shortages);
-            if (!dto.AllowPartialFallback)
-                return new KitActionResultDto(false, true, true, shortages);
-        }
-
-        var ids = consumables.Select(m => m.ComponentItemId).Distinct().OrderBy(i => i).ToList();
-        await LockAllAsync(ids);
-        try
-        {
-            foreach (var m in consumables)
-            {
-                var component = await _inventoryRepo.GetByIdAsync(m.ComponentItemId);
-                if (component is not ConsumableItem consumable) continue;
-                var need   = m.Quantity * qty;
-                var actual = Math.Min(need, Math.Max(0, consumable.Quantity));
-                if (actual <= 0) continue;
-
-                consumable.Quantity  = Math.Max(0, consumable.Quantity - actual);
-                consumable.UpdatedAt = DateTime.UtcNow;
-                await _inventoryRepo.UpdateAsync(consumable);
-                await RecordConsumeAsync(consumable, actual, userId, username, $"Kit '{kit.Name}' consume");
-            }
-
-            await LogAsync(userId, username, "KitConsume", kit.Id,
-                $"Consumed {qty}x kit '{kit.Name}'");
-            _ = _webhooks.DispatchAsync("kit.consumed",
-                new { kit = new { id = kit.Id, name = kit.Name }, actor = username, quantity = qty });
-        }
-        finally
-        {
-            ReleaseAll(ids);
-        }
-
-        return new KitActionResultDto(true, false, kit.AllowPartial, Array.Empty<KitShortageDto>());
-    }
-
-    public async Task RestockKitAsync(int kitItemId, int quantity, int userId, string username)
-    {
-        var kit = await GetKitAsync(kitItemId);
-        var consumables = kit.Components.Where(c => c.ComponentItem is ConsumableItem).ToList();
-        if (consumables.Count == 0)
-            throw new InvalidOperationException("This kit has no consumable items to restock.");
-
-        var qty = Math.Max(1, quantity);
-        var ids = consumables.Select(m => m.ComponentItemId).Distinct().OrderBy(i => i).ToList();
-        await LockAllAsync(ids);
-        try
-        {
-            foreach (var m in consumables)
-            {
-                var component = await _inventoryRepo.GetByIdAsync(m.ComponentItemId);
-                if (component is not ConsumableItem consumable) continue;
-                var amount = m.Quantity * qty;
-                consumable.Quantity += amount;
-                consumable.UpdatedAt = DateTime.UtcNow;
-                await _inventoryRepo.UpdateAsync(consumable);
-
-                await _stockMovementRepo.AddAsync(new StockMovement
-                {
-                    InventoryItemId = consumable.Id, ChangeType = "Restock", Quantity = amount,
-                    UserId = userId, Username = username, Notes = $"Kit '{kit.Name}' restock", Timestamp = DateTime.UtcNow
-                });
-                _ = _webhooks.DispatchAsync("item.restocked",
-                    new { item = new { id = consumable.Id, name = consumable.Name }, actor = username, quantity = amount });
-            }
-
-            await LogAsync(userId, username, "KitRestock", kit.Id,
-                $"Restocked {qty}x kit '{kit.Name}' worth of consumables");
-        }
-        finally
-        {
-            ReleaseAll(ids);
-        }
-    }
-
-    public async Task CheckInKitAsync(int kitCheckoutId, int userId, string username)
+    public async Task CheckInKitAsync(int kitCheckoutId, IReadOnlyList<KitConsumableUsageDto>? usage,
+        bool flagIfNotReconciled, int userId, string username)
     {
         var kitCheckout = await _kitRepo.GetCheckoutAsync(kitCheckoutId)
             ?? throw new KeyNotFoundException("Kit checkout not found.");
@@ -291,12 +213,120 @@ public class KitService : IKitService
         }
 
         kitCheckout.CheckedInAt = DateTime.UtcNow;
+
+        var hasAllocations = kitCheckout.ConsumableAllocations.Any(a => a.ReconciledAt == null);
+        if (usage is not null)
+            await ApplyReconciliationAsync(kitCheckout, usage, userId, username);
+        else if (flagIfNotReconciled && hasAllocations)
+            kitCheckout.NeedsReconciliation = true;
+
         await _kitRepo.UpdateCheckoutAsync(kitCheckout);
 
         var kit = await _inventoryRepo.GetByIdAsync(kitCheckout.KitItemId);
         await LogAsync(userId, username, "KitCheckIn", kitCheckout.KitItemId,
             $"'{kitCheckout.CheckedOutBy}' checked in kit '{kit?.Name ?? kitCheckout.KitItemId.ToString()}'");
         _ = _ntfy.NotifyCheckinAsync(kit?.Name ?? "Kit", kitCheckout.CheckedOutBy);
+    }
+
+    // ── Consumable reconciliation ──────────────────────────────────────
+    public async Task ReconcileKitAsync(int kitCheckoutId, IReadOnlyList<KitConsumableUsageDto> usage,
+        int userId, string username)
+    {
+        var kitCheckout = await _kitRepo.GetCheckoutAsync(kitCheckoutId)
+            ?? throw new KeyNotFoundException("Kit checkout not found.");
+        await ApplyReconciliationAsync(kitCheckout, usage, userId, username);
+        await _kitRepo.UpdateCheckoutAsync(kitCheckout);
+    }
+
+    public async Task<IReadOnlyList<KitReconcileDto>> GetPendingReconciliationsAsync()
+    {
+        var pending = await _kitRepo.GetPendingReconciliationsAsync();
+        var result = new List<KitReconcileDto>();
+        foreach (var k in pending)
+        {
+            var dto = await BuildReconcileDtoAsync(k);
+            if (dto is not null) result.Add(dto);
+        }
+        return result;
+    }
+
+    public async Task<KitReconcileDto?> GetReconciliationAsync(int kitCheckoutId)
+    {
+        var kitCheckout = await _kitRepo.GetCheckoutAsync(kitCheckoutId);
+        return kitCheckout is null ? null : await BuildReconcileDtoAsync(kitCheckout);
+    }
+
+    private async Task<KitReconcileDto?> BuildReconcileDtoAsync(KitCheckout kitCheckout)
+    {
+        var kit = await _inventoryRepo.GetByIdAsync(kitCheckout.KitItemId);
+        var lines = new List<KitReconcileLineDto>();
+        foreach (var a in kitCheckout.ConsumableAllocations.Where(a => a.ReconciledAt == null))
+        {
+            var item = await _inventoryRepo.GetByIdAsync(a.ConsumableItemId);
+            lines.Add(new KitReconcileLineDto(a.ConsumableItemId,
+                item?.Name ?? a.ConsumableItemId.ToString(), a.AllocatedQuantity));
+        }
+        return new KitReconcileDto(kitCheckout.Id, kitCheckout.KitItemId,
+            kit?.Name ?? kitCheckout.KitItemId.ToString(), kitCheckout.CheckedOutBy,
+            kitCheckout.CheckedOutAt, kitCheckout.CheckedInAt, lines);
+    }
+
+    // Returns the unused remainder of each consumable allocation to stock and clears the flag.
+    // The caller persists the kit checkout afterwards.
+    private async Task ApplyReconciliationAsync(KitCheckout kitCheckout,
+        IReadOnlyList<KitConsumableUsageDto> usage, int userId, string username)
+    {
+        var allocs = kitCheckout.ConsumableAllocations.Where(a => a.ReconciledAt == null).ToList();
+        if (allocs.Count > 0)
+        {
+            var usageMap = usage
+                .GroupBy(u => u.ConsumableItemId)
+                .ToDictionary(g => g.Key, g => g.Last().UsedQuantity);
+
+            var ids = allocs.Select(a => a.ConsumableItemId).Distinct().OrderBy(i => i).ToList();
+            await LockAllAsync(ids);
+            try
+            {
+                foreach (var a in allocs)
+                {
+                    var used = usageMap.TryGetValue(a.ConsumableItemId, out var u)
+                        ? Math.Clamp(u, 0, a.AllocatedQuantity)
+                        : a.AllocatedQuantity; // no figure given for this line → treat as fully used
+                    a.UsedQuantity = used;
+                    a.ReconciledAt = DateTime.UtcNow;
+
+                    var returnQty = a.AllocatedQuantity - used;
+                    if (returnQty > 0 && await _inventoryRepo.GetByIdAsync(a.ConsumableItemId) is ConsumableItem consumable)
+                    {
+                        consumable.Quantity += returnQty;
+                        consumable.UpdatedAt = DateTime.UtcNow;
+                        await _inventoryRepo.UpdateAsync(consumable);
+
+                        await _stockMovementRepo.AddAsync(new StockMovement
+                        {
+                            InventoryItemId = consumable.Id, ChangeType = "Restock", Quantity = returnQty,
+                            UserId = userId, Username = username,
+                            Notes = "Kit reconcile: unused consumable returned", Timestamp = DateTime.UtcNow
+                        });
+                        _ = _webhooks.DispatchAsync("item.restocked",
+                            new { item = new { id = consumable.Id, name = consumable.Name }, actor = username, quantity = returnQty });
+                    }
+
+                    await _kitRepo.UpdateAllocationAsync(a);
+                }
+            }
+            finally
+            {
+                ReleaseAll(ids);
+            }
+        }
+
+        kitCheckout.NeedsReconciliation = false;
+        kitCheckout.ReconciledAt = DateTime.UtcNow;
+
+        var kit = await _inventoryRepo.GetByIdAsync(kitCheckout.KitItemId);
+        await LogAsync(userId, username, "KitReconcile", kitCheckout.KitItemId,
+            $"Reconciled consumables for kit '{kit?.Name ?? kitCheckout.KitItemId.ToString()}' (checked out by '{kitCheckout.CheckedOutBy}')");
     }
 
     public async Task MarkKitLostAsync(int kitCheckoutId, int userId, string username)

@@ -2111,6 +2111,48 @@
     }
 }
 
+@if (Model.Tab == "modules" && User.IsInRole("Admin") && Model.ModuleSection == "kits")
+{
+    <div class="mb-3">
+        <a href="/Settings?tab=modules" class="text-decoration-none small"><i class="bi bi-arrow-left me-1"></i>Modules</a>
+    </div>
+    @if (!Model.IsModuleEnabled("kits"))
+    {
+        <div class="alert alert-warning" style="max-width: 1080px;">
+            The Kits &amp; Bundles module is disabled. <a href="/Settings?tab=modules">Enable it</a> to configure.
+        </div>
+    }
+    else
+    {
+        <div class="card" style="max-width: 720px;">
+            <div class="card-header fw-semibold"><i class="bi bi-box-seam me-2"></i>Kits &amp; Bundles</div>
+            <div class="card-body">
+                <form method="post" asp-page-handler="SaveKitsSettings">
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" role="switch" id="kits-reconcile"
+                               name="reconcileEnabled" value="true" @(Model.KitsReconcileEnabled ? "checked" : "") />
+                        <label class="form-check-label" for="kits-reconcile">Reconcile consumables at check-in</label>
+                        <div class="form-text">When a kit is checked in, ask how many consumables were used and return the unused remainder to stock. A kit can be checked in without counting; it is then flagged on the <strong>Reports &rarr; Reconciliation</strong> tab to count later.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small mb-1">At check-in, count items that were&hellip;</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="mode" id="kits-mode-used" value="used" @(Model.KitsReconcileMode != "remain" ? "checked" : "") />
+                            <label class="form-check-label" for="kits-mode-used"><strong>Used</strong> &mdash; count up what got used</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="mode" id="kits-mode-remain" value="remain" @(Model.KitsReconcileMode == "remain" ? "checked" : "") />
+                            <label class="form-check-label" for="kits-mode-remain"><strong>Remaining</strong> &mdash; count up what came back unused</label>
+                        </div>
+                        <div class="form-text">Reconciling a skipped kit later always counts what remains.</div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </form>
+            </div>
+        </div>
+    }
+}
+
 @if (Model.Tab == "modules" && User.IsInRole("Admin") && Model.ModuleSection == "webhooks")
 {
     <div class="mb-3">

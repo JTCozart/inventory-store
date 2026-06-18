@@ -84,6 +84,8 @@ public class IndexModel : PageModel
     // Per-module Configure state
     public string CostCurrency      { get; private set; } = "$";
     public int    ForecastWindowDays { get; private set; } = 30;
+    public bool   KitsReconcileEnabled { get; private set; }
+    public string KitsReconcileMode    { get; private set; } = "used";
 
     // Notifications tab
     public string? NtfyServer      { get; private set; }
@@ -164,6 +166,8 @@ public class IndexModel : PageModel
             EnabledMap         = await _modules.GetEnabledMapAsync();
             CostCurrency       = await _settingsService.GetAsync("module.cost.currency") ?? "$";
             ForecastWindowDays = int.TryParse(await _settingsService.GetAsync("module.forecast.windowdays"), out var w) && w > 0 ? w : 30;
+            KitsReconcileEnabled = await _settingsService.GetAsync("module.kits.reconcile") == "true";
+            KitsReconcileMode    = await _settingsService.GetAsync("module.kits.reconcile.mode") ?? "used";
         }
 
         if (tab == "notifications")
@@ -694,6 +698,14 @@ public class IndexModel : PageModel
         if (!User.IsInRole("Admin")) return Forbid();
         await _settingsService.SetAsync("module.forecast.windowdays", (windowDays > 0 ? windowDays : 30).ToString());
         return RedirectWithMessage("modules", success: "Forecast window saved.", section: "forecast");
+    }
+
+    public async Task<IActionResult> OnPostSaveKitsSettingsAsync(bool reconcileEnabled, string? mode)
+    {
+        if (!User.IsInRole("Admin")) return Forbid();
+        await _settingsService.SetAsync("module.kits.reconcile", reconcileEnabled ? "true" : null);
+        await _settingsService.SetAsync("module.kits.reconcile.mode", mode == "remain" ? "remain" : "used");
+        return RedirectWithMessage("modules", success: "Kit settings saved.", section: "kits");
     }
 
     public async Task<IActionResult> OnPostSavePublicViewSettingAsync(bool enabled)

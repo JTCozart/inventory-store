@@ -24,7 +24,7 @@ public class ModuleRegistry : IModuleRegistry
             "bi-broadcast", HasConfigure: true),
         new ModuleDescriptor("kits", "Kits & Bundles",
             "Group items into kits that can be checked out, used, or restocked all at once.",
-            "bi-box-seam", HasConfigure: false),
+            "bi-box-seam", HasConfigure: true),
         new ModuleDescriptor("maintenance", "Maintenance",
             "Track service schedules, send items out to vendors, and get due / overdue alerts.",
             "bi-tools", HasConfigure: true),

@@ -772,10 +772,18 @@ sudo systemctl restart inventorystore</code></pre>
         <li><strong>Reusable items</strong> are checked out and tracked, so they can be returned later.</li>
         <li><strong>Consumable items</strong> are used up straight away, the same as if you had consumed them on their own.</li>
       </ul>
-      <p>When you <strong>check the kit back in</strong>, every reusable item inside comes back in one step. Consumable items are not restored, because they were used when the kit went out. You can also <strong>mark a whole kit as lost</strong>, which marks all of its reusable items lost together.</p>
+      <p>When you <strong>check the kit back in</strong>, every reusable item inside comes back in one step. You can also <strong>mark a whole kit as lost</strong>, which marks all of its reusable items lost together.</p>
+      <p>By default, consumable items are not restored when a kit comes back, because they were treated as used when the kit went out. If you want to account for what was really used, switch on consumable reconciliation (see below).</p>
 
-      <h3>Using and restocking a kit</h3>
-      <p>If you just want to draw down a kit's worth of supplies without lending anything, use the <strong>Consume</strong> button. This reduces only the consumable items inside the kit. The <strong>Restock All</strong> button does the opposite and tops the consumable items back up by a kit's worth. Reusable items are never changed by Consume or Restock.</p>
+      <h3>Counting what was used when a kit comes back</h3>
+      <p>Often a kit goes out with more supplies than it needs, and some come back unused. <strong>Consumable reconciliation</strong> lets you record what was actually used so the leftover goes back into stock instead of being written off.</p>
+      <p>Turn it on under <strong>Settings &rarr; Modules &rarr; Kits &amp; Bundles &rarr; Configure</strong>. There you can also choose how the count is phrased:</p>
+      <ul>
+        <li><strong>Count what was used</strong>: when a kit comes back you enter how many of each consumable were used.</li>
+        <li><strong>Count what is left</strong>: you enter how many of each consumable came back unused.</li>
+      </ul>
+      <p>With reconciliation on, checking a kit in opens a short pop-up that lists each consumable, with a plus and minus button to set the count for each one. Whatever was not used is added straight back to stock. You can also tap <strong>Skip for now</strong> to check the kit in right away and count it later.</p>
+      <p>Any kit you skip is flagged and appears on the <strong>Reconciliation</strong> report (see <a href="#reports">Reports</a>). Open it from there whenever you are ready, count what came back, and the leftover returns to stock. Counting a skipped kit later always asks how many are left, since the kit is already back in front of you.</p>
 
       <h3>When stock runs short</h3>
       <p>If you ask for more kits than you can build, the app stops and shows you exactly which items are short. What happens next depends on a per-kit setting called <strong>Allow partial</strong>, which an Admin or Manager sets on the kit's Edit screen:</p>
@@ -785,7 +793,7 @@ sudo systemctl restart inventorystore</code></pre>
       </ul>
 
       <h3>Kits on the Terminal</h3>
-      <p>Kits work on the <a href="#terminal">Terminal</a> too. Staff can scan or search for a kit and check it out or use it as a single unit, with the same low-stock prompts. The individual items inside a kit are not handled separately on the Terminal; the kit is always treated as one thing.</p>
+      <p>Kits work on the <a href="#terminal">Terminal</a> too. Staff can scan or search for a kit and check it out or check it back in as a single unit, with the same low-stock prompts. If consumable reconciliation is on, checking a kit in on the Terminal shows the same count pop-up, with a <strong>Skip for now</strong> option. The individual items inside a kit are not handled separately on the Terminal; the kit is always treated as one thing.</p>
 
       <h3>Incomplete Kits report</h3>
       <p>While the module is on, <strong>Reports</strong> gains an <strong>Incomplete Kits</strong> tab. It lists every kit that cannot be built right now, along with the exact items that are short and how many more you need. Kits with no items added yet show up here too. It is a quick way to see what to reorder so your kits are ready when you need them.</p>
@@ -837,6 +845,7 @@ sudo systemctl restart inventorystore</code></pre>
         <tr><td><strong>Lost Items</strong></td><td>Items marked lost, with the last person who checked them out.</td></tr>
         <tr><td><strong>Take Inventory</strong></td><td>Printable checklist for physical stock counts - SKU, location, expected quantity, and a blank field for actual count.</td></tr>
         <tr><td><strong>Incomplete Kits</strong></td><td>Kits that cannot be built right now, with the items that are short. Shown only when the <a href="#kits">Kits &amp; Bundles</a> module is on.</td></tr>
+        <tr><td><strong>Reconciliation</strong></td><td>Checked-in kits that still need their consumables counted. Each one opens a pop-up where you record what came back, and the leftover returns to stock. Shown only when the <a href="#kits">Kits &amp; Bundles</a> module has consumable reconciliation switched on.</td></tr>
         <tr><td><strong>Expiry</strong></td><td>Expired items and items expiring within 90 days, grouped and color-coded by urgency.</td></tr>
         <tr><td><strong>Barcode Sheet</strong></td><td>Printable barcode grid for all items that have a SKU.</td></tr>
         <tr><td><strong>Activity Log</strong></td><td>Full audit trail. Filter by date range and action type. Timestamps shown as date.</td></tr>

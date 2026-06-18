@@ -20,4 +20,10 @@ public interface IKitRepository
     Task<IEnumerable<KitCheckout>> GetAllActiveAsync();
     // Deletes a kit's own checkout groups (its member CheckoutRecords are cleared separately).
     Task DeleteByKitItemIdAsync(int kitItemId);
+
+    // ── Consumable reconciliation ──────────────────────────────────────
+    Task AddAllocationAsync(KitConsumableAllocation allocation);
+    Task UpdateAllocationAsync(KitConsumableAllocation allocation);
+    // Checked-in kits still awaiting a consumable count (NeedsReconciliation), newest first.
+    Task<IEnumerable<KitCheckout>> GetPendingReconciliationsAsync();
 }

@@ -22,6 +22,7 @@ public class AppDbContext : DbContext
     public DbSet<WebhookEndpoint> WebhookEndpoints => Set<WebhookEndpoint>();
     public DbSet<KitComponent> KitComponents => Set<KitComponent>();
     public DbSet<KitCheckout> KitCheckouts => Set<KitCheckout>();
+    public DbSet<KitConsumableAllocation> KitConsumableAllocations => Set<KitConsumableAllocation>();
     public DbSet<Vendor> Vendors => Set<Vendor>();
     public DbSet<MaintenanceSchedule> MaintenanceSchedules => Set<MaintenanceSchedule>();
     public DbSet<MaintenanceVisit> MaintenanceVisits => Set<MaintenanceVisit>();
@@ -109,6 +110,18 @@ public class AppDbContext : DbContext
              .WithOne()
              .HasForeignKey(r => r.KitCheckoutId)
              .OnDelete(DeleteBehavior.Cascade);
+
+            e.HasMany(k => k.ConsumableAllocations)
+             .WithOne()
+             .HasForeignKey(a => a.KitCheckoutId)
+             .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<KitConsumableAllocation>(e =>
+        {
+            e.HasKey(a => a.Id);
+            e.HasIndex(a => a.KitCheckoutId);
+            e.HasIndex(a => a.ConsumableItemId);
         });
 
         modelBuilder.Entity<User>(e =>

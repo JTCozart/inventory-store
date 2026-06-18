@@ -13,14 +13,18 @@ public class IndexModel : PageModel
     private readonly IReportService _reportService;
     private readonly IInventoryService _inventoryService;
     private readonly InventoryStore.App.Modules.IModuleRegistry _modules;
+    private readonly ISettingsService _settings;
+    private readonly IKitService _kitService;
     private readonly IAppTimeZone _clock;
 
     public string Tab { get; private set; } = "stock";
     public bool CostEnabled { get; private set; }
     public bool ForecastEnabled { get; private set; }
     public bool KitsEnabled { get; private set; }
+    public bool ReconcileEnabled { get; private set; }
     public bool MaintenanceEnabled { get; private set; }
     public MaintenanceReportDto? MaintenanceReport { get; private set; }
+    public IReadOnlyList<KitReconcileDto> PendingReconciliations { get; private set; } = [];
 
     public StockReportDto?        StockReport     { get; private set; }
     public CheckedOutReportDto?   CheckedOut      { get; private set; }
@@ -34,11 +38,14 @@ public class IndexModel : PageModel
     public DateTime? ActivityTo   { get; private set; }
 
     public IndexModel(IReportService reportService, IInventoryService inventoryService,
-        InventoryStore.App.Modules.IModuleRegistry modules, IAppTimeZone clock)
+        InventoryStore.App.Modules.IModuleRegistry modules, ISettingsService settings,
+        IKitService kitService, IAppTimeZone clock)
     {
         _reportService    = reportService;
         _inventoryService = inventoryService;
         _modules          = modules;
+        _settings         = settings;
+        _kitService       = kitService;
         _clock            = clock;
     }
 
@@ -59,9 +66,11 @@ public class IndexModel : PageModel
         CostEnabled     = await _modules.IsEnabledAsync("cost");
         ForecastEnabled = await _modules.IsEnabledAsync("forecast");
         KitsEnabled     = await _modules.IsEnabledAsync("kits");
+        ReconcileEnabled = KitsEnabled && await _settings.GetAsync("module.kits.reconcile") == "true";
         MaintenanceEnabled = await _modules.IsEnabledAsync("maintenance");
         // Don't serve the kit report when the module is off — fall back to the default tab.
         if (tab == "kits" && !KitsEnabled) { Tab = tab = "stock"; }
+        if (tab == "reconcile" && !ReconcileEnabled) { Tab = tab = "stock"; }
         if (tab == "maintenance" && !MaintenanceEnabled) { Tab = tab = "stock"; }
         switch (tab)
         {
@@ -76,6 +85,9 @@ public class IndexModel : PageModel
                 break;
             case "kits":
                 IncompleteKits = await _reportService.GetIncompleteKitsReportAsync();
+                break;
+            case "reconcile":
+                PendingReconciliations = await _kitService.GetPendingReconciliationsAsync();
                 break;
             case "maintenance":
                 MaintenanceReport = await _reportService.GetMaintenanceDueReportAsync();

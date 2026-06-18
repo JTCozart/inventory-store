@@ -444,7 +444,6 @@ function populateKitView(s) {
             </div>`;
         }).join('')}</div>` : '';
 
-    const hasConsumables = comps.some(c => c.itemType === 'Consumable');
     const actionPanel = canWrite ? `
         <div id="kit-shortage" class="alert alert-warning d-none"></div>
         <h6 class="fw-semibold mb-2">Check Out Kit</h6>
@@ -456,15 +455,6 @@ function populateKitView(s) {
             <div class="col-auto"><button class="btn btn-sm btn-primary" onclick="handleKitCheckout()">
                 <i class="bi bi-box-arrow-up-right me-1"></i>Check Out</button></div>
         </div>
-        ${hasConsumables ? `
-        <h6 class="fw-semibold mb-2">Use / Restock</h6>
-        <div class="d-flex gap-2 align-items-end flex-wrap mb-1">
-            <div style="width:90px"><label class="form-label small mb-1">Kits</label>
-                <input type="number" id="kit-adjust-qty" class="form-control form-control-sm" value="1" min="1"></div>
-            <button class="btn btn-sm btn-outline-danger" onclick="handleKitConsume()"><i class="bi bi-dash-lg me-1"></i>Consume</button>
-            <button class="btn btn-sm btn-outline-success" onclick="handleKitRestock()"><i class="bi bi-plus-lg me-1"></i>Restock All</button>
-        </div>
-        <div class="form-text">Consume reduces only the kit's consumable items; Restock All adds them back.</div>` : ''}
     ` : '';
 
     document.getElementById('actions-kit').innerHTML = membersTable + checkoutsHtml + actionPanel;
@@ -485,6 +475,12 @@ async function kitApiPost(path, body) {
         throw t;
     }
     try { return await res.json(); } catch { return {}; }
+}
+
+async function kitApiGet(path) {
+    const res = await fetch('/api/inventory/kit/' + path, { credentials: 'include' });
+    if (!res.ok) return null;
+    try { return await res.json(); } catch { return null; }
 }
 
 function kitShortageHtml(result) {
@@ -544,28 +540,81 @@ window.handleKitCheckout = function () {
     runKitAction('checkout', { kitId: _currentItemId, quantity: qty, checkedOutBy: by }, 'Kit checked out.');
 };
 
-window.handleKitConsume = function () {
-    const qty = parseInt(document.getElementById('kit-adjust-qty').value) || 1;
-    runKitAction('consume', { kitId: _currentItemId, quantity: qty }, 'Kit consumed.');
-};
-
-window.handleKitRestock = async function () {
-    const qty = parseInt(document.getElementById('kit-adjust-qty').value) || 1;
+async function doKitCheckin(kitCheckoutId, usage) {
     try {
-        await kitApiPost('restock', { kitId: _currentItemId, quantity: qty });
-        showAlert('modal-alert', 'Restocked the kit’s items.', 'success');
-        _needsReload = true;
-        await refreshModal();
-    } catch (msg) { showAlert('modal-alert', msg || 'Restock failed.', 'danger'); }
-};
-
-window.handleKitCheckin = async function (kitCheckoutId) {
-    try {
-        await kitApiPost('checkin', { kitCheckoutId });
+        await kitApiPost('checkin', usage ? { kitCheckoutId, usage } : { kitCheckoutId });
         showAlert('modal-alert', 'Kit checked in.', 'success');
         _needsReload = true;
         await refreshModal();
     } catch (msg) { showAlert('modal-alert', msg || 'Check in failed.', 'danger'); }
+}
+
+window.handleKitCheckin = async function (kitCheckoutId) {
+    // When reconciliation is on, ask how many consumables were used before checking in.
+    const meta = await kitApiGet('reconcile/meta/' + kitCheckoutId);
+    if (!meta || !meta.enabled || !(meta.lines || []).length) { doKitCheckin(kitCheckoutId, null); return; }
+    showKitReconcileModal(kitCheckoutId, meta.mode || 'used', meta.lines);
+};
+
+// Modal listing each consumable with a +/- stepper. The user counts up from zero. "used" mode
+// counts what got used; "remain" mode counts what came back unused. Confirm reconciles inline;
+// Skip checks in and flags the kit for the reconciliation report.
+function showKitReconcileModal(kitCheckoutId, mode, lines) {
+    const existing = document.getElementById('kit-recon-modal');
+    if (existing) existing.parentNode.removeChild(existing);
+
+    const remainMode = (mode === 'remain');
+    const title = remainMode ? 'How many came back unused?' : 'How many did you use?';
+
+    const rows = lines.map(l =>
+        `<div class="d-flex align-items-center justify-content-between border-bottom py-2" data-id="${l.consumableItemId}" data-alloc="${l.allocatedQuantity}">
+            <div class="me-2"><div class="fw-semibold">${esc(l.name)}</div>
+            <div class="text-muted small">${l.allocatedQuantity} went out</div></div>
+            <div class="input-group input-group-sm" style="width:150px">
+                <button class="btn btn-outline-secondary" type="button" onclick="kitReconStep(this,-1)">&minus;</button>
+                <input type="number" class="form-control text-center kit-recon-input" value="0" min="0" max="${l.allocatedQuantity}">
+                <button class="btn btn-outline-secondary" type="button" onclick="kitReconStep(this,1)">+</button>
+            </div></div>`).join('');
+
+    const html =
+        `<div class="modal fade" id="kit-recon-modal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+                <div class="modal-header"><h5 class="modal-title">${title}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+                <div class="modal-body">${rows}</div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" id="kit-recon-skip">Skip for now</button>
+                    <button type="button" class="btn btn-primary" id="kit-recon-confirm">Confirm &amp; check in</button>
+                </div></div></div></div>`;
+
+    const wrap = document.createElement('div');
+    wrap.innerHTML = html;
+    document.body.appendChild(wrap.firstChild);
+
+    const el = document.getElementById('kit-recon-modal');
+    const modal = bootstrap.Modal.getOrCreateInstance(el);
+    el.addEventListener('hidden.bs.modal', () => el.parentNode.removeChild(el));
+
+    document.getElementById('kit-recon-confirm').onclick = () => {
+        const usage = Array.from(el.querySelectorAll('[data-id]')).map(row => {
+            const alloc = parseInt(row.dataset.alloc, 10) || 0;
+            let n = parseInt(row.querySelector('.kit-recon-input').value, 10) || 0;
+            n = Math.max(0, Math.min(alloc, n));
+            return { consumableItemId: parseInt(row.dataset.id, 10), usedQuantity: remainMode ? (alloc - n) : n };
+        });
+        modal.hide();
+        doKitCheckin(kitCheckoutId, usage);
+    };
+    document.getElementById('kit-recon-skip').onclick = () => { modal.hide(); doKitCheckin(kitCheckoutId, null); };
+
+    modal.show();
+}
+
+window.kitReconStep = function (btn, delta) {
+    const input = btn.parentElement.querySelector('.kit-recon-input');
+    const max = parseInt(input.max, 10);
+    let v = (parseInt(input.value, 10) || 0) + delta;
+    input.value = Math.max(0, isNaN(max) ? v : Math.min(max, v));
 };
 
 window.handleKitLost = async function (kitCheckoutId) {

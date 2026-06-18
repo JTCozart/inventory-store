@@ -25,8 +25,6 @@
         ['term-result', 'term-notfound', 'term-picker'].forEach(function (id) { $(id).classList.add('d-none'); });
     }
 
-    var termCanRestock = ($('term-kit') && $('term-kit').dataset.canRestock === '1') || window.termCanRestock;
-
     // ── Search / lookup ───────────────────────────────────────────────
     // One omni search box: try an exact SKU match first, then fall back to a name search.
     window.termSearch = function () {
@@ -371,7 +369,6 @@
     function renderKitTerminal(item) {
         var comps = item.components || [];
         var checkouts = item.activeKitCheckouts || [];
-        var hasConsumables = comps.some(function (c) { return c.itemType === 0; });
         var avail = item.availableQuantity;
 
         var members = comps.map(function (c) {
@@ -391,28 +388,21 @@
                     '<i class="bi bi-box-arrow-in-down me-1"></i>Check In</button></div>';
             }).join('') + '</div>' : '';
 
-        var useRow = hasConsumables ?
-            '<div class="mt-3"><label class="form-label fs-6 fw-semibold mb-1">Use / restock</label>' +
-            '<div class="input-group" style="max-width:320px">' +
-            '<button class="btn btn-danger term-step-btn" type="button" onclick="termKitConsume()" title="Use one kit\'s worth"><i class="bi bi-dash-lg"></i></button>' +
-            '<input type="number" id="term-kit-qty" class="form-control term-step-input" value="1" min="1">' +
-            (termCanRestock ? '<button class="btn btn-success term-step-btn" type="button" onclick="termKitRestock()" title="Restock"><i class="bi bi-plus-lg"></i></button>' : '') +
-            '</div></div>' : '';
-
         $('term-kit').innerHTML =
             '<div id="term-kit-alert" class="alert d-none py-2 px-3 fs-6"></div>' +
             '<div class="mb-2">' + (members || '<span class="text-muted">This kit has no items.</span>') + '</div>' +
             '<label class="form-label fs-6 fw-semibold mb-1">Borrower</label>' +
             '<input type="text" id="term-kit-by" class="form-control term-input mb-2" placeholder="Name" autocomplete="off">' +
+            '<label class="form-label fs-6 fw-semibold mb-1">Number of kits</label>' +
             '<div class="d-flex align-items-center gap-2 mb-2">' +
-            '<div class="input-group" style="max-width:200px">' +
+            '<div class="input-group" style="max-width:280px">' +
             '<button class="btn btn-outline-secondary term-step-btn" type="button" onclick="termStep(\'term-kit-co-qty\',-1)">−</button>' +
             '<input type="number" id="term-kit-co-qty" class="form-control term-step-input" value="1" min="1">' +
             '<button class="btn btn-outline-secondary term-step-btn" type="button" onclick="termStep(\'term-kit-co-qty\',1)">+</button>' +
             '</div></div>' +
             '<button class="btn btn-primary term-btn term-btn-lg w-100" onclick="termKitCheckout()" ' + (avail <= 0 ? 'disabled' : '') + '>' +
             '<i class="bi bi-box-arrow-up-right me-1"></i> Check Out Kit</button>' +
-            useRow + checkoutsHtml;
+            checkoutsHtml;
     }
 
     function kitAlert(msg, type) {
@@ -470,24 +460,87 @@
         runKitAction('checkout', { kitId: currentItem.id, quantity: qty, checkedOutBy: by }, 'Kit checked out to ' + by + '.');
     };
 
-    window.termKitConsume = function () {
-        if (!currentItem) return;
-        var qty = parseInt($('term-kit-qty').value) || 1;
-        runKitAction('consume', { kitId: currentItem.id, quantity: qty }, 'Used ' + qty + ' kit(s).');
-    };
-
-    window.termKitRestock = function () {
-        if (!currentItem || !termCanRestock) return;
-        var qty = parseInt($('term-kit-qty').value) || 1;
-        apiPost('/api/inventory/kit/restock', { kitId: currentItem.id, quantity: qty })
-            .then(function () { showAlert('Restocked ' + qty + ' kit(s) worth.', 'success'); refresh(); })
-            .catch(function (m) { kitAlert(m || 'Restock failed.', 'danger'); });
-    };
-
-    window.termKitCheckin = function (kitCheckoutId) {
-        apiPost('/api/inventory/kit/checkin', { kitCheckoutId: kitCheckoutId })
+    function doKitCheckin(kitCheckoutId, usage) {
+        var body = usage ? { kitCheckoutId: kitCheckoutId, usage: usage } : { kitCheckoutId: kitCheckoutId };
+        return apiPost('/api/inventory/kit/checkin', body)
             .then(function () { showAlert('Kit checked in.', 'success'); refresh(); })
             .catch(function (m) { kitAlert(m || 'Check in failed.', 'danger'); });
+    }
+
+    window.termKitCheckin = function (kitCheckoutId) {
+        // When reconciliation is on, ask how many consumables were used before checking in. The
+        // meta endpoint returns enabled:false (or no lines) when there is nothing to reconcile.
+        fetch('/api/inventory/kit/reconcile/meta/' + kitCheckoutId, { credentials: 'include' })
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (meta) {
+                if (!meta || !meta.enabled || !(meta.lines || []).length) { doKitCheckin(kitCheckoutId, null); return; }
+                showKitReconcileModal(kitCheckoutId, meta.mode || 'used', meta.lines);
+            })
+            .catch(function () { doKitCheckin(kitCheckoutId, null); });
+    };
+
+    // Builds a touch-first modal listing each consumable with a big +/- stepper. The user counts up
+    // from zero. "used" mode counts what got used; "remain" mode counts what came back unused.
+    function showKitReconcileModal(kitCheckoutId, mode, lines) {
+        var existing = $('term-recon-modal');
+        if (existing) existing.parentNode.removeChild(existing);
+
+        var remainMode = (mode === 'remain');
+        var title = remainMode ? 'How many came back unused?' : 'How many did you use?';
+
+        // Each consumable gets its own full-width stepper row. The name/allocated sit above the
+        // stepper so the big touch buttons never crowd out the number field.
+        var rows = lines.map(function (l) {
+            return '<div class="border-bottom py-3" ' +
+                'data-id="' + l.consumableItemId + '" data-alloc="' + l.allocatedQuantity + '">' +
+                '<div class="d-flex justify-content-between align-items-baseline mb-2">' +
+                '<span class="fw-semibold fs-5">' + esc(l.name) + '</span>' +
+                '<span class="text-muted">' + l.allocatedQuantity + ' went out</span></div>' +
+                '<div class="input-group">' +
+                '<button class="btn btn-outline-secondary term-step-btn" type="button" onclick="termReconStep(this,-1)">−</button>' +
+                '<input type="number" class="form-control term-step-input term-recon-input" value="0" min="0" max="' + l.allocatedQuantity + '">' +
+                '<button class="btn btn-outline-secondary term-step-btn" type="button" onclick="termReconStep(this,1)">+</button>' +
+                '</div></div>';
+        }).join('');
+
+        var html = '<div class="modal fade" id="term-recon-modal" tabindex="-1" aria-hidden="true">' +
+            '<div class="modal-dialog modal-dialog-centered modal-lg"><div class="modal-content">' +
+            '<div class="modal-header"><h5 class="modal-title fs-4">' + title + '</h5>' +
+            '<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>' +
+            '<div class="modal-body">' + rows + '</div>' +
+            '<div class="modal-footer">' +
+            '<button type="button" class="btn btn-outline-secondary term-btn" id="term-recon-skip">Skip for now</button>' +
+            '<button type="button" class="btn btn-primary term-btn" id="term-recon-confirm">Confirm &amp; check in</button>' +
+            '</div></div></div></div>';
+
+        var wrap = document.createElement('div');
+        wrap.innerHTML = html;
+        document.body.appendChild(wrap.firstChild);
+
+        var el = $('term-recon-modal');
+        var modal = bootstrap.Modal.getOrCreateInstance(el);
+        el.addEventListener('hidden.bs.modal', function () { el.parentNode.removeChild(el); });
+
+        $('term-recon-confirm').onclick = function () {
+            var usage = Array.prototype.map.call(el.querySelectorAll('[data-id]'), function (row) {
+                var alloc = parseInt(row.dataset.alloc, 10) || 0;
+                var n = parseInt(row.querySelector('.term-recon-input').value, 10) || 0;
+                n = Math.max(0, Math.min(alloc, n));
+                return { consumableItemId: parseInt(row.dataset.id, 10), usedQuantity: remainMode ? (alloc - n) : n };
+            });
+            modal.hide();
+            doKitCheckin(kitCheckoutId, usage);
+        };
+        $('term-recon-skip').onclick = function () { modal.hide(); doKitCheckin(kitCheckoutId, null); };
+
+        modal.show();
+    }
+
+    window.termReconStep = function (btn, delta) {
+        var input = btn.parentElement.querySelector('.term-recon-input');
+        var max = parseInt(input.max, 10);
+        var v = (parseInt(input.value, 10) || 0) + delta;
+        input.value = Math.max(0, isNaN(max) ? v : Math.min(max, v));
     };
 
     // ── Camera scanning ───────────────────────────────────────────────

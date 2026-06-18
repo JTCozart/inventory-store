@@ -36,6 +36,10 @@
     {
         <option value="/Reports?tab=kits" selected="@(Model.Tab=="kits")">Incomplete Kits</option>
     }
+    @if (Model.ReconcileEnabled)
+    {
+        <option value="/Reports?tab=reconcile" selected="@(Model.Tab=="reconcile")">Reconciliation</option>
+    }
     <option value="/Reports?tab=expiry"    selected="@(Model.Tab=="expiry")">Expiry</option>
     <option value="/Reports?tab=barcodes"  selected="@(Model.Tab=="barcodes")">Barcode Sheet</option>
     <option value="/Reports?tab=activity"  selected="@(Model.Tab=="activity")">Activity Log</option>
@@ -62,6 +66,10 @@
     @if (Model.KitsEnabled)
     {
         <a href="/Reports?tab=kits" class="nav-link @tKits"><i class="bi bi-box-seam"></i> Incomplete Kits</a>
+    }
+    @if (Model.ReconcileEnabled)
+    {
+        <a href="/Reports?tab=reconcile" class="nav-link @(Model.Tab == "reconcile" ? "active" : "")"><i class="bi bi-clipboard-check"></i> Reconciliation</a>
     }
     <a href="/Reports?tab=expiry"    class="nav-link @tExpiry">   <i class="bi bi-calendar-x"></i> Expiry</a>
     <a href="/Reports?tab=barcodes"  class="nav-link @tBarcodes"> <i class="bi bi-upc"></i> Barcode Sheet</a>
@@ -561,6 +569,78 @@
     }
 }
 
+@if (Model.Tab == "reconcile")
+{
+    <div class="print-title d-none">Kit Reconciliation - <utc-time value="@genTime" fmt="date" /></div>
+    <p class="text-muted small no-print">Kits that were checked in without counting their consumables. Reconcile each to return the unused remainder to stock.</p>
+
+    @if (!Model.PendingReconciliations.Any())
+    {
+        <div class="card"><div class="card-body text-center text-muted py-5">
+            <i class="bi bi-check-circle display-6 d-block mb-2 text-success opacity-75"></i>
+            Nothing to reconcile. Every checked-in kit has been accounted for.
+        </div></div>
+    }
+    else
+    {
+        <div class="card">
+            <div class="table-responsive">
+                <table class="table table-sm mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Kit</th>
+                            <th>Checked Out By</th>
+                            <th class="d-none d-md-table-cell">Checked In</th>
+                            <th class="text-end">Consumables</th>
+                            <th class="text-end no-print">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var r in Model.PendingReconciliations)
+                        {
+                            <tr>
+                                <td class="fw-semibold align-middle">@r.KitName</td>
+                                <td class="align-middle">@r.CheckedOutBy</td>
+                                <td class="small text-muted align-middle d-none d-md-table-cell">
+                                    @if (r.CheckedInAt.HasValue) { <utc-time value="@r.CheckedInAt.Value" fmt="date" /> } else { <text>-</text> }
+                                </td>
+                                <td class="text-end align-middle">@r.Lines.Count</td>
+                                <td class="text-end align-middle no-print">
+                                    <button type="button" class="btn btn-sm btn-primary" onclick="openReconcile(@r.KitCheckoutId)">
+                                        <i class="bi bi-clipboard-check me-1"></i>Reconcile
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <p class="text-muted small mt-3 no-print">@Model.PendingReconciliations.Count kit@(Model.PendingReconciliations.Count == 1 ? "" : "s") awaiting reconciliation</p>
+    }
+
+    <!-- Reconcile modal -->
+    <div class="modal fade" id="reconcileModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Reconcile kit consumables</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small mb-3">For each item, count how many came back unused. The leftover is returned to stock.</p>
+                    <div id="rec-error" class="alert alert-danger d-none"></div>
+                    <div id="rec-lines"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="rec-confirm" onclick="submitReconcile()">Confirm</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @if (Model.Tab == "expiry")
 {
     var expToday = DateOnly.FromDateTime(DateTime.Today);
@@ -827,6 +907,74 @@
 }
 
 @section Scripts {
+@if (Model.Tab == "reconcile")
+{
+<script>
+// Reconciling from the report always counts what remains (the kit is physically back).
+var _recKitCheckoutId = null;
+function recEsc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+
+async function openReconcile(kitCheckoutId) {
+    _recKitCheckoutId = kitCheckoutId;
+    var err = document.getElementById('rec-error');
+    var box = document.getElementById('rec-lines');
+    err.classList.add('d-none');
+    box.innerHTML = '<div class="text-muted small">Loading…</div>';
+    var modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('reconcileModal'));
+    modal.show();
+    try {
+        var res = await fetch('/api/inventory/kit/reconcile/meta/' + kitCheckoutId);
+        if (!res.ok) throw new Error();
+        var data = await res.json();
+        var lines = data.lines || [];
+        if (!lines.length) { box.innerHTML = '<div class="text-muted">No consumables to reconcile.</div>'; return; }
+        box.innerHTML = lines.map(function (l) {
+            return '<div class="d-flex align-items-center justify-content-between mb-2" data-id="' + l.consumableItemId + '" data-alloc="' + l.allocatedQuantity + '">' +
+                '<div><div class="fw-semibold">' + recEsc(l.name) + '</div>' +
+                '<div class="text-muted small">' + l.allocatedQuantity + ' went out</div></div>' +
+                '<div class="input-group input-group-sm" style="width:140px">' +
+                '<button type="button" class="btn btn-outline-secondary" onclick="recStep(this,-1)">&minus;</button>' +
+                '<input type="number" class="form-control text-center rec-input" value="0" min="0" max="' + l.allocatedQuantity + '" />' +
+                '<button type="button" class="btn btn-outline-secondary" onclick="recStep(this,1)">+</button>' +
+                '</div></div>';
+        }).join('') + '<div class="form-text">Enter how many of each item came back unused.</div>';
+    } catch { err.textContent = 'Could not load the kit.'; err.classList.remove('d-none'); box.innerHTML = ''; }
+}
+
+function recStep(btn, delta) {
+    var input = btn.parentElement.querySelector('.rec-input');
+    var max = parseInt(input.max, 10);
+    var v = (parseInt(input.value, 10) || 0) + delta;
+    input.value = Math.max(0, Math.min(isNaN(max) ? v : max, v));
+}
+
+async function submitReconcile() {
+    if (_recKitCheckoutId == null) return;
+    var rows = document.querySelectorAll('#rec-lines [data-id]');
+    var usage = Array.from(rows).map(function (row) {
+        var alloc = parseInt(row.dataset.alloc, 10) || 0;
+        var remain = parseInt(row.querySelector('.rec-input').value, 10) || 0;
+        remain = Math.max(0, Math.min(alloc, remain));
+        return { consumableItemId: parseInt(row.dataset.id, 10), usedQuantity: alloc - remain };
+    });
+    var btn = document.getElementById('rec-confirm');
+    btn.disabled = true;
+    try {
+        var res = await fetch('/api/inventory/kit/reconcile', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ kitCheckoutId: _recKitCheckoutId, usage: usage })
+        });
+        if (!res.ok) throw new Error(await res.text());
+        location.reload();
+    } catch (e) {
+        var err = document.getElementById('rec-error');
+        err.textContent = (e && e.message) ? e.message : 'Could not reconcile.';
+        err.classList.remove('d-none');
+        btn.disabled = false;
+    }
+}
+</script>
+}
 <script>
 function printReport() {
     if (typeof pgPrintAll === 'function') pgPrintAll();

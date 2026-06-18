@@ -75,6 +75,13 @@ public class DatabaseInitializer
         await EnsureKitComponentsTableAsync(conn);
         await EnsureKitCheckoutsTableAsync(conn);
 
+        // Kit consumable reconciliation: track each consumable's per-checkout allocation so the
+        // unused remainder can be returned to stock when the kit is checked back in, plus a flag on
+        // the checkout for kits that were returned without recording usage yet.
+        await AddColumnIfMissingAsync(conn, "KitCheckouts", "NeedsReconciliation", "INTEGER NOT NULL DEFAULT 0");
+        await AddColumnIfMissingAsync(conn, "KitCheckouts", "ReconciledAt",        "TEXT NULL");
+        await EnsureKitConsumableAllocationsTableAsync(conn);
+
         // Maintenance module: vendors, the per-item schedule, the out-for-maintenance visits, and an
         // availability column that maintenance draws down the same way checkouts do.
         await AddColumnIfMissingAsync(conn, "InventoryItems", "OutForMaintenanceCount", "INTEGER NOT NULL DEFAULT 0");
@@ -211,10 +218,10 @@ public class DatabaseInitializer
     private static readonly HashSet<string> _allowedTables = new(StringComparer.OrdinalIgnoreCase)
         { "Users", "InventoryItems", "CheckoutRecords", "Clients", "ProductMetadata", "SafetyDataSheets",
           "ItemCosts", "StockMovements", "WebhookEndpoints", "KitComponents", "KitCheckouts",
-          "Vendors", "MaintenanceSchedules", "MaintenanceVisits" };
+          "KitConsumableAllocations", "Vendors", "MaintenanceSchedules", "MaintenanceVisits" };
 
     private static readonly HashSet<string> _allowedColumns = new(StringComparer.OrdinalIgnoreCase)
-        { "FirstName", "LastName", "ItemType", "CheckedOutCount", "LostCount", "ScanWarning", "CategoryId", "ExpiryDate", "IsPublic", "ClientId", "Email", "IsMetadataMatched", "MetadataSource", "SelectedMetadataId", "Size", "Weight", "AllowPartial", "KitCheckoutId", "OutForMaintenanceCount" };
+        { "FirstName", "LastName", "ItemType", "CheckedOutCount", "LostCount", "ScanWarning", "CategoryId", "ExpiryDate", "IsPublic", "ClientId", "Email", "IsMetadataMatched", "MetadataSource", "SelectedMetadataId", "Size", "Weight", "AllowPartial", "KitCheckoutId", "OutForMaintenanceCount", "NeedsReconciliation", "ReconciledAt" };
 
     private static async Task AddColumnIfMissingAsync(
         SqliteConnection conn, string table, string column, string definition)
@@ -417,6 +424,26 @@ public class DatabaseInitializer
                 ClientId     INTEGER NULL
             );
             CREATE INDEX IF NOT EXISTS IX_KitCheckouts_KitItemId ON KitCheckouts (KitItemId);";
+        await cmd.ExecuteNonQueryAsync();
+    }
+
+    private static async Task EnsureKitConsumableAllocationsTableAsync(SqliteConnection conn)
+    {
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+            CREATE TABLE IF NOT EXISTS KitConsumableAllocations (
+                Id                INTEGER PRIMARY KEY AUTOINCREMENT,
+                KitCheckoutId     INTEGER NOT NULL,
+                ConsumableItemId  INTEGER NOT NULL,
+                AllocatedQuantity INTEGER NOT NULL DEFAULT 0,
+                UsedQuantity      INTEGER NOT NULL DEFAULT 0,
+                ReconciledAt      TEXT    NULL,
+                FOREIGN KEY (KitCheckoutId) REFERENCES KitCheckouts (Id) ON DELETE CASCADE
+            );
+            CREATE INDEX IF NOT EXISTS IX_KitConsumableAllocations_KitCheckoutId
+                ON KitConsumableAllocations (KitCheckoutId);
+            CREATE INDEX IF NOT EXISTS IX_KitConsumableAllocations_ConsumableItemId
+                ON KitConsumableAllocations (ConsumableItemId);";
         await cmd.ExecuteNonQueryAsync();
     }
 

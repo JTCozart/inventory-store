@@ -34,7 +34,9 @@ internal record ConsumeRequest(int ItemId, int Quantity, string? Notes);
 internal record RestockRequest(int ItemId, int Quantity, string? Notes);
 internal record KitActionRequest(int KitId, int Quantity = 1, string? CheckedOutBy = null, int? ClientId = null, string? Notes = null, bool AllowPartialFallback = false);
 internal record KitCheckoutRefRequest(int KitCheckoutId);
-internal record KitRestockRequest(int KitId, int Quantity = 1);
+internal record KitConsumableUsageInput(int ConsumableItemId, int UsedQuantity);
+internal record KitCheckinRequest(int KitCheckoutId, IReadOnlyList<KitConsumableUsageInput>? Usage = null);
+internal record KitReconcileRequest(int KitCheckoutId, IReadOnlyList<KitConsumableUsageInput> Usage);
 internal record CostInput(decimal UnitCost, string? PurchaseDate, int? UsefulLifeMonths);
 internal record WebhookInput(string Url, string? Events, string? Secret);
 internal record UsageReportRequest(string? HowHeard, bool OptOut);
@@ -1174,16 +1176,23 @@ internal class Program
                 }
             });
 
-            endpoints.MapPost("/api/inventory/kit/consume", [Authorize(Roles = "Admin,Manager,Staff")] async (HttpContext ctx, IKitService svc) =>
+            endpoints.MapPost("/api/inventory/kit/checkin", [Authorize(Roles = "Admin,Manager,Staff")] async (
+                HttpContext ctx, IKitService svc, IModuleRegistry modules, ISettingsService settings) =>
             {
-                var dto = await ctx.Request.ReadFromJsonAsync<KitActionRequest>();
+                var dto = await ctx.Request.ReadFromJsonAsync<KitCheckinRequest>();
                 if (dto is null) return Results.BadRequest();
                 var (uid, uname) = HttpContextExtensions.GetUser(ctx);
                 try
                 {
-                    var result = await svc.ConsumeKitAsync(
-                        new Application.DTOs.KitActionDto(dto.KitId, dto.Quantity, dto.CheckedOutBy, dto.ClientId, dto.Notes, dto.AllowPartialFallback), uid, uname);
-                    return Results.Ok(result);
+                    // The kit gets flagged for later reconciliation only when the feature is on and the
+                    // user checked it in without recording usage (the Skip path).
+                    var reconcileOn = await modules.IsEnabledAsync("kits")
+                        && await settings.GetAsync("module.kits.reconcile") == "true";
+                    var usage = dto.Usage?
+                        .Select(u => new Application.DTOs.KitConsumableUsageDto(u.ConsumableItemId, u.UsedQuantity))
+                        .ToList();
+                    await svc.CheckInKitAsync(dto.KitCheckoutId, usage, reconcileOn, uid, uname);
+                    return Results.Ok();
                 }
                 catch (Exception ex) when (ex is InvalidOperationException or KeyNotFoundException)
                 {
@@ -1191,14 +1200,45 @@ internal class Program
                 }
             });
 
-            endpoints.MapPost("/api/inventory/kit/checkin", [Authorize(Roles = "Admin,Manager,Staff")] async (HttpContext ctx, IKitService svc) =>
+            // Consumable lines + framing for the check-in / reconcile modal. Returns enabled:false
+            // (and no lines) when the option is off, so the UI just checks in directly.
+            endpoints.MapGet("/api/inventory/kit/reconcile/meta/{kitCheckoutId:int}", [Authorize(Roles = "Admin,Manager,Staff")] async (
+                int kitCheckoutId, IKitService svc, IModuleRegistry modules, ISettingsService settings) =>
             {
-                var dto = await ctx.Request.ReadFromJsonAsync<KitCheckoutRefRequest>();
+                var enabled = await modules.IsEnabledAsync("kits")
+                    && await settings.GetAsync("module.kits.reconcile") == "true";
+                if (!enabled) return Results.Ok(new { enabled = false, mode = "used", lines = Array.Empty<object>() });
+                var mode = await settings.GetAsync("module.kits.reconcile.mode") ?? "used";
+                var info = await svc.GetReconciliationAsync(kitCheckoutId);
+                return Results.Ok(new { enabled = true, mode, lines = info?.Lines ?? (IReadOnlyList<Application.DTOs.KitReconcileLineDto>)Array.Empty<Application.DTOs.KitReconcileLineDto>() });
+            });
+
+            // Checked-in kits still awaiting a consumable count (reconciliation report).
+            endpoints.MapGet("/api/inventory/kit/reconcile/pending", [Authorize(Roles = "Admin,Manager")] async (
+                IKitService svc, IModuleRegistry modules, ISettingsService settings) =>
+            {
+                var enabled = await modules.IsEnabledAsync("kits")
+                    && await settings.GetAsync("module.kits.reconcile") == "true";
+                if (!enabled) return Results.Ok(Array.Empty<Application.DTOs.KitReconcileDto>());
+                return Results.Ok(await svc.GetPendingReconciliationsAsync());
+            });
+
+            // Reconcile a kit that was checked in without recording usage.
+            endpoints.MapPost("/api/inventory/kit/reconcile", [Authorize(Roles = "Admin,Manager")] async (
+                HttpContext ctx, IKitService svc, IModuleRegistry modules, ISettingsService settings) =>
+            {
+                var enabled = await modules.IsEnabledAsync("kits")
+                    && await settings.GetAsync("module.kits.reconcile") == "true";
+                if (!enabled) return Results.NotFound();
+                var dto = await ctx.Request.ReadFromJsonAsync<KitReconcileRequest>();
                 if (dto is null) return Results.BadRequest();
                 var (uid, uname) = HttpContextExtensions.GetUser(ctx);
                 try
                 {
-                    await svc.CheckInKitAsync(dto.KitCheckoutId, uid, uname);
+                    var usage = (dto.Usage ?? new List<KitConsumableUsageInput>())
+                        .Select(u => new Application.DTOs.KitConsumableUsageDto(u.ConsumableItemId, u.UsedQuantity))
+                        .ToList();
+                    await svc.ReconcileKitAsync(dto.KitCheckoutId, usage, uid, uname);
                     return Results.Ok();
                 }
                 catch (Exception ex) when (ex is InvalidOperationException or KeyNotFoundException)
@@ -1215,22 +1255,6 @@ internal class Program
                 try
                 {
                     await svc.MarkKitLostAsync(dto.KitCheckoutId, uid, uname);
-                    return Results.Ok();
-                }
-                catch (Exception ex) when (ex is InvalidOperationException or KeyNotFoundException)
-                {
-                    return Results.Text(ex.Message, "text/plain", null, StatusCodes.Status400BadRequest);
-                }
-            });
-
-            endpoints.MapPost("/api/inventory/kit/restock", [Authorize(Roles = "Admin,Manager")] async (HttpContext ctx, IKitService svc) =>
-            {
-                var dto = await ctx.Request.ReadFromJsonAsync<KitRestockRequest>();
-                if (dto is null) return Results.BadRequest();
-                var (uid, uname) = HttpContextExtensions.GetUser(ctx);
-                try
-                {
-                    await svc.RestockKitAsync(dto.KitId, dto.Quantity, uid, uname);
                     return Results.Ok();
                 }
                 catch (Exception ex) when (ex is InvalidOperationException or KeyNotFoundException)

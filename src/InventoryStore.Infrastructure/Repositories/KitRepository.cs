@@ -52,6 +52,7 @@ public class KitRepository : IKitRepository
     public async Task<KitCheckout?> GetCheckoutAsync(int id) =>
         await _context.KitCheckouts
             .Include(k => k.ComponentCheckouts)
+            .Include(k => k.ConsumableAllocations)
             .FirstOrDefaultAsync(k => k.Id == id);
 
     public async Task UpdateCheckoutAsync(KitCheckout checkout)
@@ -78,4 +79,24 @@ public class KitRepository : IKitRepository
         await _context.KitCheckouts
             .Where(k => k.KitItemId == kitItemId)
             .ExecuteDeleteAsync();
+
+    // ── Consumable reconciliation ──────────────────────────────────────
+    public async Task AddAllocationAsync(KitConsumableAllocation allocation)
+    {
+        _context.KitConsumableAllocations.Add(allocation);
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task UpdateAllocationAsync(KitConsumableAllocation allocation)
+    {
+        _context.KitConsumableAllocations.Update(allocation);
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task<IEnumerable<KitCheckout>> GetPendingReconciliationsAsync() =>
+        await _context.KitCheckouts
+            .Include(k => k.ConsumableAllocations)
+            .Where(k => k.NeedsReconciliation)
+            .OrderByDescending(k => k.CheckedInAt)
+            .ToListAsync();
 }

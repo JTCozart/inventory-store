@@ -55,3 +55,23 @@ public record KitActionResultDto(
     bool AllowPartial,
     IReadOnlyList<KitShortageDto> Shortages
 );
+
+// ── Consumable reconciliation ──────────────────────────────────────────
+// How many units of a consumable member were actually used for a kit checkout. The remainder
+// (allocated - used) is returned to stock. The server always receives a "used" count; the UI
+// converts a "remaining" count to used before posting.
+public record KitConsumableUsageDto(int ConsumableItemId, int UsedQuantity);
+
+// One consumable line awaiting reconciliation, with the amount allocated at checkout.
+public record KitReconcileLineDto(int ConsumableItemId, string Name, int AllocatedQuantity);
+
+// A kit checkout's consumables to reconcile, used by the check-in modal and the report.
+public record KitReconcileDto(
+    int KitCheckoutId,
+    int KitItemId,
+    string KitName,
+    string CheckedOutBy,
+    DateTime CheckedOutAt,
+    DateTime? CheckedInAt,
+    IReadOnlyList<KitReconcileLineDto> Lines
+);
