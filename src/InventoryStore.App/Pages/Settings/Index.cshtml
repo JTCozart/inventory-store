@@ -209,7 +209,7 @@
                                     <div class="text-muted small">@user.DisplayUsername</div>
                                 }
                             </td>
-                            <td class="small">@(user.Email ?? "—")</td>
+                            <td class="small">@(user.DisplayEmail ?? "—")</td>
                             <td>
                                 <span class="badge @(user.Role == UserRole.Admin ? "bg-danger" : user.Role == UserRole.Manager ? "bg-warning text-dark" : user.Role == UserRole.Staff ? "bg-info text-dark" : "bg-secondary")">
                                     @user.Role
@@ -240,7 +240,7 @@
                                         data-username="@user.Username"
                                         data-firstname="@(user.FirstName ?? "")"
                                         data-lastname="@(user.LastName ?? "")"
-                                        data-email="@(user.Email ?? "")"
+                                        data-email="@(user.DisplayEmail ?? "")"
                                         data-role="@((int)user.Role)"
                                         data-active="@user.IsActive.ToString().ToLower()"
                                         title="Edit">

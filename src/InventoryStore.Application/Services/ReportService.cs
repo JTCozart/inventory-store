@@ -40,8 +40,8 @@ public class ReportService : IReportService
         _clock           = clock;
     }
 
-    // In professional-services hosted mode the locked first-admin account is shown as "SYSTEM" in
-    // activity logs. Returns its id so log rows by that user can be relabelled; null otherwise.
+    // In professional-services hosted mode the locked first-admin account is hidden from activity
+    // logs entirely. Returns its id so log rows by that user can be filtered out; null otherwise.
     private async Task<int?> GetLockedAdminIdAsync() =>
         _hostingMode.IsProfessionalServicesHosted
             ? (await _userRepo.GetAdminAsync())?.Id
@@ -52,7 +52,9 @@ public class ReportService : IReportService
         var lockedAdminId   = await GetLockedAdminIdAsync();
         var allItems        = (await _inventoryRepo.GetAllAsync()).ToList();
         var lowStock        = allItems.Where(i => i.IsLowStock).Select(InventoryService.MapToDto).ToList();
-        var recentActivity  = (await _activityRepo.GetRecentAsync(10)).Select(l => MapLog(l, lockedAdminId)).ToList();
+        var recentActivity  = (await _activityRepo.GetRecentAsync(10))
+            .Where(l => lockedAdminId is null || l.UserId != lockedAdminId)
+            .Select(MapLog).ToList();
         var activeRecords   = (await _checkoutRepo.GetAllActiveAsync()).ToList();
         var lostRecords     = (await _checkoutRepo.GetAllLostAsync()).ToList();
 
@@ -286,12 +288,11 @@ public class ReportService : IReportService
             logs = await _activityRepo.GetAllAsync(pageSize: 500);
         }
         var lockedAdminId = await GetLockedAdminIdAsync();
-        return logs.Select(l => MapLog(l, lockedAdminId));
+        return logs.Where(l => lockedAdminId is null || l.UserId != lockedAdminId).Select(MapLog);
     }
 
-    private static ActivityLogDto MapLog(ActivityLog l, int? lockedAdminId = null) => new(
-        l.Id,
-        lockedAdminId is not null && l.UserId == lockedAdminId ? "SYSTEM" : l.Username,
+    private static ActivityLogDto MapLog(ActivityLog l) => new(
+        l.Id, l.Username,
         l.Action, l.EntityType, l.EntityId, l.Details, l.Timestamp
     );
 }

@@ -30,6 +30,9 @@ public record UserDto(
 
     // Login name to show in the UI (real name hidden for the locked system account).
     public string DisplayUsername => IsSystemLocked ? SystemUsername : Username;
+
+    // Email to show in the UI (hidden for the locked system account).
+    public string? DisplayEmail => IsSystemLocked ? null : Email;
 }
 
 public record CreateUserDto(
