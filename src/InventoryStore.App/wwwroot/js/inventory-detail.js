@@ -813,9 +813,9 @@ function populateEditForm(data) {
                  </p>`;
         } else {
             typeDisplay.innerHTML +=
-                `<div><button type="button" class="btn btn-link p-0 text-secondary mt-1"
+                `<div class="mt-2"><button type="button" class="btn btn-sm btn-outline-secondary"
                          id="convert-type-btn" data-target-type="${targetType}"
-                         onclick="handleConvertTypeClick()" style="font-size:.8rem;text-decoration:none">
+                         onclick="handleConvertTypeClick()">
                      <i class="bi bi-arrow-left-right me-1"></i>Convert to ${targetType}
                  </button></div>`;
         }
@@ -1303,13 +1303,13 @@ function handleConvertTypeClick() {
     if (!btn) return;
     if (btn.dataset.armed !== '1') {
         btn.dataset.armed = '1';
-        btn.classList.remove('text-secondary');
-        btn.classList.add('text-danger');
+        btn.classList.remove('btn-outline-secondary');
+        btn.classList.add('btn-danger');
         btn.innerHTML = `<i class="bi bi-exclamation-triangle me-1"></i>Confirm convert to ${btn.dataset.targetType}?`;
         btn._resetTimer = setTimeout(() => {
             btn.dataset.armed = '';
-            btn.classList.remove('text-danger');
-            btn.classList.add('text-secondary');
+            btn.classList.remove('btn-danger');
+            btn.classList.add('btn-outline-secondary');
             btn.innerHTML = `<i class="bi bi-arrow-left-right me-1"></i>Convert to ${btn.dataset.targetType}`;
         }, 4000);
         return;
@@ -1335,8 +1335,8 @@ async function doConvertType() {
         if (btn) {
             btn.disabled = false;
             btn.dataset.armed = '';
-            btn.classList.remove('text-danger');
-            btn.classList.add('text-secondary');
+            btn.classList.remove('btn-danger');
+            btn.classList.add('btn-outline-secondary');
             btn.innerHTML = `<i class="bi bi-arrow-left-right me-1"></i>Convert to ${btn.dataset.targetType}`;
         }
     }

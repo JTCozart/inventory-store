@@ -172,10 +172,13 @@
     .tier-name { font-size: 1.15rem; font-weight: 800; margin-bottom: .35rem; }
     .tier-price { font-size: 2rem; font-weight: 800; line-height: 1; margin-bottom: .25rem; }
     .tier-price small { font-size: .9rem; font-weight: 600; color: var(--gray); }
-    .tier-desc { color: var(--gray); font-size: .92rem; margin-bottom: 1.5rem; }
+    .tier-desc { color: var(--gray); font-size: .92rem; margin-bottom: 1.5rem; min-height: 4.5em; }
+    @media (max-width: 980px) { .tier-desc { min-height: 0; } }
     .tier-list { list-style: none; margin: 0 0 1.75rem; display: flex; flex-direction: column; gap: .65rem; }
     .tier-list li { display: flex; align-items: flex-start; gap: .6rem; font-size: .92rem; }
     .tier-list i { color: #16a34a; margin-top: .2rem; flex-shrink: 0; }
+    .tier-list i.no { color: #dc2626; }
+    .tier-list li.muted { color: var(--gray); }
     .tier-card .btn-primary, .tier-card .btn-secondary { justify-content: center; margin-top: auto; }
 
     /* FAQ */
@@ -245,36 +248,43 @@
 <!-- Hero -->
 <section class="hero">
   <div class="hero-tag">Pilot Program &nbsp;·&nbsp; Limited Spots</div>
-  <h1>Free to run yourself, or <span>let us host it for you</span></h1>
-  <p>Inventory Store is free to download, install, and use for as long as you like. If you would rather not run it yourself, we are piloting a fully managed hosted option with your own custom domain.</p>
+  <h1>Let us <span>host and set up</span> Inventory Store for you</h1>
+  <p>Skip the server work. We run Inventory Store for you on your own custom domain, handle updates and backups, and get your team up and running. Spots in the pilot are limited.</p>
   <div class="hero-cta">
     <a href="#contact" class="btn-primary">
-      <i class="fa-solid fa-paper-plane"></i> Ask about hosting
+      <i class="fa-solid fa-paper-plane"></i> Request a hosted spot
     </a>
-    <a href="https://github.com/JTCozart/inventory-store/releases/latest" class="btn-secondary" target="_blank" rel="noopener noreferrer">
-      <i class="fa-solid fa-download"></i> Download for free
+    <a href="#tiers" class="btn-secondary">
+      <i class="fa-solid fa-layer-group"></i> See the options
     </a>
-  </div>
-</section>
-
-<!-- Free to run -->
-<section style="background:var(--light)">
-  <div class="container narrow lead">
-    <div class="section-tag">Always free</div>
-    <h2>The app is free, and it stays that way</h2>
-    <p>Inventory Store is open source. You can download it, install it on a single PC on your network, and use every feature without any license fee or subscription. <strong>That is not a trial, and it is not going away.</strong></p>
-    <p>When you self-host, your data lives on your own machine. There are no cloud accounts to create, nothing is billed, and you are never locked in. For many teams, that is all they will ever need, and that is exactly how it should be.</p>
   </div>
 </section>
 
 <!-- Hosted option -->
 <section>
   <div class="container narrow lead">
-    <div class="section-tag">Hosted option</div>
-    <h2>Prefer not to run a server? We can host it for you</h2>
-    <p>Running your own machine, keeping it online, setting up a domain, and handling backups is not for everyone. If you would rather skip all of that, we offer a managed hosted option where we run Inventory Store for you and you reach it at <strong>your own custom domain</strong>.</p>
-    <p>You get the same app you already know, with the day to day server work handled on your behalf. To keep things simple while the program is small, pricing and details are shared one to one, so <strong>reach out and we will walk you through it</strong>.</p>
+    <div class="section-tag">Managed hosting</div>
+    <h2>We run the server so you can just run your business</h2>
+    <p>Keeping a machine online, setting up a domain, locking down security, and remembering to take backups is real work, and it is not what you got into business to do. With managed hosting, <strong>we handle all of it for you</strong> and you reach Inventory Store at your own custom domain from any device.</p>
+    <p>You get the same app, fully looked after, with updates and routine backups taken care of and direct help when you need it. To keep things personal while the program is small, pricing and details are shared one to one, so <strong>reach out and we will walk you through it</strong>.</p>
     <p><a href="#contact"><i class="fa-solid fa-paper-plane"></i> Reach out for hosted details</a></p>
+  </div>
+</section>
+
+<!-- Setup option -->
+<section style="background:var(--light)">
+  <div class="container narrow lead">
+    <div class="section-tag">Professional setup</div>
+    <h2>Want it on your own gear? We will stand it up for you</h2>
+    <p>If you would rather keep everything in house, we offer a one time professional setup. We install and configure Inventory Store in your own environment, get your team logged in and working, and hand it over ready to go, so you skip the trial and error of doing it yourself.</p>
+    <p><a href="#contact"><i class="fa-solid fa-paper-plane"></i> Ask about professional setup</a></p>
+  </div>
+</section>
+
+<!-- Free note -->
+<section style="padding-top:2.5rem; padding-bottom:2.5rem;">
+  <div class="container narrow lead" style="text-align:center">
+    <p style="margin:0">Not ready for any of that? Inventory Store is also <strong>free and open source</strong> to download and run yourself, with every feature included. <a href="https://github.com/JTCozart/inventory-store/releases/latest" target="_blank" rel="noopener noreferrer">Grab the free download</a> and upgrade to hosting whenever it makes sense.</p>
   </div>
 </section>
 
@@ -290,12 +300,49 @@
 </section>
 
 <!-- Tiers -->
-<section>
+<section id="tiers">
   <div class="container">
-    <div class="section-tag">Three ways to run it</div>
-    <h2>Pick what fits your team</h2>
-    <p class="section-sub">Self-host for free, get hands-on help with a one-time setup, or apply for a fully managed hosted spot in the pilot.</p>
+    <div class="section-tag">Let us do the work</div>
+    <h2>Pick the level of help you want</h2>
+    <p class="section-sub">Have us host and run it for you, bring us in for a one-time professional setup, or run the free version yourself.</p>
     <div class="tier-grid">
+
+      <div class="tier-card featured">
+        <div class="tier-flag">Pilot &middot; Limited spots</div>
+        <div class="tier-name">Hosted by us</div>
+        <div class="tier-price">Let's talk</div>
+        <p class="tier-desc">We run it for you and you reach it at your own custom domain. The easy button.</p>
+        <ul class="tier-list">
+          <li><i class="fa-solid fa-check"></i> Your own custom domain</li>
+          <li><i class="fa-solid fa-check"></i> Managed hosting, updates, and security</li>
+          <li><i class="fa-solid fa-check"></i> Routine backups handled for you</li>
+          <li><i class="fa-solid fa-check"></i> Direct help with setup and onboarding</li>
+          <li><i class="fa-solid fa-check"></i> Priority feature requests</li>
+          <li><i class="fa-solid fa-check"></i> Reach it from any device, anywhere</li>
+        </ul>
+        <a href="#contact" class="btn-primary">
+          <i class="fa-solid fa-paper-plane"></i> Request a spot
+        </a>
+      </div>
+
+      <div class="tier-card">
+        <div class="tier-flag flag-muted">Pilot &middot; Limited spots</div>
+        <div class="tier-name">Professional Setup</div>
+        <div class="tier-price">One-time fee</div>
+        <p class="tier-desc">We install and configure it in your own environment and hand it over ready to go.</p>
+        <ul class="tier-list">
+          <li><i class="fa-solid fa-check"></i> We install and configure it for you</li>
+          <li><i class="fa-solid fa-check"></i> We get your team up and running</li>
+          <li><i class="fa-solid fa-check"></i> Runs on your own gear, your data stays put</li>
+          <li><i class="fa-solid fa-check"></i> Paid once, no ongoing cost</li>
+          <li class="muted"><i class="fa-solid fa-xmark no"></i> No continued support after handoff</li>
+          <li class="muted"><i class="fa-solid fa-xmark no"></i> Backups and updates are on you</li>
+          <li class="muted"><i class="fa-solid fa-xmark no"></i> No priority feature requests</li>
+        </ul>
+        <a href="#contact" class="btn-secondary">
+          <i class="fa-solid fa-paper-plane"></i> Request setup help
+        </a>
+      </div>
 
       <div class="tier-card">
         <div class="tier-name">Self-Hosted</div>
@@ -304,46 +351,13 @@
         <ul class="tier-list">
           <li><i class="fa-solid fa-check"></i> All features included</li>
           <li><i class="fa-solid fa-check"></i> Your data stays on your machine</li>
-          <li><i class="fa-solid fa-check"></i> Windows installer or Linux setup</li>
-          <li><i class="fa-solid fa-check"></i> Free remote access tunnels and HTTPS</li>
           <li><i class="fa-solid fa-check"></i> Community support on GitHub</li>
+          <li class="muted"><i class="fa-solid fa-xmark no"></i> You set it up and keep it running</li>
+          <li class="muted"><i class="fa-solid fa-xmark no"></i> Backups and updates are on you</li>
+          <li class="muted"><i class="fa-solid fa-xmark no"></i> No priority feature requests</li>
         </ul>
         <a href="https://github.com/JTCozart/inventory-store/releases/latest" class="btn-secondary" target="_blank" rel="noopener noreferrer">
           <i class="fa-solid fa-download"></i> Download installer
-        </a>
-      </div>
-
-      <div class="tier-card">
-        <div class="tier-flag flag-muted">Pilot &middot; Limited spots</div>
-        <div class="tier-name">Self-Hosted + Setup</div>
-        <div class="tier-price">One-time fee</div>
-        <p class="tier-desc">You still run it on your own environment, but we get it stood up and running for you.</p>
-        <ul class="tier-list">
-          <li><i class="fa-solid fa-check"></i> Everything in Self-Hosted</li>
-          <li><i class="fa-solid fa-check"></i> We install and configure it in your environment</li>
-          <li><i class="fa-solid fa-check"></i> We get your team up and running</li>
-          <li><i class="fa-solid fa-check"></i> Paid once, no ongoing cost</li>
-          <li><i class="fa-solid fa-check"></i> No continued support after handoff</li>
-        </ul>
-        <a href="#contact" class="btn-secondary">
-          <i class="fa-solid fa-paper-plane"></i> Request setup help
-        </a>
-      </div>
-
-      <div class="tier-card featured">
-        <div class="tier-flag">Pilot &middot; Limited spots</div>
-        <div class="tier-name">Hosted by us</div>
-        <div class="tier-price">Let's talk</div>
-        <p class="tier-desc">We run it for you and you reach it at your own custom domain.</p>
-        <ul class="tier-list">
-          <li><i class="fa-solid fa-check"></i> Everything in Self-Hosted</li>
-          <li><i class="fa-solid fa-check"></i> Your own custom domain</li>
-          <li><i class="fa-solid fa-check"></i> Managed hosting, updates, and HTTPS</li>
-          <li><i class="fa-solid fa-check"></i> Routine backups handled for you</li>
-          <li><i class="fa-solid fa-check"></i> Direct help with setup and onboarding</li>
-        </ul>
-        <a href="#contact" class="btn-primary">
-          <i class="fa-solid fa-paper-plane"></i> Request a spot
         </a>
       </div>
 
@@ -358,12 +372,12 @@
     <h2>Common questions</h2>
     <div class="faq" style="margin-top:2rem">
       <div class="faq-item">
-        <h3>Is the free version really free?</h3>
-        <p>Yes. The downloadable app is free and open source, with every feature included. Hosting is the only paid, optional service.</p>
+        <h3>What does hosting include?</h3>
+        <p>We run Inventory Store for you on your own custom domain and take care of the server, updates, security, and routine backups, so you can just use the app from any device.</p>
       </div>
       <div class="faq-item">
-        <h3>What does hosting include?</h3>
-        <p>We run Inventory Store for you on your own custom domain and take care of the server, updates, HTTPS, and routine backups, so you can just use the app.</p>
+        <h3>What does hosting cost?</h3>
+        <p>We reserve server resources for you on a yearly basis, so hosting is a small annual fee rather than something you pay month to month. We keep pricing personal while the program is small, so reach out and we will talk through what your team needs and share the number.</p>
       </div>
       <div class="faq-item">
         <h3>What is the professional setup option?</h3>
@@ -375,7 +389,11 @@
       </div>
       <div class="faq-item">
         <h3>Can I move between the options?</h3>
-        <p>Yes. You can start self-hosted and ask about setup help or hosting later, or move your data back to self-hosting at any time. You are never locked in.</p>
+        <p>Yes. You can start self-hosted and ask about setup help or hosting whenever you are ready. Hosting runs on an annual term, and at the end of the term you can renew or take your data back to self-hosting. Your data is always yours.</p>
+      </div>
+      <div class="faq-item">
+        <h3>Is the free version still free?</h3>
+        <p>Yes. The downloadable app stays free and open source, with every feature included. Hosting and professional setup are the optional paid services for teams who would rather have us handle it.</p>
       </div>
     </div>
   </div>
