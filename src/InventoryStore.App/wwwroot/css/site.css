@@ -238,55 +238,24 @@ html, body {
     .page-sidenav-select { display: none; }
 }
 
-/* ── Barcode scanner (@zxing/library) ───────────────────────────────────────
-   We own the <video> element — ZXing reads the raw MediaStream for detection.
-   CSS rotation corrects the portrait camera stream to appear landscape.
-   JS sets:  video.width = DISPLAY_H,  video.height = containerWidth
-             video.top   = (DISPLAY_H - containerWidth) / 2
-             video.left  = (containerWidth - DISPLAY_H) / 2
-   Then transform: rotate(-90deg) visually makes it landscape W × DISPLAY_H. ── */
-
+/* ── Barcode scanner viewport ────────────────────────────────────────────────
+   Shared by the scan modal, the inline SKU scanners (Inventory add / Edit), and
+   the Terminal. Matches the Terminal's look: the video flows naturally (no
+   JS-forced height), capped and rounded, letterboxed on black. */
 .scanner-viewport {
-    position: relative;
     width: 100%;
-    overflow: hidden;
     background: #000;
-    border-radius: 6px;
-    /* height set by JS to DISPLAY_H */
+    border-radius: 14px;
+    overflow: hidden;
 }
 
 .scanner-viewport video {
-    position: absolute;
-    top: 0;
-    left: 0;
+    display: block;
+    width: 100%;
+    max-height: 320px;
     object-fit: cover;
+    background: #000;
 }
-
-/* Red aiming line overlay */
-.scanner-aim {
-    position: absolute;
-    top: 50%;
-    left: 8%;
-    right: 8%;
-    height: 2px;
-    background: rgba(220, 38, 38, 0.9);
-    transform: translateY(-50%);
-    box-shadow: 0 0 8px rgba(220, 38, 38, 0.6);
-    pointer-events: none;
-    border-radius: 1px;
-}
-
-.scanner-aim::before,
-.scanner-aim::after {
-    content: '';
-    position: absolute;
-    width: 2px;
-    height: 20px;
-    background: rgba(220, 38, 38, 0.9);
-    top: -9px;
-}
-.scanner-aim::before { left: 0; }
-.scanner-aim::after  { right: 0; }
 
 /* ── Stat cards ──────────────────────────────── */
 
@@ -615,14 +584,8 @@ th.sort-asc::after  { content: ' ↑'; color: #0d6efd; }
 th.sort-desc::after { content: ' ↓'; color: #0d6efd; }
 
 /* ── Barcode scanner ─────────────────────────── */
-
-#scanner-video {
-    width: 100%;
-    max-height: 240px;
-    object-fit: cover;
-    border-radius: 6px;
-    background: #000;
-}
+/* Scan-window video styling lives with .scanner-viewport above so the modal,
+   the Edit-page SKU scanner, and the Terminal all render the same way. */
 
 #scanner-overlay {
     position: relative;

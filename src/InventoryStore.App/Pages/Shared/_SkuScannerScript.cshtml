@@ -9,11 +9,10 @@ function initSkuScanner(skuInputId, scanBtnId, cancelBtnId, areaId,
     var videoEl      = document.getElementById(videoId);
     var captureInput = document.getElementById(captureId);
     var hintEl       = document.getElementById(hintId);
-    var zxingReader  = null;
-    var DISPLAY_H    = 180;
+    var scanCtl      = null;
 
     scanBtn.addEventListener('click', function () {
-        if (zxingReader) { stopLive(); return; }
+        if (scanCtl) { stopLive(); return; }
         if (window.isSecureContext) { startLive(); }
         else { captureInput.value = ''; captureInput.click(); }
     });
@@ -28,20 +27,9 @@ function initSkuScanner(skuInputId, scanBtnId, cancelBtnId, areaId,
         area.classList.remove('d-none');
         if (hintEl) hintEl.textContent = 'Reading barcode…';
         scanBtn.disabled = true;
-        var url = URL.createObjectURL(file);
-        var hints = new Map();
-        hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
-            ZXing.BarcodeFormat.UPC_A,
-            ZXing.BarcodeFormat.UPC_E,
-            ZXing.BarcodeFormat.EAN_13,
-            ZXing.BarcodeFormat.EAN_8,
-            ZXing.BarcodeFormat.CODE_128,
-            ZXing.BarcodeFormat.QR_CODE
-        ]);
-        new ZXing.BrowserMultiFormatReader(hints)
-            .decodeFromImageUrl(url)
-            .then(function (result) {
-                skuInput.value = result.getText();
+        BarcodeScanner.scanFromImageFile(file)
+            .then(function (text) {
+                skuInput.value = text;
                 skuInput.dispatchEvent(new Event('input'));
                 skuInput.focus();
                 area.classList.add('d-none');
@@ -52,66 +40,33 @@ function initSkuScanner(skuInputId, scanBtnId, cancelBtnId, areaId,
                 if (hintEl) hintEl.textContent = 'Could not read barcode — try again in better light.';
             })
             .finally(function () {
-                URL.revokeObjectURL(url);
                 scanBtn.disabled = false;
             });
     });
 
     // ── Live viewfinder (HTTPS) ──────────────────────────────────────────
 
-    function positionVideo() {
-        var W = viewport.offsetWidth || 300;
-        videoEl.style.width  = W + 'px';
-        videoEl.style.height = DISPLAY_H + 'px';
-        viewport.style.height = DISPLAY_H + 'px';
-    }
-
     function startLive() {
         area.classList.remove('d-none');
-        positionVideo();
         scanBtn.innerHTML = '<i class="bi bi-stop-circle"></i>';
 
-        var hints = new Map();
-        hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
-            ZXing.BarcodeFormat.UPC_A,
-            ZXing.BarcodeFormat.UPC_E,
-            ZXing.BarcodeFormat.EAN_13,
-            ZXing.BarcodeFormat.EAN_8,
-            ZXing.BarcodeFormat.CODE_128
-        ]);
-        zxingReader = new ZXing.BrowserMultiFormatReader(hints);
-
-        navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } } })
-            .then(function (tmpStream) {
-                var track = tmpStream.getVideoTracks()[0];
-                var deviceId = track ? track.getSettings().deviceId : null;
-                tmpStream.getTracks().forEach(function (t) { t.stop(); });
-                return zxingReader.decodeFromVideoDevice(
-                    deviceId,
-                    videoEl,
-                    function (result, err) {
-                        if (result) {
-                            stopLive();
-                            skuInput.value = result.getText();
-                            skuInput.dispatchEvent(new Event('input'));
-                            skuInput.focus();
-                        }
-                    }
-                );
-            })
-            .catch(function (err) {
+        scanCtl = BarcodeScanner.scanFromVideo(videoEl, {
+            onResult: function (text) {
+                stopLive();
+                skuInput.value = text;
+                skuInput.dispatchEvent(new Event('input'));
+                skuInput.focus();
+            },
+            onError: function (err) {
                 stopLive();
                 if (hintEl) hintEl.textContent = 'Camera unavailable: ' + (err.message || err);
-            });
+            }
+        });
     }
 
     function stopLive() {
         scanBtn.innerHTML = '<i class="bi bi-upc-scan"></i>';
-        if (zxingReader) {
-            try { zxingReader.stopContinuousDecode(); } catch (e) {}
-            try { zxingReader.reset(); } catch (e) {}
-            zxingReader = null;
-        }
+        if (scanCtl) { scanCtl.stop(); scanCtl = null; }
         if (videoEl.srcObject) {
             videoEl.srcObject.getTracks().forEach(function (t) { t.stop(); });
             videoEl.srcObject = null;

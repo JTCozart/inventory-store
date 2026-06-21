@@ -52,17 +52,14 @@ https://github.com/twbs/icons/blob/main/LICENSE
 
 ---
 
-## @zxing/library (ZXing for JavaScript)
+## @undecaf/zbar-wasm (ZBar barcode reader, WebAssembly build)
 
-**Copyright** (c) ZXing authors  
-**License:** Apache License 2.0  
-https://github.com/zxing-js/library/blob/master/LICENSE
+Camera-fallback barcode decoding for browsers without the native BarcodeDetector API.
 
-    Licensed under the Apache License, Version 2.0 (the "License");
-    you may not use this file except in compliance with the License.
-    You may obtain a copy of the License at
-
-        http://www.apache.org/licenses/LICENSE-2.0
+**Copyright** (c) Ferdinand Prantl (wrapper); ZBar authors (library)  
+**License:** MIT (wrapper), LGPL-2.1 (bundled ZBar library)  
+https://github.com/undecaf/zbar-wasm/blob/master/LICENSE  
+https://github.com/mchehab/zbar/blob/master/COPYING
 
 ---
 

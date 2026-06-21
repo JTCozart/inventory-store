@@ -62,10 +62,9 @@
                     <div id="sku-scanner-area" class="mt-2 d-none">
                         <div id="sku-scanner-viewport" class="scanner-viewport">
                             <video id="sku-scanner-video" autoplay muted playsinline></video>
-                            <div class="scanner-aim"></div>
                         </div>
                         <div class="d-flex gap-2 mt-1">
-                            <small class="text-muted flex-grow-1" id="sku-scan-hint">Align barcode with the red line</small>
+                            <small class="text-muted flex-grow-1" id="sku-scan-hint">Point the camera at the barcode</small>
                             <button type="button" class="btn btn-sm btn-outline-danger" id="sku-scan-cancel">Cancel</button>
                         </div>
                     </div>
@@ -153,7 +152,7 @@
 @await Html.PartialAsync("_SkuScannerScript")
 
 @section Scripts {
-<script src="https://cdn.jsdelivr.net/npm/@@zxing/library@@0.21.3/umd/index.min.js"></script>
+<script src="~/js/barcode-scanner.js" asp-append-version="true"></script>
 <script>
 initSkuScanner('sku-input', 'sku-scan-btn', 'sku-scan-cancel', 'sku-scanner-area',
                'sku-scanner-viewport', 'sku-scanner-video',

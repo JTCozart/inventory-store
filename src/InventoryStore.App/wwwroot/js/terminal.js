@@ -3,7 +3,7 @@
 // large-button DOM. Staff are limited to this page; Admin/Manager also get a Restock button.
 (function () {
     var currentItem = null;
-    var zxingReader = null;
+    var scanCtl = null;
     var videoEl = document.getElementById('term-scan-video');
 
     function $(id) { return document.getElementById(id); }
@@ -548,40 +548,23 @@
         if (!window.isSecureContext) { showAlert('Camera needs HTTPS. Type the SKU instead.', 'warning'); return; }
         // The scan button stays visible at all times, so guard against starting a second
         // camera session if one is already running.
-        if (zxingReader) return;
+        if (scanCtl) return;
         $('term-scan-wrap').classList.remove('d-none');
-        var hints = new Map();
-        hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
-            ZXing.BarcodeFormat.UPC_A, ZXing.BarcodeFormat.UPC_E,
-            ZXing.BarcodeFormat.EAN_13, ZXing.BarcodeFormat.EAN_8,
-            ZXing.BarcodeFormat.CODE_128
-        ]);
-        zxingReader = new ZXing.BrowserMultiFormatReader(hints);
-        navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } } })
-            .then(function (tmp) {
-                var track = tmp.getVideoTracks()[0];
-                var deviceId = track ? track.getSettings().deviceId : null;
-                tmp.getTracks().forEach(function (t) { t.stop(); });
-                return zxingReader.decodeFromVideoDevice(deviceId, videoEl, function (result) {
-                    if (result) {
-                        termStopScan();
-                        $('term-search-input').value = result.getText();
-                        lookupSku(result.getText());
-                    }
-                });
-            })
-            .catch(function (err) {
+        scanCtl = BarcodeScanner.scanFromVideo(videoEl, {
+            onResult: function (text) {
+                termStopScan();
+                $('term-search-input').value = text;
+                lookupSku(text);
+            },
+            onError: function (err) {
                 termStopScan();
                 showAlert('Camera unavailable: ' + (err.message || err), 'warning');
-            });
+            }
+        });
     };
 
     window.termStopScan = function () {
-        if (zxingReader) {
-            try { zxingReader.stopContinuousDecode(); } catch (e) {}
-            try { zxingReader.reset(); } catch (e) {}
-            zxingReader = null;
-        }
+        if (scanCtl) { scanCtl.stop(); scanCtl = null; }
         if (videoEl.srcObject) {
             videoEl.srcObject.getTracks().forEach(function (t) { t.stop(); });
             videoEl.srcObject = null;

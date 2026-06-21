@@ -9,12 +9,11 @@
     var captureInput  = document.getElementById('capture-input');
     var videoEl       = document.getElementById('scanner-video');
     var bsModal           = null;
-    var zxingReader       = null;
+    var scanCtl           = null;
     var scanning          = false;
     var currentItem       = null;
     window.currentScannedSku = null;
     var pendingAddQuery   = '';
-    var DISPLAY_H         = window.innerWidth <= 576 ? Math.round(window.innerHeight * 0.42) : 220;
     var _scannerDidAction = false;
 
     // Maintenance module: build a due/overdue (or currently-out) warning from an item status.
@@ -83,21 +82,10 @@
         if (!file) return;
         scannerIdle.classList.add('d-none');
         scannerProc.classList.remove('d-none');
-        var url = URL.createObjectURL(file);
-        var hints = new Map();
-        hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
-            ZXing.BarcodeFormat.UPC_A,
-            ZXing.BarcodeFormat.UPC_E,
-            ZXing.BarcodeFormat.EAN_13,
-            ZXing.BarcodeFormat.EAN_8,
-            ZXing.BarcodeFormat.CODE_128,
-            ZXing.BarcodeFormat.QR_CODE
-        ]);
-        new ZXing.BrowserMultiFormatReader(hints)
-            .decodeFromImageUrl(url)
-            .then(function (result) {
+        BarcodeScanner.scanFromImageFile(file)
+            .then(function (text) {
                 scannerProc.classList.add('d-none');
-                lookupBarcode(result.getText());
+                lookupBarcode(text);
             })
             .catch(function () {
                 scannerProc.classList.add('d-none');
@@ -105,58 +93,29 @@
                     'Could not read barcode — try again with the barcode clearly in frame.';
                 scannerError.classList.remove('d-none');
                 scannerIdle.classList.remove('d-none');
-            })
-            .finally(function () { URL.revokeObjectURL(url); });
+            });
     });
-
-    function positionVideo() {
-        var vp = document.getElementById('scanner-viewport');
-        var W  = vp.offsetWidth || 300;
-        videoEl.style.width  = W + 'px';
-        videoEl.style.height = DISPLAY_H + 'px';
-        vp.style.height = DISPLAY_H + 'px';
-    }
 
     function startLive() {
         scannerIdle.classList.add('d-none');
         scannerError.classList.add('d-none');
         scannerActive.classList.remove('d-none');
-        positionVideo();
-        var hints = new Map();
-        hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
-            ZXing.BarcodeFormat.UPC_A,
-            ZXing.BarcodeFormat.UPC_E,
-            ZXing.BarcodeFormat.EAN_13,
-            ZXing.BarcodeFormat.EAN_8,
-            ZXing.BarcodeFormat.CODE_128
-        ]);
-        zxingReader = new ZXing.BrowserMultiFormatReader(hints);
-        navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } } })
-            .then(function (tmpStream) {
-                var track = tmpStream.getVideoTracks()[0];
-                var deviceId = track ? track.getSettings().deviceId : null;
-                tmpStream.getTracks().forEach(function (t) { t.stop(); });
-                return zxingReader.decodeFromVideoDevice(
-                    deviceId, videoEl,
-                    function (result) { if (result) { stopLive(false); lookupBarcode(result.getText()); } }
-                );
-            })
-            .then(function () { scanning = true; scanBtn.classList.add('d-none'); })
-            .catch(function (err) {
+        scanCtl = BarcodeScanner.scanFromVideo(videoEl, {
+            onResult: function (text) { stopLive(false); lookupBarcode(text); },
+            onError: function (err) {
                 stopLive(true);
                 document.getElementById('scanner-error-msg').textContent = 'Camera unavailable: ' + (err.message || err);
                 scannerError.classList.remove('d-none');
-            });
+            }
+        });
+        scanning = true;
+        scanBtn.classList.add('d-none');
     }
 
     function stopLive(showIdle) {
         scanning = false;
         scanBtn.classList.remove('d-none');
-        if (zxingReader) {
-            try { zxingReader.stopContinuousDecode(); } catch (e) {}
-            try { zxingReader.reset(); } catch (e) {}
-            zxingReader = null;
-        }
+        if (scanCtl) { scanCtl.stop(); scanCtl = null; }
         if (videoEl.srcObject) {
             videoEl.srcObject.getTracks().forEach(function (t) { t.stop(); });
             videoEl.srcObject = null;

@@ -779,10 +779,9 @@ else
                     <div id="scanner-active" class="d-none mb-2">
                         <div id="scanner-viewport" class="scanner-viewport">
                             <video id="scanner-video" autoplay muted playsinline></video>
-                            <div class="scanner-aim"></div>
                         </div>
                         <div class="d-flex justify-content-between align-items-center mt-1">
-                            <span class="text-muted small">Align barcode with the red line</span>
+                            <span class="text-muted small">Point the camera at the barcode</span>
                             <button id="scanStopBtn" class="btn btn-sm btn-danger" type="button">
                                 <i class="bi bi-stop-circle me-1"></i> Stop
                             </button>
@@ -985,7 +984,7 @@ else
     <script>window.canManage = @(_canWrite ? "true" : "false");</script>
     <script>window.modules = @Html.Raw(_modulesJson);</script>
     <script>window.costCurrency = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(_costCurrency));</script>
-    <script src="https://cdn.jsdelivr.net/npm/@@zxing/library@@0.21.3/umd/index.min.js"></script>
+    <script src="~/js/barcode-scanner.js" asp-append-version="true"></script>
     <script src="~/js/scanner.js"></script>
 
     @if (_showUsagePrompt)
