@@ -4,6 +4,7 @@ A self-hosted inventory management system for small teams. Runs as a Windows ser
 
 [![Release](https://img.shields.io/github/v/release/JTCozart/inventory-store?label=latest)](https://github.com/JTCozart/inventory-store/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+<a href="https://www.aihonestybadge.com" target="_blank" rel="noopener"><img src="https://www.aihonestybadge.com/badges/ai-assisted.svg" alt="AI Assisted Badge" height="20" /></a>
 
 ---
 
