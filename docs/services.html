@@ -189,9 +189,9 @@
     /* Embedded form */
     .form-embed {
       border: 1px solid var(--border); border-radius: var(--radius);
-      overflow: hidden; background: #fff; box-shadow: 0 10px 40px rgba(0,0,0,.06);
+      background: #fff; box-shadow: 0 10px 40px rgba(0,0,0,.06);
     }
-    .form-embed iframe { display: block; width: 100%; height: calc(100% + 30px); min-height: 920px; border: 0; }
+    .form-embed iframe { display: block; width: 100%; min-height: 920px; border: 0; }
 
     /* CTA */
     .cta-section { background: var(--dark); color: #fff; text-align: center; padding: 5rem 2rem; }
@@ -462,6 +462,24 @@
         toggle.setAttribute('aria-expanded', 'false');
         toggle.querySelector('i').className = 'fa-solid fa-bars';
       });
+    });
+  })();
+
+  // Resize the contact form iframe as the form's content changes
+  (function () {
+    var iframe = document.querySelector('.form-embed iframe');
+    if (!iframe) return;
+    window.addEventListener('message', function (e) {
+      if (!e.data) return;
+      var data = e.data;
+      if (typeof data === 'string') {
+        try { data = JSON.parse(data); } catch (_) { return; }
+      }
+      // Common patterns used by form providers
+      var h = data.height || data.frameHeight || (data.payload && data.payload.height);
+      if (h && Number(h) > 0) {
+        iframe.style.height = Number(h) + 'px';
+      }
     });
   })();
 </script>
