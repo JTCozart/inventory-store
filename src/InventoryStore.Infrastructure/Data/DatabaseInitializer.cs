@@ -89,6 +89,10 @@ public class DatabaseInitializer
         await EnsureMaintenanceSchedulesTableAsync(conn);
         await EnsureMaintenanceVisitsTableAsync(conn);
 
+        // AI Assistant module: chat history, so a conversation survives a page reload.
+        await EnsureChatConversationsTableAsync(conn);
+        await EnsureChatMessagesTableAsync(conn);
+
         await BackfillActivityLogUsernamesAsync(conn);
         await CleanupOrphanedCheckoutRecordsAsync(conn);
     }
@@ -500,6 +504,36 @@ public class DatabaseInitializer
             );
             CREATE INDEX IF NOT EXISTS IX_MaintenanceVisits_InventoryItemId
                 ON MaintenanceVisits (InventoryItemId);";
+        await cmd.ExecuteNonQueryAsync();
+    }
+
+    private static async Task EnsureChatConversationsTableAsync(SqliteConnection conn)
+    {
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+            CREATE TABLE IF NOT EXISTS ChatConversations (
+                Id            INTEGER PRIMARY KEY AUTOINCREMENT,
+                CreatedAt     TEXT    NOT NULL,
+                LastMessageAt TEXT    NOT NULL
+            );";
+        await cmd.ExecuteNonQueryAsync();
+    }
+
+    private static async Task EnsureChatMessagesTableAsync(SqliteConnection conn)
+    {
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+            CREATE TABLE IF NOT EXISTS ChatMessages (
+                Id             INTEGER PRIMARY KEY AUTOINCREMENT,
+                ConversationId INTEGER NOT NULL,
+                Role           INTEGER NOT NULL,
+                Content        TEXT    NOT NULL,
+                ToolTrace      TEXT    NULL,
+                CreatedAt      TEXT    NOT NULL,
+                FOREIGN KEY (ConversationId) REFERENCES ChatConversations (Id) ON DELETE CASCADE
+            );
+            CREATE INDEX IF NOT EXISTS IX_ChatMessages_ConversationId
+                ON ChatMessages (ConversationId);";
         await cmd.ExecuteNonQueryAsync();
     }
 

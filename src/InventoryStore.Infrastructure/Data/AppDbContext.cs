@@ -26,6 +26,8 @@ public class AppDbContext : DbContext
     public DbSet<Vendor> Vendors => Set<Vendor>();
     public DbSet<MaintenanceSchedule> MaintenanceSchedules => Set<MaintenanceSchedule>();
     public DbSet<MaintenanceVisit> MaintenanceVisits => Set<MaintenanceVisit>();
+    public DbSet<ChatConversation> ChatConversations => Set<ChatConversation>();
+    public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -264,6 +266,23 @@ public class AppDbContext : DbContext
              .WithMany()
              .HasForeignKey(v => v.VendorId)
              .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<ChatConversation>(e =>
+        {
+            e.HasKey(c => c.Id);
+        });
+
+        modelBuilder.Entity<ChatMessage>(e =>
+        {
+            e.HasKey(m => m.Id);
+            e.HasIndex(m => m.ConversationId);
+            e.Property(m => m.Content).IsRequired();
+
+            e.HasOne<ChatConversation>()
+             .WithMany(c => c.Messages)
+             .HasForeignKey(m => m.ConversationId)
+             .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

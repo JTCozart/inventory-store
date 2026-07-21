@@ -1,0 +1,36 @@
+<div id="ai-chat-widget" class="ai-chat-widget">
+    <button id="ai-chat-toggle" class="ai-chat-toggle" type="button" title="Ask the AI Assistant">
+        <i class="bi bi-robot"></i>
+    </button>
+
+    <div id="ai-chat-panel" class="ai-chat-panel d-none">
+        <div class="ai-chat-header">
+            <span class="fw-semibold"><i class="bi bi-robot me-2"></i>AI Assistant</span>
+            <div class="d-flex align-items-center gap-1">
+                <button id="ai-chat-new" class="btn btn-sm btn-link text-white p-0 me-2" title="New conversation">
+                    <i class="bi bi-plus-lg"></i>
+                </button>
+                <button id="ai-chat-close" class="btn btn-sm btn-link text-white p-0" title="Close">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+        </div>
+
+        <div id="ai-chat-not-configured" class="ai-chat-notice d-none">
+            <i class="bi bi-exclamation-triangle text-warning fs-4 d-block mb-2"></i>
+            <p class="mb-2 small">The AI Assistant needs an NVIDIA API key before it can answer questions.</p>
+            <a href="/Settings?tab=modules&amp;section=ai" class="btn btn-sm btn-primary">Configure in Settings</a>
+        </div>
+
+        <div id="ai-chat-messages" class="ai-chat-messages"></div>
+
+        <div id="ai-chat-typing" class="ai-chat-typing d-none">
+            <span class="spinner-grow spinner-grow-sm text-secondary"></span> thinking&hellip;
+        </div>
+
+        <form id="ai-chat-form" class="ai-chat-input">
+            <input type="text" id="ai-chat-text" class="form-control form-control-sm" placeholder="Ask about your inventory…" autocomplete="off" maxlength="2000" />
+            <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-send"></i></button>
+        </form>
+    </div>
+</div>

@@ -488,6 +488,16 @@ internal class Program
 
         services.AddScoped<InventoryStore.App.Modules.IModuleRegistry, InventoryStore.App.Modules.ModuleRegistry>();
 
+        // AI Assistant module: NVIDIA-hosted OpenAI-compatible chat completions.
+        services.AddHttpClient<InventoryStore.App.Ai.ChatModel>((sp, c) =>
+        {
+            var opts = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<InventoryStore.App.Ai.ChatOptions>>().Value;
+            c.BaseAddress = new Uri(opts.ApiBaseUrl.TrimEnd('/') + "/");
+            c.Timeout = TimeSpan.FromSeconds(opts.RequestTimeoutSeconds);
+        });
+        services.AddScoped<InventoryStore.App.Ai.ChatTools>();
+        services.AddScoped<InventoryStore.App.Ai.ChatOrchestrationService>();
+
         // Deployment flags read from environment variables (e.g. PROFESSIONAL_SERVICES_HOSTED).
         services.AddSingleton<InventoryStore.Application.Interfaces.Services.IHostingMode,
                               InventoryStore.App.Services.HostingMode>();
@@ -865,6 +875,50 @@ internal class Program
                 if (!await modules.IsEnabledAsync("sds")) return Results.NotFound();
                 await sdsRepo.DeleteAsync(id);
                 return Results.Ok(new { success = true });
+            });
+
+            // ── AI Assistant module ───────────────────────────────────────
+            // All endpoints return 404 when the module is disabled in Settings → Modules.
+
+            endpoints.MapGet("/api/ai/chat/status", [Authorize] async (
+                IModuleRegistry modules, ISettingsService settings) =>
+            {
+                if (!await modules.IsEnabledAsync("ai")) return Results.Ok(new { status = "Disabled" });
+                var apiKey = await settings.GetAsync("module.ai.apiKey");
+                return Results.Ok(new { status = string.IsNullOrWhiteSpace(apiKey) ? "NotConfigured" : "Ready" });
+            });
+
+            endpoints.MapPost("/api/ai/chat/ask", [Authorize] async (
+                InventoryStore.App.Ai.ChatAskRequest request, IModuleRegistry modules,
+                InventoryStore.App.Ai.ChatOrchestrationService orchestrator) =>
+            {
+                if (!await modules.IsEnabledAsync("ai")) return Results.NotFound();
+                var message = (request.Message ?? "").Trim();
+                if (string.IsNullOrWhiteSpace(message)) return Results.BadRequest(new { error = "message required" });
+                if (message.Length > 2000) message = message[..2000];
+
+                // Deliberately NOT the request's own CancellationToken: navigating to a new page
+                // mid-answer aborts the browser's fetch, but the assistant's turn should still
+                // finish and get saved to the conversation -- otherwise the user's question is
+                // silently dropped with no reply, ever, the moment they click away while it's
+                // still "thinking". ChatModel's HttpClient has its own timeout (ChatOptions.
+                // RequestTimeoutSeconds) so a genuinely hung call still can't run forever.
+                var (answer, conversationId) = await orchestrator.AskAsync(request.ConversationId, message, CancellationToken.None);
+                return Results.Ok(new InventoryStore.App.Ai.ChatAskResponse(answer.Text, answer.Succeeded, conversationId, answer.OpenUrl));
+            });
+
+            endpoints.MapGet("/api/ai/chat/history/{conversationId:int}", [Authorize] async (
+                int conversationId, IModuleRegistry modules, AppDbContext db) =>
+            {
+                if (!await modules.IsEnabledAsync("ai")) return Results.NotFound();
+
+                var messages = await db.ChatMessages
+                    .Where(m => m.ConversationId == conversationId)
+                    .OrderBy(m => m.CreatedAt)
+                    .Select(m => new InventoryStore.App.Ai.ChatHistoryItem(m.Role, m.Content, m.CreatedAt))
+                    .ToListAsync();
+
+                return Results.Ok(messages);
             });
 
             // ── Cost & Valuation module ───────────────────────────────────

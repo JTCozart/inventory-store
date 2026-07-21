@@ -12,13 +12,15 @@ public class IndexModel : PageModel
 
     public IEnumerable<ClientDto> Clients { get; private set; } = [];
     public string? Query { get; private set; }
+    public int? Open { get; private set; }
     public bool CanManage => User.IsInRole("Admin") || User.IsInRole("Manager");
 
     public IndexModel(IClientService clientService) => _clientService = clientService;
 
-    public async Task OnGetAsync(string? q)
+    public async Task OnGetAsync(string? q, int? open)
     {
         Query = q;
+        Open  = open;
         Clients = string.IsNullOrWhiteSpace(q)
             ? await _clientService.GetAllAsync()
             : await _clientService.SearchAsync(q);

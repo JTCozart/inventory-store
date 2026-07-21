@@ -2153,6 +2153,48 @@
     }
 }
 
+@if (Model.Tab == "modules" && User.IsInRole("Admin") && Model.ModuleSection == "ai")
+{
+    <div class="mb-3">
+        <a href="/Settings?tab=modules" class="text-decoration-none small"><i class="bi bi-arrow-left me-1"></i>Modules</a>
+    </div>
+    @if (!Model.IsModuleEnabled("ai"))
+    {
+        <div class="alert alert-warning" style="max-width: 1080px;">
+            The AI Assistant module is disabled. <a href="/Settings?tab=modules">Enable it</a> to configure.
+        </div>
+    }
+    else
+    {
+        <div class="card" style="max-width: 720px;">
+            <div class="card-header fw-semibold"><i class="bi bi-robot me-2"></i>AI Assistant</div>
+            <div class="card-body">
+                <p class="text-muted small">
+                    Uses an NVIDIA-hosted AI model (<a href="https://build.nvidia.com" target="_blank" rel="noopener">build.nvidia.com</a>)
+                    to answer questions about your inventory. Your API key is stored locally and only ever sent to NVIDIA's API.
+                </p>
+                <form method="post" asp-page-handler="SaveAiSettings">
+                    <div class="mb-3">
+                        <label class="form-label small mb-1">NVIDIA API key</label>
+                        <input type="password" name="apiKey" class="form-control" autocomplete="off"
+                               placeholder="@(Model.AiApiKeySet ? "•••••••••••••••• (unchanged)" : "Enter your NVIDIA API key")" />
+                        @if (Model.AiApiKeySet)
+                        {
+                            <div class="form-text"><i class="bi bi-check-circle text-success me-1"></i>An API key is configured. Leave blank to keep it.</div>
+                        }
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small mb-1">Model <span class="text-muted">(optional override)</span></label>
+                        <input type="text" name="model" class="form-control" style="max-width:420px"
+                               value="@Model.AiModel" placeholder="nvidia/nemotron-3-ultra-550b-a55b" />
+                    </div>
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </form>
+            </div>
+        </div>
+    }
+}
+
 @if (Model.Tab == "modules" && User.IsInRole("Admin") && Model.ModuleSection == "webhooks")
 {
     <div class="mb-3">

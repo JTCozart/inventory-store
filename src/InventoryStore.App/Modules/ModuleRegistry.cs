@@ -28,6 +28,9 @@ public class ModuleRegistry : IModuleRegistry
         new ModuleDescriptor("maintenance", "Maintenance",
             "Track service schedules, send items out to vendors, and get due / overdue alerts.",
             "bi-tools", HasConfigure: true),
+        new ModuleDescriptor("ai", "AI Assistant",
+            "Ask questions about your inventory in plain language — checkouts, stock levels, kits, and maintenance.",
+            "bi-robot", HasConfigure: true),
     };
 
     public ModuleRegistry(ISettingsService settings) => _settings = settings;

@@ -359,5 +359,10 @@ window.deleteClient = function() {
         .then(function() { getDeleteModal().hide(); showFlashToast('Client deleted.', 'secondary'); location.reload(); })
         .catch(function() {});
 };
+
+@if (Model.Open.HasValue)
+{
+    <text>document.addEventListener('DOMContentLoaded', () => openClientView(@Model.Open.Value));</text>
+}
 </script>
 }

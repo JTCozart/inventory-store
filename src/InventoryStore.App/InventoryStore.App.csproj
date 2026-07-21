@@ -43,4 +43,10 @@
     <ProjectReference Include="..\InventoryStore.Infrastructure\InventoryStore.Infrastructure.csproj" />
   </ItemGroup>
 
+  <!-- Ships the user guide inside the app itself (embedded, not fetched over the network) so
+       the AI assistant's help lookup works offline and always matches the installed version. -->
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\docs\user-guide.html" LogicalName="InventoryStore.App.Ai.user-guide.html" />
+  </ItemGroup>
+
 </Project>

@@ -987,6 +987,12 @@ else
     <script src="~/js/barcode-scanner.js" asp-append-version="true"></script>
     <script src="~/js/scanner.js"></script>
 
+    @if (_moduleMap.TryGetValue("ai", out var _aiEnabled) && _aiEnabled)
+    {
+        @await Html.PartialAsync("_ChatWidget")
+        <script src="~/js/chat-widget.js" asp-append-version="true"></script>
+    }
+
     @if (_showUsagePrompt)
     {
         <!-- One-time usage check-in (first admin only) -->

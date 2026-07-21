@@ -86,6 +86,8 @@ public class IndexModel : PageModel
     public int    ForecastWindowDays { get; private set; } = 30;
     public bool   KitsReconcileEnabled { get; private set; }
     public string KitsReconcileMode    { get; private set; } = "used";
+    public bool   AiApiKeySet { get; private set; }
+    public string? AiModel    { get; private set; }
 
     // Notifications tab
     public string? NtfyServer      { get; private set; }
@@ -168,6 +170,8 @@ public class IndexModel : PageModel
             ForecastWindowDays = int.TryParse(await _settingsService.GetAsync("module.forecast.windowdays"), out var w) && w > 0 ? w : 30;
             KitsReconcileEnabled = await _settingsService.GetAsync("module.kits.reconcile") == "true";
             KitsReconcileMode    = await _settingsService.GetAsync("module.kits.reconcile.mode") ?? "used";
+            AiApiKeySet = !string.IsNullOrWhiteSpace(await _settingsService.GetAsync("module.ai.apiKey"));
+            AiModel     = await _settingsService.GetAsync("module.ai.model");
         }
 
         if (tab == "notifications")
@@ -706,6 +710,17 @@ public class IndexModel : PageModel
         await _settingsService.SetAsync("module.kits.reconcile", reconcileEnabled ? "true" : null);
         await _settingsService.SetAsync("module.kits.reconcile.mode", mode == "remain" ? "remain" : "used");
         return RedirectWithMessage("modules", success: "Kit settings saved.", section: "kits");
+    }
+
+    // Blank apiKey means "keep the existing key" (mirrors the not-shown password input) --
+    // there is no way to clear it back to unconfigured from this form, only replace it.
+    public async Task<IActionResult> OnPostSaveAiSettingsAsync(string? apiKey, string? model)
+    {
+        if (!User.IsInRole("Admin")) return Forbid();
+        if (!string.IsNullOrWhiteSpace(apiKey))
+            await _settingsService.SetAsync("module.ai.apiKey", apiKey.Trim());
+        await _settingsService.SetAsync("module.ai.model", string.IsNullOrWhiteSpace(model) ? null : model.Trim());
+        return RedirectWithMessage("modules", success: "AI Assistant settings saved.", section: "ai");
     }
 
     public async Task<IActionResult> OnPostSavePublicViewSettingAsync(bool enabled)
