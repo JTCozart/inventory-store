@@ -260,6 +260,7 @@
       <li><a href="#custom-https">HTTPS / TLS</a></li>
       <li><a href="#public-view">Public View</a></li>
       <li><a href="#notifications">Push Notifications</a></li>
+      <li><a href="#password-reset">Email &amp; Password Reset</a></li>
       <li><a href="#dark-mode">Dark Mode</a></li>
       <li><a href="#database">Database Backup</a></li>
       <li><a href="#updates">Updates</a></li>
@@ -1076,6 +1077,26 @@ sudo systemctl restart inventorystore</code></pre>
 
       <h3>Clearing your token</h3>
       <p>If you need to remove a saved auth token, click <strong>Clear token</strong> next to the token field. The token is deleted and future notifications are sent without authentication.</p>
+    </section>
+
+    <section id="password-reset">
+      <h2><i class="fa-solid fa-envelope"></i> Email &amp; Password Reset</h2>
+      <p>Forgot your password? On the login screen, click <strong>Forgot password?</strong> and enter your username. If your account has an email address on file and the app has been set up to send email, you'll get a message with a link to choose a new password. The link expires after a short time and can only be used once.</p>
+      <p>If email hasn't been set up yet, ask an Admin to reset your password for you from <strong>Settings → User Management</strong> instead.</p>
+
+      <h3>Setting up email (Admin)</h3>
+      <p>Inventory Store sends these emails through <a href="https://www.mailjet.com" target="_blank" rel="noopener">Mailjet</a>, a third-party email service with a free tier. Go to <strong>Settings → Modules → Email &amp; Password Reset → Configure</strong> and fill in:</p>
+      <table>
+        <tr><th>Field</th><th>Notes</th></tr>
+        <tr><td><strong>API Key</strong> &amp; <strong>Secret Key</strong></td><td>From your Mailjet account, under API Key Management</td></tr>
+        <tr><td><strong>From Address</strong></td><td>Must be a sender address you've verified with Mailjet</td></tr>
+        <tr><td><strong>From Name</strong></td><td>The name recipients see, e.g. "Inventory Store"</td></tr>
+      </table>
+      <p>You'll also need a <strong>Public Base URL</strong> set under <strong>Settings → General</strong> - this is the web address your team uses to reach the app (for example <code>https://inventory.yourcompany.com</code>), so the reset link in the email points somewhere your team can actually open.</p>
+      <div class="callout">
+        <i class="fa-solid fa-circle-info"></i>
+        On a hosted setup run by a service provider, only the primary admin account can view or change the Mailjet keys and Public Base URL, to keep other admins from redirecting password-reset links off the account.
+      </div>
     </section>
 
     <section id="dark-mode">
