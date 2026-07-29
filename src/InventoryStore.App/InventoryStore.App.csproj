@@ -6,8 +6,8 @@
          defaults to the Windows configuration. -->
     <IsLinuxBuild Condition="$(RuntimeIdentifier.StartsWith('linux'))">true</IsLinuxBuild>
 
-    <TargetFramework Condition="'$(IsLinuxBuild)' == 'true'">net8.0</TargetFramework>
-    <TargetFramework Condition="'$(IsLinuxBuild)' != 'true'">net8.0-windows</TargetFramework>
+    <TargetFramework Condition="'$(IsLinuxBuild)' == 'true'">net9.0</TargetFramework>
+    <TargetFramework Condition="'$(IsLinuxBuild)' != 'true'">net9.0-windows</TargetFramework>
 
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -28,18 +28,18 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(IsLinuxBuild)' == 'true'">
-    <PackageReference Include="Microsoft.Extensions.Hosting.Systemd" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Systemd" Version="9.0.9" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(IsLinuxBuild)' != 'true'">
-    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="8.0.1" />
-    <PackageReference Include="System.Diagnostics.EventLog" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="9.0.9" />
+    <PackageReference Include="System.Diagnostics.EventLog" Version="9.0.9" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="LettuceEncrypt" Version="1.3.2" />
     <PackageReference Include="log4net" Version="3.3.2" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Log4Net.AspNetCore" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Log4Net.AspNetCore" Version="10.0.0" />
   </ItemGroup>
 
   <ItemGroup>
