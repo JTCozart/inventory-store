@@ -13,24 +13,33 @@ public class LoginModel : PageModel
 {
     private readonly IUserAuthService _authService;
     private readonly INtfyService _ntfy;
+    private readonly IEmailSender _emailSender;
+    private readonly InventoryStore.App.Modules.IModuleRegistry _modules;
 
     [BindProperty]
     public LoginInputModel Input { get; set; } = new();
 
     public string? ErrorMessage { get; set; }
+    public string? SuccessMessage { get; set; }
     public string? ReturnUrl { get; set; }
+    public bool ShowForgotPasswordLink { get; set; }
 
-    public LoginModel(IUserAuthService authService, INtfyService ntfy)
+    public LoginModel(IUserAuthService authService, INtfyService ntfy, IEmailSender emailSender,
+        InventoryStore.App.Modules.IModuleRegistry modules)
     {
-        _authService = authService;
-        _ntfy        = ntfy;
+        _authService  = authService;
+        _ntfy         = ntfy;
+        _emailSender  = emailSender;
+        _modules      = modules;
     }
 
-    public IActionResult OnGet(string? returnUrl = null)
+    public async Task<IActionResult> OnGetAsync(string? returnUrl = null, string? success = null)
     {
         ReturnUrl = returnUrl;
+        SuccessMessage = success;
         if (User.Identity?.IsAuthenticated == true)
             return Redirect(ResolveDestination(returnUrl, User.IsInRole(nameof(InventoryStore.Domain.Enums.UserRole.Staff))));
+        ShowForgotPasswordLink = await _modules.IsEnabledAsync("email") && await _emailSender.IsConfiguredAsync();
         return Page();
     }
 

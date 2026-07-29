@@ -31,6 +31,9 @@ public class ModuleRegistry : IModuleRegistry
         new ModuleDescriptor("ai", "AI Assistant",
             "Ask questions about your inventory in plain language — checkouts, stock levels, kits, and maintenance.",
             "bi-robot", HasConfigure: true),
+        new ModuleDescriptor("email", "Email Delivery",
+            "Send password-reset links by email using your own Mailjet account.",
+            "bi-envelope", HasConfigure: true),
     };
 
     public ModuleRegistry(ISettingsService settings) => _settings = settings;

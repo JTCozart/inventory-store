@@ -37,6 +37,17 @@ if ($Action -eq "install") {
                 -Description $Description `
                 -StartupType Automatic
 
+    # Error-level log entries (e.g. a failed Mailjet send) are also written to the Windows
+    # Event Log; the source must exist before anything can log to it. Safe to skip if it's
+    # already registered or if creation fails for some reason -- the rolling file log still works.
+    if (-not [System.Diagnostics.EventLog]::SourceExists("InventoryStore")) {
+        try {
+            [System.Diagnostics.EventLog]::CreateEventSource("InventoryStore", "Application")
+        } catch {
+            Write-Warning "Could not register the 'InventoryStore' event log source: $_"
+        }
+    }
+
     Start-Service -Name $ServiceName
     Write-Host "Service '$ServiceName' installed and started." -ForegroundColor Green
     Write-Host "Access the web UI at: http://localhost:5050" -ForegroundColor Cyan

@@ -305,6 +305,12 @@ internal class Program
     [STAThread]
     static void Main(string[] args)
     {
+        // log4net.config references ${INVENTORYSTORE_LOG_DIR} for the rolling log file's
+        // location -- set it before ConfigureLogging(...AddLog4Net...) runs in CreateHostBuilder.
+        // Matches AppPaths.DataDir so logs land next to the database and follow the same
+        // INVENTORYSTORE_DATA override.
+        Environment.SetEnvironmentVariable("INVENTORYSTORE_LOG_DIR", InventoryStore.App.Utilities.AppPaths.DataDir);
+
 #if LINUX
         // Linux runs headless as a systemd service — no tray companion.
         // UseSystemd (unlike UseWindowsService) does not set the content root, so
@@ -356,6 +362,8 @@ internal class Program
 
     static IHostBuilder CreateHostBuilder(string[] args) =>
         Host.CreateDefaultBuilder(args)
+            .ConfigureLogging(logging =>
+                logging.AddLog4Net(Path.Combine(AppContext.BaseDirectory, "log4net.config")))
             .ConfigureWebHostDefaults(web =>
             {
                 var isDev = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
@@ -497,6 +505,19 @@ internal class Program
         });
         services.AddScoped<InventoryStore.App.Ai.ChatTools>();
         services.AddScoped<InventoryStore.App.Ai.ChatOrchestrationService>();
+
+        // Email module: outbound mail via Mailjet's REST API for password-reset links.
+        services.AddHttpClient(InventoryStore.App.Email.EmailSender.HttpClientName, c =>
+        {
+            c.DefaultRequestHeaders.UserAgent.ParseAdd("InventoryStore/1.0 (email)");
+            c.Timeout = TimeSpan.FromSeconds(15);
+        });
+        services.AddScoped<InventoryStore.App.Email.EmailSender>();
+        // Same instance behind the Application-layer interface, mirroring the AppTimeZone pattern —
+        // Settings page needs the concrete type's "send test email" overload; AuthenticationService
+        // only needs the interface.
+        services.AddScoped<InventoryStore.Application.Interfaces.Services.IEmailSender>(
+            sp => sp.GetRequiredService<InventoryStore.App.Email.EmailSender>());
 
         // Deployment flags read from environment variables (e.g. PROFESSIONAL_SERVICES_HOSTED).
         services.AddSingleton<InventoryStore.Application.Interfaces.Services.IHostingMode,

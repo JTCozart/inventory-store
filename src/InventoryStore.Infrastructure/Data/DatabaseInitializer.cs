@@ -93,6 +93,9 @@ public class DatabaseInitializer
         await EnsureChatConversationsTableAsync(conn);
         await EnsureChatMessagesTableAsync(conn);
 
+        // Email module: password-reset tokens.
+        await EnsurePasswordResetTokensTableAsync(conn);
+
         await BackfillActivityLogUsernamesAsync(conn);
         await CleanupOrphanedCheckoutRecordsAsync(conn);
     }
@@ -534,6 +537,24 @@ public class DatabaseInitializer
             );
             CREATE INDEX IF NOT EXISTS IX_ChatMessages_ConversationId
                 ON ChatMessages (ConversationId);";
+        await cmd.ExecuteNonQueryAsync();
+    }
+
+    private static async Task EnsurePasswordResetTokensTableAsync(SqliteConnection conn)
+    {
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+            CREATE TABLE IF NOT EXISTS PasswordResetTokens (
+                Id        INTEGER PRIMARY KEY AUTOINCREMENT,
+                UserId    INTEGER NOT NULL,
+                TokenHash TEXT    NOT NULL,
+                ExpiresAt TEXT    NOT NULL,
+                CreatedAt TEXT    NOT NULL,
+                UsedAt    TEXT    NULL,
+                FOREIGN KEY (UserId) REFERENCES Users (Id) ON DELETE CASCADE
+            );
+            CREATE UNIQUE INDEX IF NOT EXISTS IX_PasswordResetTokens_TokenHash ON PasswordResetTokens (TokenHash);
+            CREATE INDEX IF NOT EXISTS IX_PasswordResetTokens_UserId ON PasswordResetTokens (UserId);";
         await cmd.ExecuteNonQueryAsync();
     }
 

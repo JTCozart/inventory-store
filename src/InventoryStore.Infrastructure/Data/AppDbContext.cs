@@ -28,6 +28,7 @@ public class AppDbContext : DbContext
     public DbSet<MaintenanceVisit> MaintenanceVisits => Set<MaintenanceVisit>();
     public DbSet<ChatConversation> ChatConversations => Set<ChatConversation>();
     public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
+    public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -282,6 +283,19 @@ public class AppDbContext : DbContext
             e.HasOne<ChatConversation>()
              .WithMany(c => c.Messages)
              .HasForeignKey(m => m.ConversationId)
+             .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<PasswordResetToken>(e =>
+        {
+            e.HasKey(t => t.Id);
+            e.Property(t => t.TokenHash).IsRequired().HasMaxLength(128);
+            e.HasIndex(t => t.TokenHash).IsUnique();
+            e.HasIndex(t => t.UserId);
+
+            e.HasOne<User>()
+             .WithMany()
+             .HasForeignKey(t => t.UserId)
              .OnDelete(DeleteBehavior.Cascade);
         });
     }

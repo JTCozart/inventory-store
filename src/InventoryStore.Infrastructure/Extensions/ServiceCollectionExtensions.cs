@@ -32,6 +32,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IKitRepository, KitRepository>();
         services.AddScoped<IVendorRepository, VendorRepository>();
         services.AddScoped<IMaintenanceRepository, MaintenanceRepository>();
+        services.AddScoped<IPasswordResetTokenRepository, PasswordResetTokenRepository>();
 
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
 

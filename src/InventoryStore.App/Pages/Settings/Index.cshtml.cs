@@ -28,6 +28,9 @@ public class IndexModel : PageModel
     private readonly IInventoryService _inventoryService;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly InventoryStore.App.Modules.IModuleRegistry _modules;
+    private readonly InventoryStore.App.Email.EmailSender _emailSender;
+    private readonly InventoryStore.Application.Interfaces.Services.IHostingMode _hostingMode;
+    private readonly InventoryStore.Domain.Interfaces.Repositories.IUserRepository _userRepository;
     private readonly ILogger<IndexModel> _logger;
 
     public string Tab { get; private set; } = "account";
@@ -88,6 +91,21 @@ public class IndexModel : PageModel
     public string KitsReconcileMode    { get; private set; } = "used";
     public bool   AiApiKeySet { get; private set; }
     public string? AiModel    { get; private set; }
+    public bool    EmailApiKeySet   { get; private set; }
+    public bool    EmailSecretKeySet { get; private set; }
+    public string? EmailFromAddress { get; private set; }
+    public string? EmailFromName    { get; private set; }
+
+    // General tab — public base URL, used wherever the app needs to build an absolute,
+    // externally-reachable URL server-side (currently: password-reset links).
+    public string? PublicBaseUrl    { get; private set; }
+
+    // Hosted-mode gating: when the server runs PROFESSIONAL_SERVICES_HOSTED=true, only the
+    // primary (first-created) admin may view/edit settings that are sensitive enough to matter
+    // for a hosted customer's trust boundary -- currently the Mailjet credentials and the public
+    // base URL (which a malicious admin could otherwise point at a domain they control to steal
+    // other users' password-reset tokens). Any admin may manage these in self-hosted mode.
+    public bool    CanManageProtectedSettings { get; private set; }
 
     // Notifications tab
     public string? NtfyServer      { get; private set; }
@@ -103,6 +121,9 @@ public class IndexModel : PageModel
         TunnelService tunnel,
         ICategoryService categoryService, ITagService tagService, IInventoryService inventoryService,
         IHttpContextAccessor httpContextAccessor, InventoryStore.App.Modules.IModuleRegistry modules,
+        InventoryStore.App.Email.EmailSender emailSender,
+        InventoryStore.Application.Interfaces.Services.IHostingMode hostingMode,
+        InventoryStore.Domain.Interfaces.Repositories.IUserRepository userRepository,
         ILogger<IndexModel> logger)
     {
         _authService          = authService;
@@ -114,7 +135,20 @@ public class IndexModel : PageModel
         _inventoryService     = inventoryService;
         _httpContextAccessor  = httpContextAccessor;
         _modules              = modules;
+        _emailSender          = emailSender;
+        _hostingMode          = hostingMode;
+        _userRepository       = userRepository;
         _logger               = logger;
+    }
+
+    // Same "locked admin" logic AuthenticationService uses to protect the primary account:
+    // in hosted mode only that account may manage protected settings; any admin may otherwise.
+    private async Task<bool> ComputeCanManageProtectedSettingsAsync()
+    {
+        if (!_hostingMode.IsProfessionalServicesHosted)
+            return true;
+        var admin = await _userRepository.GetAdminAsync();
+        return admin?.Id == CurrentUserId;
     }
 
     public async Task OnGetAsync(string tab = "account", string? success = null, string? error = null, string? section = null)
@@ -125,10 +159,14 @@ public class IndexModel : PageModel
         LocalIpAddress = NetworkUtility.GetLocalIpAddress();
         CurrentUserId  = User.GetIdentity().userId;
         MaintenanceModuleEnabled = await _modules.IsEnabledAsync("maintenance");
+        CanManageProtectedSettings = await ComputeCanManageProtectedSettingsAsync();
 
         if (tab == "general")
+        {
             // Empty means "no override" — fall back to the server's local zone.
             TimeZoneId = await _settingsService.GetAsync(AppTimeZone.SettingKey) ?? string.Empty;
+            PublicBaseUrl = await _settingsService.GetAsync(ISettingsService.PublicBaseUrlSettingKey);
+        }
 
         if (tab == "users")
             Users = await _authService.GetAllUsersAsync();
@@ -172,6 +210,11 @@ public class IndexModel : PageModel
             KitsReconcileMode    = await _settingsService.GetAsync("module.kits.reconcile.mode") ?? "used";
             AiApiKeySet = !string.IsNullOrWhiteSpace(await _settingsService.GetAsync("module.ai.apiKey"));
             AiModel     = await _settingsService.GetAsync("module.ai.model");
+
+            EmailApiKeySet    = !string.IsNullOrWhiteSpace(await _settingsService.GetAsync(InventoryStore.App.Email.EmailSender.ApiKeySettingKey));
+            EmailSecretKeySet = !string.IsNullOrWhiteSpace(await _settingsService.GetAsync(InventoryStore.App.Email.EmailSender.SecretKeySettingKey));
+            EmailFromAddress  = await _settingsService.GetAsync(InventoryStore.App.Email.EmailSender.FromAddressSettingKey);
+            EmailFromName     = await _settingsService.GetAsync(InventoryStore.App.Email.EmailSender.FromNameSettingKey);
         }
 
         if (tab == "notifications")
@@ -212,6 +255,26 @@ public class IndexModel : PageModel
         return RedirectWithMessage("general", success: string.IsNullOrEmpty(timeZoneId)
             ? "Time zone cleared. Times now follow each viewer's device."
             : "Time zone saved. Times now display in the selected zone.");
+    }
+
+    public async Task<IActionResult> OnPostSavePublicBaseUrlAsync(string? publicBaseUrl)
+    {
+        if (!User.IsInRole("Admin")) return Forbid();
+        CurrentUserId = User.GetIdentity().userId;
+        if (!await ComputeCanManageProtectedSettingsAsync()) return Forbid();
+
+        publicBaseUrl = publicBaseUrl?.Trim();
+        if (!string.IsNullOrEmpty(publicBaseUrl)
+            && !(Uri.TryCreate(publicBaseUrl, UriKind.Absolute, out var parsed)
+                 && (parsed.Scheme == Uri.UriSchemeHttp || parsed.Scheme == Uri.UriSchemeHttps)))
+        {
+            return RedirectWithMessage("general", error: "Public base URL must be a valid http(s) URL, e.g. https://inventory.example.com.");
+        }
+
+        await _settingsService.SetAsync(ISettingsService.PublicBaseUrlSettingKey,
+            string.IsNullOrEmpty(publicBaseUrl) ? null : publicBaseUrl.TrimEnd('/'));
+
+        return RedirectWithMessage("general", success: "Public base URL saved.");
     }
 
     public async Task<IActionResult> OnPostSaveNotificationsAsync(
@@ -684,6 +747,11 @@ public class IndexModel : PageModel
         if (!User.IsInRole("Admin")) return Forbid();
         var module = _modules.Find(key);
         if (module is null) return RedirectWithMessage("modules", error: "Unknown module.");
+        if (string.Equals(key, "email", StringComparison.OrdinalIgnoreCase))
+        {
+            CurrentUserId = User.GetIdentity().userId;
+            if (!await ComputeCanManageProtectedSettingsAsync()) return Forbid();
+        }
         await _modules.SetEnabledAsync(key, enabled);
         return RedirectWithMessage("modules",
             success: $"{module.Name} module {(enabled ? "enabled" : "disabled")}.");
@@ -721,6 +789,43 @@ public class IndexModel : PageModel
             await _settingsService.SetAsync("module.ai.apiKey", apiKey.Trim());
         await _settingsService.SetAsync("module.ai.model", string.IsNullOrWhiteSpace(model) ? null : model.Trim());
         return RedirectWithMessage("modules", success: "AI Assistant settings saved.", section: "ai");
+    }
+
+    // Blank apiKey/secretKey means "keep the existing value" -- mirrors OnPostSaveAiSettingsAsync.
+    public async Task<IActionResult> OnPostSaveEmailSettingsAsync(
+        string? apiKey, string? secretKey, string? fromAddress, string? fromName)
+    {
+        if (!User.IsInRole("Admin")) return Forbid();
+        CurrentUserId = User.GetIdentity().userId;
+        if (!await ComputeCanManageProtectedSettingsAsync()) return Forbid();
+
+        if (!string.IsNullOrWhiteSpace(apiKey))
+            await _settingsService.SetAsync(InventoryStore.App.Email.EmailSender.ApiKeySettingKey, apiKey.Trim());
+        if (!string.IsNullOrWhiteSpace(secretKey))
+            await _settingsService.SetAsync(InventoryStore.App.Email.EmailSender.SecretKeySettingKey, secretKey.Trim());
+        await _settingsService.SetAsync(InventoryStore.App.Email.EmailSender.FromAddressSettingKey,
+            string.IsNullOrWhiteSpace(fromAddress) ? null : fromAddress.Trim());
+        await _settingsService.SetAsync(InventoryStore.App.Email.EmailSender.FromNameSettingKey,
+            string.IsNullOrWhiteSpace(fromName) ? null : fromName.Trim());
+
+        return RedirectWithMessage("modules", success: "Email settings saved.", section: "email");
+    }
+
+    public async Task<IActionResult> OnPostSendTestEmailAsync(string testAddress)
+    {
+        if (!User.IsInRole("Admin")) return Forbid();
+        CurrentUserId = User.GetIdentity().userId;
+        if (!await ComputeCanManageProtectedSettingsAsync()) return Forbid();
+
+        if (string.IsNullOrWhiteSpace(testAddress))
+            return RedirectWithMessage("modules", error: "Enter an address to send the test email to.", section: "email");
+
+        var result = await _emailSender.SendAsync(testAddress.Trim(), "Inventory Store test email",
+            "<p>This is a test email from your Inventory Store instance. If you received this, email delivery is working.</p>");
+
+        return result.Succeeded
+            ? RedirectWithMessage("modules", success: $"Test email sent to {testAddress.Trim()}.", section: "email")
+            : RedirectWithMessage("modules", error: result.Error, section: "email");
     }
 
     public async Task<IActionResult> OnPostSavePublicViewSettingAsync(bool enabled)

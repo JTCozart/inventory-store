@@ -74,6 +74,12 @@ Filename: "{sys}\sc.exe"; \
   Parameters: "description InventoryStore ""Inventory Store web server - accessible at http://localhost:5050"""; \
   Flags: runhidden waituntilterminated
 
+; Register the Windows Event Log source so error-level log entries (e.g. a failed Mailjet
+; send) have somewhere to go; safe to re-run on upgrade since it no-ops if already registered.
+Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; \
+  Parameters: "-NoProfile -Command ""if (-not [System.Diagnostics.EventLog]::SourceExists('InventoryStore')) {{ [System.Diagnostics.EventLog]::CreateEventSource('InventoryStore', 'Application') }}"""; \
+  Flags: runhidden waituntilterminated; StatusMsg: "Registering event log source..."
+
 ; Stamp the build version into appsettings.json so the app knows its own version
 Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; \
   Parameters: "-NoProfile -Command ""$f='{app}\appsettings.json'; $j=Get-Content $f -Raw | ConvertFrom-Json; $j.AppVersion='{#AppVersion}'; $j | ConvertTo-Json -Depth 10 | Set-Content $f"""; \

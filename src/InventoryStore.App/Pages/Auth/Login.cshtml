@@ -14,6 +14,10 @@
                 <h2 class="mt-2">Inventory Store</h2>
             </div>
 
+            @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+            {
+                <div class="alert alert-success">@Model.SuccessMessage</div>
+            }
             <div id="login-error" class="alert alert-danger d-none"></div>
 
             <form id="login-form" autocomplete="on">
@@ -33,9 +37,18 @@
                     Sign In
                 </button>
             </form>
-            <p class="text-center text-muted small mt-3 mb-0">
-                Forgot your password? Use <strong>Reset Admin Password</strong> in the system tray icon.
-            </p>
+            @if (Model.ShowForgotPasswordLink)
+            {
+                <p class="text-center text-muted small mt-3 mb-0">
+                    <a href="/Auth/ForgotPassword">Forgot your password?</a>
+                </p>
+            }
+            else
+            {
+                <p class="text-center text-muted small mt-3 mb-0">
+                    Forgot your password? Use <strong>Reset Admin Password</strong> in the system tray icon.
+                </p>
+            }
         </div>
     </div>
 </div>

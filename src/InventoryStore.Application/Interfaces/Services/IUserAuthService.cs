@@ -17,4 +17,12 @@ public interface IUserAuthService
     Task ResetUserPasswordAsync(int id, string newPassword);
     Task SetUserSuspendedAsync(int id, bool suspended);
     Task DeleteUserAsync(int id);
+
+    // Accepts either a username or an email address. Enumeration-safe: does nothing observable
+    // to the caller whether or not the account exists or has an email on file. Sends a reset
+    // link when it does.
+    Task RequestPasswordResetAsync(string usernameOrEmail, string resetBaseUrl);
+
+    // Returns false for an invalid, expired, or already-used token.
+    Task<bool> ResetPasswordWithTokenAsync(string token, string newPassword);
 }

@@ -167,6 +167,43 @@
                 </div>
             </div>
         </div>
+
+        <div class="col-12">
+            @if (!Model.CanManageProtectedSettings)
+            {
+                <div class="card">
+                    <div class="card-header fw-semibold">Public Base URL</div>
+                    <div class="card-body">
+                        <p class="text-muted small mb-0">
+                            <i class="bi bi-lock me-1"></i>Managed by the system administrator on this hosted instance.
+                        </p>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="card">
+                    <div class="card-header fw-semibold">Public Base URL</div>
+                    <div class="card-body">
+                        <p class="text-muted small mb-3">
+                            The address people use to reach this app from outside — used wherever the app needs to build
+                            an absolute link back to itself server-side (currently: password-reset emails).
+                            <strong>Set this if the app is reachable over the internet</strong> (including via a tunnel);
+                            without it, those links are built from the incoming request's own address, which isn't safe
+                            to trust on an internet-facing server.
+                        </p>
+                        <form method="post" asp-page-handler="SavePublicBaseUrl">
+                            <div class="mb-3">
+                                <label class="form-label">Public base URL</label>
+                                <input type="url" name="publicBaseUrl" class="form-control" style="max-width:420px"
+                                       value="@Model.PublicBaseUrl" placeholder="https://inventory.example.com" />
+                            </div>
+                            <button type="submit" class="btn btn-primary">Save</button>
+                        </form>
+                    </div>
+                </div>
+            }
+        </div>
     </div>
 }
 
@@ -1905,27 +1942,34 @@
                             <div class="flex-grow-1">
                                 <div class="fw-semibold">@mod.Name</div>
                                 <p class="text-muted small mb-2">@mod.Description</p>
-                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
-                                    <form method="post" asp-page-handler="ToggleModule">
-                                        <input type="hidden" name="key" value="@mod.Key" />
-                                        <input type="hidden" name="enabled" value="@(on ? "false" : "true")" />
-                                        <div class="form-check form-switch mb-0">
-                                            <input class="form-check-input" type="checkbox" role="switch"
-                                                   @(on ? "checked" : "") onchange="this.form.submit()" />
-                                            <label class="form-check-label">@(on ? "Enabled" : "Disabled")</label>
-                                        </div>
-                                    </form>
-                                    @if (mod.HasConfigure && on)
-                                    {
-                                        <a href="/Settings?tab=modules&section=@mod.Key" class="btn btn-sm btn-outline-secondary" title="Configure" aria-label="Configure @mod.Name">
-                                            <i class="bi bi-gear"></i>
-                                        </a>
-                                    }
-                                    else if (mod.HasConfigure)
-                                    {
-                                        <span class="text-muted small">Enable to configure</span>
-                                    }
-                                </div>
+                                @if (mod.Key == "email" && !Model.CanManageProtectedSettings)
+                                {
+                                    <span class="text-muted small"><i class="bi bi-lock me-1"></i>Managed by the system administrator</span>
+                                }
+                                else
+                                {
+                                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                        <form method="post" asp-page-handler="ToggleModule">
+                                            <input type="hidden" name="key" value="@mod.Key" />
+                                            <input type="hidden" name="enabled" value="@(on ? "false" : "true")" />
+                                            <div class="form-check form-switch mb-0">
+                                                <input class="form-check-input" type="checkbox" role="switch"
+                                                       @(on ? "checked" : "") onchange="this.form.submit()" />
+                                                <label class="form-check-label">@(on ? "Enabled" : "Disabled")</label>
+                                            </div>
+                                        </form>
+                                        @if (mod.HasConfigure && on)
+                                        {
+                                            <a href="/Settings?tab=modules&section=@mod.Key" class="btn btn-sm btn-outline-secondary" title="Configure" aria-label="Configure @mod.Name">
+                                                <i class="bi bi-gear"></i>
+                                            </a>
+                                        }
+                                        else if (mod.HasConfigure)
+                                        {
+                                            <span class="text-muted small">Enable to configure</span>
+                                        }
+                                    </div>
+                                }
                             </div>
                         </div>
                     </div>
@@ -2189,6 +2233,79 @@
                                value="@Model.AiModel" placeholder="nvidia/nemotron-3-ultra-550b-a55b" />
                     </div>
                     <button type="submit" class="btn btn-primary">Save</button>
+                </form>
+            </div>
+        </div>
+    }
+}
+
+@if (Model.Tab == "modules" && User.IsInRole("Admin") && Model.ModuleSection == "email")
+{
+    <div class="mb-3">
+        <a href="/Settings?tab=modules" class="text-decoration-none small"><i class="bi bi-arrow-left me-1"></i>Modules</a>
+    </div>
+    @if (!Model.IsModuleEnabled("email"))
+    {
+        <div class="alert alert-warning" style="max-width: 1080px;">
+            The Email Delivery module is disabled. <a href="/Settings?tab=modules">Enable it</a> to configure.
+        </div>
+    }
+    else if (!Model.CanManageProtectedSettings)
+    {
+        <div class="alert alert-info" style="max-width: 1080px;">
+            Email delivery is managed by the system administrator on this hosted instance.
+        </div>
+    }
+    else
+    {
+        <div class="card mb-3" style="max-width: 720px;">
+            <div class="card-header fw-semibold"><i class="bi bi-envelope me-2"></i>Email Delivery</div>
+            <div class="card-body">
+                <p class="text-muted small">
+                    Sends password-reset links through <a href="https://www.mailjet.com" target="_blank" rel="noopener">Mailjet</a>'s
+                    API using your own account. Credentials are stored locally and only ever sent to Mailjet.
+                </p>
+                <form method="post" asp-page-handler="SaveEmailSettings">
+                    <div class="mb-3">
+                        <label class="form-label small mb-1">Mailjet API key</label>
+                        <input type="password" name="apiKey" class="form-control" autocomplete="off"
+                               placeholder="@(Model.EmailApiKeySet ? "•••••••••••••••• (unchanged)" : "Enter your Mailjet API key")" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small mb-1">Mailjet secret key</label>
+                        <input type="password" name="secretKey" class="form-control" autocomplete="off"
+                               placeholder="@(Model.EmailSecretKeySet ? "•••••••••••••••• (unchanged)" : "Enter your Mailjet secret key")" />
+                        @if (Model.EmailApiKeySet && Model.EmailSecretKeySet)
+                        {
+                            <div class="form-text"><i class="bi bi-check-circle text-success me-1"></i>Mailjet credentials are configured. Leave blank to keep them.</div>
+                        }
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small mb-1">From address</label>
+                        <input type="email" name="fromAddress" class="form-control" style="max-width:420px"
+                               value="@Model.EmailFromAddress" placeholder="no-reply@yourdomain.com" />
+                        <div class="form-text">Must be a verified sender in your Mailjet account.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small mb-1">From name <span class="text-muted">(optional)</span></label>
+                        <input type="text" name="fromName" class="form-control" style="max-width:420px"
+                               value="@Model.EmailFromName" placeholder="Inventory Store" />
+                    </div>
+                    <div class="form-text mb-3">
+                        Password-reset emails link back using the <strong>Public base URL</strong> set in
+                        <a href="/Settings?tab=general">Settings → General</a>.
+                    </div>
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="card" style="max-width: 720px;">
+            <div class="card-header fw-semibold">Send test email</div>
+            <div class="card-body">
+                <form method="post" asp-page-handler="SendTestEmail" class="d-flex gap-2 flex-wrap">
+                    <input type="email" name="testAddress" class="form-control" style="max-width:320px" placeholder="you@example.com" required />
+                    <button type="submit" class="btn btn-outline-primary">Send test</button>
                 </form>
             </div>
         </div>

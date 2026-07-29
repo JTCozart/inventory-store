@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using InventoryStore.Application.DTOs;
 using InventoryStore.Application.Interfaces.Services;
 using InventoryStore.Domain.Entities;
@@ -12,17 +14,28 @@ public class AuthenticationService : IUserAuthService
     private readonly IActivityLogRepository _activityLogRepository;
     private readonly IPasswordHasher _passwordHasher;
     private readonly IHostingMode _hostingMode;
+    private readonly IPasswordResetTokenRepository _resetTokenRepository;
+    private readonly IEmailSender _emailSender;
+    private readonly ISettingsService _settingsService;
+
+    private static readonly TimeSpan ResetTokenLifetime = TimeSpan.FromMinutes(30);
 
     public AuthenticationService(
         IUserRepository userRepository,
         IActivityLogRepository activityLogRepository,
         IPasswordHasher passwordHasher,
-        IHostingMode hostingMode)
+        IHostingMode hostingMode,
+        IPasswordResetTokenRepository resetTokenRepository,
+        IEmailSender emailSender,
+        ISettingsService settingsService)
     {
         _userRepository = userRepository;
         _activityLogRepository = activityLogRepository;
         _passwordHasher = passwordHasher;
         _hostingMode = hostingMode;
+        _resetTokenRepository = resetTokenRepository;
+        _emailSender = emailSender;
+        _settingsService = settingsService;
     }
 
     // In professional-services hosted mode the first admin account is locked. Returns its id so it
@@ -215,6 +228,90 @@ public class AuthenticationService : IUserAuthService
 
         await _userRepository.DeleteAsync(id);
     }
+
+    public async Task RequestPasswordResetAsync(string usernameOrEmail, string requestHostBaseUrl)
+    {
+        usernameOrEmail = usernameOrEmail.Trim();
+        var user = await _userRepository.GetByUsernameAsync(usernameOrEmail)
+            ?? await _userRepository.GetByEmailAsync(usernameOrEmail);
+        if (user is null || !user.IsActive || string.IsNullOrWhiteSpace(user.Email))
+            return; // Enumeration-safe: silently no-op, same as a successful send from the caller's view.
+
+        await _resetTokenRepository.InvalidateAllForUserAsync(user.Id);
+
+        var rawToken = GenerateRawToken();
+        await _resetTokenRepository.CreateAsync(new PasswordResetToken
+        {
+            UserId = user.Id,
+            TokenHash = HashToken(rawToken),
+            ExpiresAt = DateTime.UtcNow.Add(ResetTokenLifetime)
+        });
+
+        // Never trust the inbound request's Host header for a URL that carries a bearer
+        // reset token -- it's attacker-controllable (Host header injection) and would let an
+        // attacker redirect the emailed link to a domain they control. Use the admin-configured
+        // public base URL when set; only fall back to the request's own host for installs that
+        // haven't configured one yet (typically a local/LAN-only install with no exposed proxy).
+        var configuredBaseUrl = await _settingsService.GetAsync(ISettingsService.PublicBaseUrlSettingKey);
+        var resetBaseUrl = string.IsNullOrWhiteSpace(configuredBaseUrl) ? requestHostBaseUrl : configuredBaseUrl;
+
+        var link = $"{resetBaseUrl.TrimEnd('/')}/Auth/ResetPassword?token={Uri.EscapeDataString(rawToken)}";
+        var html = $"""
+            <div style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;max-width:520px;margin:auto;color:#111;">
+              <h2 style="font-weight:600;">Reset your password</h2>
+              <p>We received a request to reset the password for your Inventory Store account ({System.Net.WebUtility.HtmlEncode(user.Username)}). This link expires in 30 minutes.</p>
+              <p style="margin:24px 0;"><a href="{System.Net.WebUtility.HtmlEncode(link)}"
+                 style="background:#2563eb;color:#fff;padding:10px 18px;border-radius:6px;text-decoration:none;">Reset password</a></p>
+              <p>If the button doesn't work, paste this link into your browser:</p>
+              <p style="word-break:break-all;"><a href="{System.Net.WebUtility.HtmlEncode(link)}">{System.Net.WebUtility.HtmlEncode(link)}</a></p>
+              <p style="color:#666;">If you didn't request this, you can safely ignore this email -- your password won't change.</p>
+            </div>
+            """;
+
+        var result = await _emailSender.SendAsync(user.Email, "Reset your password", html);
+        if (result.Succeeded)
+        {
+            await _activityLogRepository.CreateAsync(new ActivityLog
+            {
+                UserId = user.Id,
+                Username = user.Username,
+                Action = "PasswordResetRequested",
+                Details = "Password reset link emailed"
+            });
+        }
+    }
+
+    public async Task<bool> ResetPasswordWithTokenAsync(string token, string newPassword)
+    {
+        var resetToken = await _resetTokenRepository.GetValidByHashAsync(HashToken(token));
+        if (resetToken is null)
+            return false;
+
+        var user = await _userRepository.GetByIdAsync(resetToken.UserId);
+        if (user is null || !user.IsActive)
+            return false;
+
+        user.PasswordHash = _passwordHasher.Hash(newPassword);
+        await _userRepository.UpdateAsync(user);
+        await _resetTokenRepository.MarkUsedAsync(resetToken.Id);
+
+        await _activityLogRepository.CreateAsync(new ActivityLog
+        {
+            UserId = user.Id,
+            Username = user.Username,
+            Action = "PasswordResetCompleted",
+            Details = "Password reset via emailed link"
+        });
+
+        return true;
+    }
+
+    private static string GenerateRawToken() =>
+        Convert.ToBase64String(RandomNumberGenerator.GetBytes(32))
+            .Replace('+', '-').Replace('/', '_').TrimEnd('=');
+
+    private static string HashToken(string token) =>
+        Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(token)));
 
     private static UserDto MapToDto(User user, int? lockedAdminId = null) => new(
         user.Id,
