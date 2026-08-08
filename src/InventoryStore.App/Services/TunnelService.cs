@@ -9,8 +9,9 @@ namespace InventoryStore.App.Services;
 public sealed partial class TunnelService : IAsyncDisposable
 {
     // ── Cloudflared paths ─────────────────────────────────────────────────
-    private static readonly int AppPort =
-        Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development" ? 5051 : 5050;
+    // Follows the Proxy:Port override so a tunnel still points at the port the app
+    // actually bound. See ProxyOptions.
+    private static readonly int AppPort = ProxyOptions.EffectiveHttpPort;
 
     private static readonly string CloudflaredPath = Path.Combine(
         AppPaths.DataDir, "tools",

@@ -8,7 +8,10 @@ namespace InventoryStore.Tray;
 
 public class TrayApplicationContext : ApplicationContext
 {
-    private const string BaseUrl  = "http://localhost:5050";
+    // Standalone companion: it cannot read the app's appsettings.json, so the port
+    // override is picked up from the environment alias only. Matches ProxyOptions.
+    private static readonly string BaseUrl =
+        $"http://localhost:{(int.TryParse(Environment.GetEnvironmentVariable("INVENTORYSTORE_PROXY_PORT"), out var p) && p > 0 ? p : 5050)}";
     private const int    PollMs   = 10_000;
 
     private readonly HttpClient          _http;

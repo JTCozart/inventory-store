@@ -7,8 +7,7 @@ namespace InventoryStore.App.Tray;
 
 public class TrayApplicationContext : ApplicationContext
 {
-    private static readonly int Port =
-        Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development" ? 5051 : 5050;
+    private static readonly int Port = InventoryStore.App.Utilities.ProxyOptions.EffectiveHttpPort;
 
     private readonly IServiceProvider _services;
     private readonly CancellationTokenSource _cts;

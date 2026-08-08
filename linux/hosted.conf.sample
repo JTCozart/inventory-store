@@ -1,0 +1,37 @@
+# Reverse-proxy / hosted deployment drop-in.
+#
+# Install as:
+#   sudo mkdir -p /etc/systemd/system/inventorystore.service.d
+#   sudo cp hosted.conf.sample /etc/systemd/system/inventorystore.service.d/hosted.conf
+#   sudo systemctl daemon-reload && sudo systemctl restart inventorystore
+#
+# With Proxy__Port set, the app binds ONLY that port as plain HTTP. It does not
+# bind 80 or 443, does not serve TLS, and skips Let's Encrypt and manual
+# certificates entirely -- even if HTTPS is still switched on in Settings. The
+# proxy in front terminates TLS and forwards to this port.
+#
+# The Network tab in Settings is disabled in this mode, since remote access,
+# HTTPS and certificates all belong to the proxy.
+
+[Service]
+# The port the proxy forwards to.
+Environment=Proxy__Port=8080
+
+# Send plain-HTTP requests on to https://. Uses the proxy's X-Forwarded-Proto,
+# so it only fires for requests the proxy itself received over plain HTTP --
+# requests it already served over TLS are left alone. Leave false if the proxy
+# already does the redirect (HostRouter does).
+Environment=Proxy__RedirectToTls=false
+
+# Optional: restrict which upstream may set X-Forwarded-* headers. Comma
+# separated. When unset, forwarded headers are accepted from any upstream --
+# fine when Proxy__Port is reachable only by the proxy, worth pinning when the
+# port is exposed more widely.
+#Environment=Proxy__TrustedProxies=127.0.0.1,10.0.0.5
+
+# Forwarded headers without a port change (proxy forwards to the default 5050).
+#Environment=Proxy__Enabled=true
+
+# The app no longer binds privileged ports in this mode, so the unit's
+# AmbientCapabilities=CAP_NET_BIND_SERVICE can be dropped if you wish:
+#AmbientCapabilities=

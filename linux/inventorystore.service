@@ -15,6 +15,11 @@ RestartSec=5
 User=inventorystore
 Group=inventorystore
 
+# Behind a reverse proxy, drop a hosted.conf in
+# /etc/systemd/system/inventorystore.service.d/ setting Proxy__Port -- the app then
+# binds only that port as plain HTTP and never touches 80/443 or certificates. See
+# hosted.conf.sample in the repo.
+
 # Allow the unprivileged service to bind the privileged ports 80/443 used by HTTPS
 # and the Let's Encrypt HTTP-01 challenge.
 AmbientCapabilities=CAP_NET_BIND_SERVICE

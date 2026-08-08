@@ -77,6 +77,12 @@ public class IndexModel : PageModel
     public string? LeEmail            { get; private set; }
     public bool    LeTosAccepted      { get; private set; }
 
+    // Reverse-proxy deployment: TLS belongs to the proxy, so the app's own HTTPS
+    // controls are inert and the page shows them read-only. See ProxyOptions.
+    public bool ProxyEnabled       => InventoryStore.App.Utilities.ProxyOptions.Current.Enabled;
+    public int  ProxyHttpPort      => InventoryStore.App.Utilities.ProxyOptions.EffectiveHttpPort;
+    public bool ProxyRedirectToTls => InventoryStore.App.Utilities.ProxyOptions.Current.RedirectToTls;
+
     // Modules tab
     public IReadOnlyList<InventoryStore.App.Modules.ModuleDescriptor> Modules { get; private set; } = [];
     public IReadOnlyDictionary<string, bool> EnabledMap { get; private set; } = new Dictionary<string, bool>();
@@ -307,6 +313,9 @@ public class IndexModel : PageModel
         bool httpsEnabled, int httpsPort, string? httpsDomain, string? httpsCertPassword, IFormFile? certFile)
     {
         if (!User.IsInRole("Admin")) return Forbid();
+        if (ProxyEnabled)
+            return RedirectWithMessage("network", error: ProxyLockMessage);
+
 
         if (certFile is { Length: > 0 })
         {
@@ -329,6 +338,9 @@ public class IndexModel : PageModel
         bool leEnabled, string? leDomain, string? leEmail, bool leAcceptTos)
     {
         if (!User.IsInRole("Admin")) return Forbid();
+        if (ProxyEnabled)
+            return RedirectWithMessage("network", error: ProxyLockMessage);
+
 
         leDomain = leDomain?.Trim();
         leEmail  = leEmail?.Trim();
@@ -358,11 +370,19 @@ public class IndexModel : PageModel
     public async Task<IActionResult> OnPostClearHttpsCertAsync()
     {
         if (!User.IsInRole("Admin")) return Forbid();
+        if (ProxyEnabled)
+            return RedirectWithMessage("network", error: ProxyLockMessage);
+
         if (System.IO.File.Exists(HttpsCertPath())) System.IO.File.Delete(HttpsCertPath());
         await _settingsService.SetAsync("https.enabled",       "false");
         await _settingsService.SetAsync("https.cert.password", null);
         return RedirectWithMessage("network", success: "Certificate removed. Restart the service to disable HTTPS.");
     }
+
+    // Shown when an HTTPS post is rejected because a reverse proxy owns TLS. The UI
+    // disables these controls already; this covers a stale page or a direct post.
+    private const string ProxyLockMessage =
+        "Network settings are disabled when in a hosted environment. The reverse proxy owns the public address and TLS.";
 
     private static string HttpsCertPath() => Path.Combine(AppPaths.DataDir, "https.pfx");
 
@@ -370,6 +390,9 @@ public class IndexModel : PageModel
         string? tunnelToken, string? tunnelUrl, string? ltSubdomain, string? autostart, string? serveoSubdomain)
     {
         if (!User.IsInRole("Admin")) return Forbid();
+
+        if (ProxyEnabled)
+            return RedirectWithMessage("network", error: ProxyLockMessage);
 
         await _settingsService.SetAsync("tunnel.token",              tunnelToken);
         await _settingsService.SetAsync("tunnel.url",                tunnelUrl);

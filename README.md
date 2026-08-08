@@ -94,6 +94,40 @@ Inventory Store can manage its own certificate. Go to **Settings → Network →
 
 The systemd unit grants `CAP_NET_BIND_SERVICE` so the unprivileged service can bind ports 80 and 443.
 
+### Running behind a reverse proxy
+
+If a reverse proxy (HostRouter, nginx, Traefik, a cloud load balancer) already terminates TLS in front of Inventory Store, the app should not own the machine's web ports. Set a **port override** and it switches into proxy mode:
+
+- Kestrel binds **only** the override port, as plain HTTP. Ports 80 and 443 are never bound, and Let's Encrypt / manual certificates are skipped entirely - even if HTTPS is still switched on under Settings. The proxy owns TLS.
+- `X-Forwarded-For`, `-Proto` and `-Host` are honoured, so the client IP, `Request.IsHttps` and generated links reflect the public request rather than the proxy hop.
+- **Settings → Network is disabled** in this mode, with a message explaining that network settings are managed by the hosting environment. Remote access, HTTPS and certificates all belong to the proxy. The HTTPS and tunnel save handlers reject posts server-side too, not just in the UI.
+
+**Linux** - add a drop-in at `/etc/systemd/system/inventorystore.service.d/hosted.conf` (a ready-made `linux/hosted.conf.sample` ships in this repo):
+
+```ini
+[Service]
+Environment=Proxy__Port=8080
+Environment=Proxy__RedirectToTls=false
+```
+
+**Windows** - add the `Proxy` section to `appsettings.json` next to the executable:
+
+```json
+"Proxy": {
+  "Port": 8080,
+  "RedirectToTls": false
+}
+```
+
+| Setting | Env alias | Meaning |
+| --- | --- | --- |
+| `Proxy:Port` | `INVENTORYSTORE_PROXY_PORT` | Port to bind instead of 5050. Setting it turns proxy mode on. |
+| `Proxy:RedirectToTls` | `INVENTORYSTORE_PROXY_REDIRECT_TO_TLS` | Redirect plain-HTTP requests to `https://`. Uses the forwarded scheme, so it only fires when the proxy itself received plain HTTP - it cannot loop. Leave off if the proxy already redirects. |
+| `Proxy:Enabled` | `INVENTORYSTORE_PROXY_ENABLED` | Turn on forwarded-header handling without changing the port. Implied by `Proxy:Port`. |
+| `Proxy:TrustedProxies` | `INVENTORYSTORE_PROXY_TRUSTED_PROXIES` | Comma-separated upstream IPs allowed to set `X-Forwarded-*`. Unset accepts them from any upstream, which is fine when the app port is reachable only by the proxy. |
+
+Restart the service after changing these; they are read once at startup.
+
 ---
 
 ## Quick start

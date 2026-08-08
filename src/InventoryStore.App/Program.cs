@@ -366,9 +366,14 @@ internal class Program
                 logging.AddLog4Net(Path.Combine(AppContext.BaseDirectory, "log4net.config")))
             .ConfigureWebHostDefaults(web =>
             {
-                var isDev = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
-                var httpPort = isDev ? 5051 : 5050;
-                var https = LoadHttpsConfig();
+                var proxy = InventoryStore.App.Utilities.ProxyOptions.Current;
+                var httpPort = InventoryStore.App.Utilities.ProxyOptions.EffectiveHttpPort;
+
+                // Behind a reverse proxy the proxy terminates TLS, so the app's own HTTPS
+                // stack is off regardless of what Settings says: no 80, no 443, no
+                // certificate handling. Kestrel binds the (possibly overridden) HTTP port
+                // and nothing else.
+                var https = proxy.Enabled ? DisabledHttps() : LoadHttpsConfig();
 
                 var useLetsEncrypt = https is { Enabled: true, Mode: "letsencrypt" }
                     && !string.IsNullOrWhiteSpace(https.Domain) && https.TosAccepted;
@@ -394,7 +399,7 @@ internal class Program
                     }
                 });
 
-                web.Configure(app => ConfigureApp(app, https));
+                web.Configure(app => ConfigureApp(app, https, proxy));
 
                 web.UseKestrel(options =>
                 {
@@ -421,12 +426,17 @@ internal class Program
         bool Enabled, string Mode, int Port, string CertPath, string? CertPassword,
         string? Domain, string? Email, bool TosAccepted);
 
+    static HttpsSettings DisabledHttps() => new(
+        false, "manual", 443,
+        Path.Combine(InventoryStore.App.Utilities.AppPaths.DataDir, "https.pfx"),
+        null, null, null, false);
+
     static HttpsSettings LoadHttpsConfig()
     {
         var dataDir  = InventoryStore.App.Utilities.AppPaths.DataDir;
         var certPath = Path.Combine(dataDir, "https.pfx");
         var dbPath   = Path.Combine(dataDir, "inventory.db");
-        var disabled = new HttpsSettings(false, "manual", 443, certPath, null, null, null, false);
+        var disabled = DisabledHttps();
         if (!File.Exists(dbPath)) return disabled;
         try
         {
@@ -568,7 +578,7 @@ internal class Program
         services.AddAuthorization();
     }
 
-    static void ConfigureApp(IApplicationBuilder app, HttpsSettings https)
+    static void ConfigureApp(IApplicationBuilder app, HttpsSettings https, InventoryStore.App.Utilities.ProxyOptions proxy)
     {
         var env = app.ApplicationServices.GetRequiredService<IWebHostEnvironment>();
 
@@ -576,6 +586,51 @@ internal class Program
             app.UseDeveloperExceptionPage();
         else
             app.UseExceptionHandler("/Error");
+
+        if (proxy.Enabled)
+        {
+            // Recover the original scheme, host and client IP from the proxy's headers.
+            // XForwardedHost matters as much as Proto: without it Request.Host stays the
+            // internal address and same-origin redirects (login, access-denied) send the
+            // browser somewhere it cannot reach.
+            var forwarded = new Microsoft.AspNetCore.Builder.ForwardedHeadersOptions
+            {
+                ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor
+                                 | Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto
+                                 | Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedHost
+            };
+            // The defaults trust loopback only, which silently drops the headers when the
+            // proxy runs on another host. Clearing accepts them from any upstream -- fine
+            // when the app port is reachable only by the proxy. Set Proxy:TrustedProxies
+            // to pin it to the proxy's address when the port is more widely exposed.
+            forwarded.KnownNetworks.Clear();
+            forwarded.KnownProxies.Clear();
+            foreach (var ip in proxy.TrustedProxies)
+                if (System.Net.IPAddress.TryParse(ip, out var parsed))
+                    forwarded.KnownProxies.Add(parsed);
+
+            app.UseForwardedHeaders(forwarded);
+
+            // SSL offload: the proxy always speaks plain HTTP to us, so this must test the
+            // forwarded scheme (which UseForwardedHeaders above has just applied to
+            // Request.IsHttps) and never the local port -- keying on the port would
+            // redirect every request, including ones the proxy already served over TLS,
+            // into an endless loop.
+            if (proxy.RedirectToTls)
+            {
+                app.Use(async (ctx, next) =>
+                {
+                    if (!ctx.Request.IsHttps)
+                    {
+                        var target = $"https://{ctx.Request.Host}" +
+                                     $"{ctx.Request.PathBase}{ctx.Request.Path}{ctx.Request.QueryString}";
+                        ctx.Response.Redirect(target, permanent: false);
+                        return;
+                    }
+                    await next();
+                });
+            }
+        }
 
         // When HTTPS is enabled, redirect plain HTTP arriving on port 80 to HTTPS. The ACME
         // HTTP-01 challenge (served first by LettuceEncrypt's startup filter) is excluded so
@@ -614,7 +669,7 @@ internal class Program
                 if (!LocalApiGuard.IsLoopback(ctx)) return Results.Forbid();
                 return Results.Ok(new
                 {
-                    networkUrl  = $"http://{InventoryStore.App.Utilities.NetworkUtility.GetLocalIpAddress()}:5050",
+                    networkUrl  = $"http://{InventoryStore.App.Utilities.NetworkUtility.GetLocalIpAddress()}:{InventoryStore.App.Utilities.ProxyOptions.EffectiveHttpPort}",
                     tunnelState = tunnel.State.ToString(),
                     tunnelUrl   = tunnel.PublicUrl,
                 });

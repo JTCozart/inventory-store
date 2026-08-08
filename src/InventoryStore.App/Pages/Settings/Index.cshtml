@@ -417,7 +417,52 @@
     </div>
 }
 
-@if (Model.Tab == "network" && User.IsInRole("Admin"))
+@* Reverse-proxy deployment: the proxy owns the public address and TLS, and Kestrel binds
+   only the configured port. Everything on this tab (tunnels, HTTPS, certificates) would
+   either do nothing or fight the proxy, so show the deployment as-configured instead. *@
+@if (Model.Tab == "network" && User.IsInRole("Admin") && Model.ProxyEnabled)
+{
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <div class="card">
+                <div class="card-header fw-semibold">
+                    <i class="bi bi-diagram-3 me-2"></i>Network
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info d-flex align-items-start mb-3">
+                        <i class="bi bi-info-circle me-2 mt-1"></i>
+                        <div>
+                            <strong>Network settings are disabled when in a hosted environment.</strong>
+                            <div class="small mt-1">
+                                This instance runs behind a reverse proxy, which owns the public address
+                                and terminates TLS. Remote access, HTTPS and certificates are configured
+                                on the proxy, not here.
+                            </div>
+                        </div>
+                    </div>
+                    <dl class="row mb-0 small">
+                        <dt class="col-5">Listening port</dt>
+                        <dd class="col-7">@Model.ProxyHttpPort <span class="text-muted">(plain HTTP, from the proxy)</span></dd>
+                        <dt class="col-5">Redirect to TLS</dt>
+                        <dd class="col-7">@(Model.ProxyRedirectToTls ? "Enabled" : "Disabled")</dd>
+                        <dt class="col-5">Configured in</dt>
+                        <dd class="col-7 text-break">
+                            @if (OperatingSystem.IsWindows())
+                            {
+                                <text>the <code>Proxy</code> section of <code>appsettings.json</code></text>
+                            }
+                            else
+                            {
+                                <text><code>Environment=Proxy__Port</code> / <code>Proxy__RedirectToTls</code> in the systemd unit</text>
+                            }
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+else if (Model.Tab == "network" && User.IsInRole("Admin"))
 {
     var isStopped = Model.TunnelState is TunnelService.TunnelState.Stopped or TunnelService.TunnelState.Error;
     var isRunning = Model.TunnelState == TunnelService.TunnelState.Running;
@@ -1695,12 +1740,12 @@
                 </dd>
                 <dt class="col-5">Local URL</dt>
                 <dd class="col-7">
-                    <a href="http://localhost:5050" target="_blank">http://localhost:5050</a>
+                    <a href="http://localhost:@Model.ProxyHttpPort" target="_blank">http://localhost:@Model.ProxyHttpPort</a>
                 </dd>
                 <dt class="col-5">Network URL</dt>
                 <dd class="col-7">
-                    <a href="http://@Model.LocalIpAddress:5050" target="_blank">
-                        http://@Model.LocalIpAddress:5050
+                    <a href="http://@(Model.LocalIpAddress):@Model.ProxyHttpPort" target="_blank">
+                        http://@(Model.LocalIpAddress):@Model.ProxyHttpPort
                     </a>
                 </dd>
                 @if (User.IsInRole("Admin"))
