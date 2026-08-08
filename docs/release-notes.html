@@ -154,11 +154,36 @@
     <p>What's new, improved, and fixed in each version of Inventory Store.</p>
   </div>
 
+  <section class="release" id="v20260808-1001">
+    <div class="release-head">
+      <h2>v20260808.1001</h2>
+      <span class="release-date">August 8, 2026</span>
+      <span class="release-latest">Latest</span>
+    </div>
+
+    <div class="release-group">
+      <span class="release-group-label label-new">New</span>
+      <ul>
+        <li><strong>Run Inventory Store behind a reverse proxy.</strong> If you already have something in front of your server handling web addresses and secure connections - a proxy, a load balancer, or a hosting provider - Inventory Store can now sit behind it. Point it at a single port of your choosing and it stops trying to claim the standard web ports for itself, so it no longer competes with whatever else is running on the machine.</li>
+        <li><strong>Certificates handled for you in a hosted setup.</strong> In this mode the app leaves secure connections entirely to the proxy in front. There is no certificate to upload, request, or renew on the Inventory Store side.</li>
+        <li><strong>Optional automatic upgrade to a secure address.</strong> A single setting sends anyone arriving over a plain, unsecured address to the secure one instead. Leave it off if your proxy already does this.</li>
+        <li><strong>Visitor details are preserved.</strong> Sign-in links, redirects, and the activity log now show the real web address and the real visitor, rather than the proxy sitting in between.</li>
+      </ul>
+    </div>
+
+    <div class="release-group">
+      <span class="release-group-label label-improved">Improved</span>
+      <ul>
+        <li><strong>Clearer settings in a hosted environment.</strong> When the app is running behind a proxy, the Network settings page explains that these settings are managed by the hosting environment instead of showing options that would have no effect. It also shows the port in use at a glance.</li>
+        <li><strong>Addresses shown throughout the app follow your chosen port.</strong> The local and network addresses on the System Info page, the tray icon menu, and remote access all use the port the app is actually running on.</li>
+      </ul>
+    </div>
+  </section>
+
   <section class="release" id="v20260729-0836">
     <div class="release-head">
       <h2>v20260729.0836</h2>
       <span class="release-date">July 29, 2026</span>
-      <span class="release-latest">Latest</span>
     </div>
 
     <div class="release-group">

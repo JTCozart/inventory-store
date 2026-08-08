@@ -993,6 +993,30 @@ sudo systemctl restart inventorystore</code></pre>
 
       <h3>Changing the certificate</h3>
       <p>Upload a new .pfx file and click <strong>Save</strong>, then <strong>Restart Service</strong>. The old certificate is replaced immediately.</p>
+
+      <h3>Running behind a reverse proxy</h3>
+      <p>If something already sits in front of your server handling web addresses and secure connections - a reverse proxy, a load balancer, or a hosting provider - Inventory Store can run behind it instead of managing its own certificate. Give it a single port to listen on and it will stay out of the way of everything else on the machine.</p>
+      <p>On <strong>Windows</strong>, add a <code>Proxy</code> section to <code>appsettings.json</code> next to the program:</p>
+      <pre><code>"Proxy": {
+  "Port": 8080,
+  "RedirectToTls": false
+}</code></pre>
+      <p>On <strong>Linux</strong>, add the settings to the service instead. Create <code>/etc/systemd/system/inventorystore.service.d/hosted.conf</code> (a ready-made <code>hosted.conf.sample</code> ships with the app):</p>
+      <pre><code>[Service]
+Environment=Proxy__Port=8080
+Environment=Proxy__RedirectToTls=false</code></pre>
+      <p>Restart the service afterwards. From then on:</p>
+      <ul>
+        <li>The app answers on that port only. It no longer uses ports 80 or 443, and it does not request or serve a certificate of its own - the proxy in front handles secure connections.</li>
+        <li>Any HTTPS settings still saved in the app are ignored, so there is nothing to undo before switching over.</li>
+        <li><strong>RedirectToTls</strong> sends anyone arriving at a plain, unsecured address on to the secure one. Leave it off if your proxy already does that.</li>
+        <li><strong>Settings → Network is disabled</strong>, with a message explaining that these settings are managed by the hosting environment. Remote access, HTTPS, and certificates all belong to the proxy.</li>
+      </ul>
+
+      <div class="callout">
+        <i class="fa-solid fa-circle-info"></i>
+        Make sure your proxy passes on the original web address and visitor details (the <code>X-Forwarded-For</code>, <code>X-Forwarded-Proto</code>, and <code>X-Forwarded-Host</code> headers - most proxies do this by default). Without them, sign-in redirects and links can point back at the internal address rather than the one your users typed.
+      </div>
     </section>
 
     <section id="public-view">
