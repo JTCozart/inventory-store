@@ -25,6 +25,7 @@ A self-hosted inventory management system for small teams. Runs as a Windows ser
 - **Cost & Valuation (module)** - record a unit cost per item; total inventory value, category breakdown, and straight-line depreciation, with a Valuation report
 - **Consumption Forecasting (module)** - projects run-out dates for consumables from a real usage history, with a Forecast report
 - **Webhooks & Integrations (module)** - send signed JSON to any URL on inventory events (checkout, low stock, item changes); connect Slack, Zapier, Make, or your own scripts
+- **Public API (module)** - other systems can list consumables, record usage, and add stock over a keyed REST API; named keys are managed in Settings (last-used shown, rotation with an optional grace period), errors come back with clear codes such as `INSUFFICIENT_QUANTITY`, and interactive Swagger docs are served at `/api/docs`
 - **CSV import / export** - bulk-load your inventory from a spreadsheet or export for backup, including a Tags column
 - **Low stock alerts** - configurable minimum quantity thresholds
 - **Reports** - stock levels, active checkouts, lost items, expiry, take-inventory sheet, barcode sheet, activity log

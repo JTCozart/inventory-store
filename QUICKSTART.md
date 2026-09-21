@@ -190,6 +190,7 @@ Inventory Store has optional add-ons under **Settings → Modules** (Admin only)
 - **Cost & Valuation** - record a unit cost per item and see total inventory value, by category, with depreciation (also a Valuation report)
 - **Consumption Forecasting** - projects when consumables will run out from real usage history (also a Forecast report)
 - **Webhooks & Integrations** - send signed messages to a URL on inventory events, to connect Slack, Zapier, Make, or your own scripts
+- **Public API** - let other systems look up consumable stock and record usage with a named API key (create, rotate, and disable keys under Configure); interactive documentation is at `/api/docs` on your server
 
 **Example - Safety Data Sheets:** switch it on, open an item, click **Edit**, enter the chemical name (e.g. `acetone`) in the **Safety Data Sheet** section, and click **Look up SDS**. The hazard pictograms then appear on the item and scan cards.
 

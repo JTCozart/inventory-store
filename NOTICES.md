@@ -36,6 +36,17 @@ https://github.com/dotnet/runtime/blob/main/LICENSE.TXT
 
 ---
 
+## Swashbuckle.AspNetCore
+
+**Copyright** (c) 2016 Richard Morris  
+**License:** MIT  
+https://github.com/domaindrivendev/Swashbuckle.AspNetCore/blob/master/LICENSE
+
+Generates the OpenAPI document for the Public API and bundles the Swagger UI, which is
+licensed under Apache License 2.0 (https://github.com/swagger-api/swagger-ui/blob/master/LICENSE).
+
+---
+
 ## Bootstrap 5
 
 **Copyright** (c) 2011-2024 The Bootstrap Authors  
