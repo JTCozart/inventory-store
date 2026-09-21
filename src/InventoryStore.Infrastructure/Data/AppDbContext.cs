@@ -20,6 +20,7 @@ public class AppDbContext : DbContext
     public DbSet<ItemCost> ItemCosts => Set<ItemCost>();
     public DbSet<StockMovement> StockMovements => Set<StockMovement>();
     public DbSet<WebhookEndpoint> WebhookEndpoints => Set<WebhookEndpoint>();
+    public DbSet<ApiKey> ApiKeys => Set<ApiKey>();
     public DbSet<KitComponent> KitComponents => Set<KitComponent>();
     public DbSet<KitCheckout> KitCheckouts => Set<KitCheckout>();
     public DbSet<KitConsumableAllocation> KitConsumableAllocations => Set<KitConsumableAllocation>();
@@ -221,6 +222,16 @@ public class AppDbContext : DbContext
             e.Property(w => w.Events).IsRequired().HasMaxLength(500);
             e.Property(w => w.Secret).HasMaxLength(200);
             e.Property(w => w.LastStatus).HasMaxLength(100);
+        });
+
+        modelBuilder.Entity<ApiKey>(e =>
+        {
+            e.HasKey(k => k.Id);
+            e.Property(k => k.Name).IsRequired().HasMaxLength(100);
+            e.Property(k => k.KeyHash).IsRequired().HasMaxLength(64);
+            e.Property(k => k.Prefix).IsRequired().HasMaxLength(16);
+            e.Property(k => k.PreviousKeyHash).HasMaxLength(64);
+            e.HasIndex(k => k.KeyHash).IsUnique();
         });
 
         modelBuilder.Entity<Client>(e =>

@@ -1,3 +1,4 @@
+using InventoryStore.App.Api;
 using InventoryStore.App.Extensions;
 using InventoryStore.App.Services;
 using InventoryStore.App.Modules;
@@ -576,6 +577,40 @@ internal class Program
             });
 
         services.AddAuthorization();
+
+        // Public API docs: only the /api/v1 group (WithGroupName("v1")) is documented, so the
+        // app's internal endpoints never appear in Swagger.
+        services.AddEndpointsApiExplorer();
+        services.AddSwaggerGen(c =>
+        {
+            c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+            {
+                Title = "Inventory Store API",
+                Version = "v1",
+                Description = "Read consumable stock and record usage. Create a key under Settings > Modules > Public API, "
+                            + "then send it in the X-Api-Key header (or as a Bearer token). "
+                            + "Every error uses the same shape: { \"error\": { \"code\": \"...\", \"message\": \"...\" } }."
+            });
+            c.DocInclusionPredicate((doc, api) => api.GroupName == doc);
+            c.AddSecurityDefinition("ApiKey", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+            {
+                Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
+                In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+                Name = "X-Api-Key",
+                Description = "API key created in Settings > Modules > Public API."
+            });
+            c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+            {
+                [new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+                {
+                    Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                    {
+                        Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                        Id = "ApiKey"
+                    }
+                }] = Array.Empty<string>()
+            });
+        });
     }
 
     static void ConfigureApp(IApplicationBuilder app, HttpsSettings https, InventoryStore.App.Utilities.ProxyOptions proxy)
@@ -657,11 +692,36 @@ internal class Program
         app.UseRouting();
         app.UseAuthentication();
         app.UseAuthorization();
+
+        // API documentation lives at /api/docs and follows the Public API module: 404 while it is off.
+        app.Use(async (ctx, next) =>
+        {
+            if (ctx.Request.Path.StartsWithSegments("/api/docs")
+                && !await ctx.RequestServices.GetRequiredService<IModuleRegistry>().IsEnabledAsync("api"))
+            {
+                ctx.Response.StatusCode = StatusCodes.Status404NotFound;
+                return;
+            }
+            await next();
+        });
+        app.UseSwagger(o => o.RouteTemplate = "api/docs/{documentName}/openapi.json");
+        app.UseSwaggerUI(o =>
+        {
+            o.RoutePrefix = "api/docs";
+            // Relative, so it still resolves when the app sits behind a reverse proxy path.
+            o.SwaggerEndpoint("v1/openapi.json", "Inventory Store API v1");
+            o.DocumentTitle = "Inventory Store API";
+        });
+
         app.UseMiddleware<FirstRunMiddleware>();
 
         app.UseEndpoints(endpoints =>
         {
             endpoints.MapRazorPages();
+
+            // ── Public API (API-key auth) + its key management ────────────
+            endpoints.MapPublicApi();
+            endpoints.MapApiKeyManagement();
 
             // ── Local tray-companion API (localhost only, no auth) ────────
             endpoints.MapGet("/api/local/status", (HttpContext ctx, TunnelService tunnel) =>

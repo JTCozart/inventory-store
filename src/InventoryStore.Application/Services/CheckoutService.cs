@@ -221,7 +221,7 @@ public class CheckoutService : ICheckoutService
         return MapRecord(record, item.Name);
     }
 
-    public async Task ConsumeAsync(ConsumeItemDto dto, int userId, string username)
+    public async Task ConsumeAsync(ConsumeItemDto dto, int? userId, string username)
     {
         var itemLock = GetItemLock(dto.InventoryItemId);
         await itemLock.WaitAsync();
@@ -234,8 +234,7 @@ public class CheckoutService : ICheckoutService
                 throw new InvalidOperationException("Use checkout/checkin for reusable items.");
 
             if (consumable.Quantity < dto.Quantity)
-                throw new InvalidOperationException(
-                    $"Only {consumable.Quantity} in stock. Cannot consume {dto.Quantity}.");
+                throw new InsufficientQuantityException(dto.Quantity, consumable.Quantity);
 
             consumable.Quantity  -= dto.Quantity;
             consumable.UpdatedAt  = DateTime.UtcNow;
@@ -273,7 +272,7 @@ public class CheckoutService : ICheckoutService
         }
     }
 
-    public async Task RestockAsync(RestockItemDto dto, int userId, string username)
+    public async Task RestockAsync(RestockItemDto dto, int? userId, string username)
     {
         var item = await _inventoryRepo.GetByIdAsync(dto.InventoryItemId)
             ?? throw new KeyNotFoundException("Item not found.");

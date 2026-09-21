@@ -247,6 +247,7 @@
       <li><a href="#cost-valuation">Cost &amp; Valuation</a></li>
       <li><a href="#forecasting">Consumption Forecasting</a></li>
       <li><a href="#webhooks">Webhooks &amp; Integrations</a></li>
+      <li><a href="#public-api">Public API</a></li>
       <li><a href="#kits">Kits &amp; Bundles</a></li>
 
       <li class="section-label">Reports</li>
@@ -665,7 +666,7 @@ sudo systemctl restart inventorystore</code></pre>
         <li>Find the module and flip its switch to <strong>Enabled</strong> or <strong>Disabled</strong></li>
         <li>When a module is on, click <strong>Configure</strong> to manage its settings and data</li>
       </ol>
-      <p>The available modules are <strong>Safety Data Sheets</strong>, <strong>Cost &amp; Valuation</strong>, <strong>Consumption Forecasting</strong>, and <strong>Webhooks &amp; Integrations</strong>, each described below.</p>
+      <p>The available modules are <strong>Safety Data Sheets</strong>, <strong>Cost &amp; Valuation</strong>, <strong>Consumption Forecasting</strong>, <strong>Webhooks &amp; Integrations</strong>, and <strong>Public API</strong>, each described below.</p>
       <div class="callout">
         <i class="fa-solid fa-circle-info"></i>
         Turning a module off hides its buttons and screens but does not delete anything it has stored. Turn it back on and your data is still there.
@@ -748,6 +749,52 @@ sudo systemctl restart inventorystore</code></pre>
         <li>Click <strong>Add</strong>. Use the <strong>Test</strong> button on a row to send a sample message and confirm it arrives</li>
       </ol>
       <p>Each message is sent as JSON and includes the event name, a timestamp, and details of the item. When you set a shared secret, the app adds a signature header (<code>X-InventoryStore-Signature</code>) so the receiving system can confirm the message really came from your app and was not changed in transit.</p>
+    </section>
+
+    <section id="public-api">
+      <h2><i class="fa-solid fa-key"></i> Public API</h2>
+      <p>The optional <strong>Public API</strong> module lets other systems, such as a scale, a script, or a spreadsheet tool, look up your consumable items and record how much was used, without anyone signing in. It only works with <strong>consumable items</strong>. Reusable items and kits are not available through it. Turn it on under <strong>Settings → Modules → Public API</strong> (Admin only).</p>
+
+      <h3>Creating a key</h3>
+      <ol>
+        <li>Click <strong>Configure</strong> on the module</li>
+        <li>Type a name that says what the key is for, for example "Kitchen scale", and click <strong>Create</strong></li>
+        <li>Copy the key that appears. <strong>It is only shown once.</strong> The app keeps a scrambled version so nobody, including you, can read it back later</li>
+      </ol>
+      <p>Whatever is using the API sends the key with every request in a header called <code>X-Api-Key</code>. It can also be sent as a Bearer token. Use a separate key for each system so you can switch one off without affecting the others.</p>
+
+      <h3>Keeping keys under control</h3>
+      <ul>
+        <li><strong>Last used</strong> shows when each key was most recently used, so you can spot keys that are no longer needed.</li>
+        <li><strong>Rotate</strong> issues a brand new key for the same entry. You choose how many hours the old key keeps working, which gives you time to update the other system without a gap. Enter 0 to cut the old key off right away.</li>
+        <li><strong>Disable</strong> pauses a key without deleting it. <strong>Delete</strong> removes it for good.</li>
+      </ul>
+
+      <h3>What it can do</h3>
+      <ul>
+        <li>List consumables, or find one by its ID or SKU</li>
+        <li>Record usage, which takes the amount out of stock</li>
+        <li>Add stock back, for example to fix an over-reported use</li>
+      </ul>
+      <p>Every use or restock done through the API appears in the activity log and the usage history, labelled with the name of the key, for example <em>api:Kitchen scale</em>. Low stock alerts and webhooks fire just as they do for changes made in the app.</p>
+
+      <h3>Error messages</h3>
+      <p>When something goes wrong, the API answers with a short code and a plain message, so the other system can react properly. For example, asking to use more than is in stock returns <code>INSUFFICIENT_QUANTITY</code> along with how many were requested and how many are available.</p>
+      <table>
+        <thead><tr><th>Code</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td><code>INSUFFICIENT_QUANTITY</code></td><td>Not enough in stock for the amount requested</td></tr>
+          <tr><td><code>INVALID_QUANTITY</code></td><td>The amount must be a whole number greater than zero</td></tr>
+          <tr><td><code>ITEM_NOT_FOUND</code></td><td>No item matches that ID or SKU</td></tr>
+          <tr><td><code>NOT_CONSUMABLE</code></td><td>The item is a reusable item or a kit</td></tr>
+          <tr><td><code>MISSING_API_KEY</code> / <code>INVALID_API_KEY</code></td><td>No key was sent, or the key is not recognised</td></tr>
+          <tr><td><code>API_KEY_DISABLED</code></td><td>The key has been disabled</td></tr>
+          <tr><td><code>API_DISABLED</code></td><td>The Public API module is switched off</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Full documentation</h3>
+      <p>Click <strong>Open API documentation</strong> on the module's settings page, or go to <code>/api/docs</code> on your server, for the complete list of requests with an interactive page where you can try them out. Use the <strong>Authorize</strong> button on that page to enter a key. The page is only available while the module is on.</p>
     </section>
 
     <section id="kits">

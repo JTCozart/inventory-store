@@ -2417,6 +2417,73 @@ else if (Model.Tab == "network" && User.IsInRole("Admin"))
     }
 }
 
+@if (Model.Tab == "modules" && User.IsInRole("Admin") && Model.ModuleSection == "api")
+{
+    <div class="mb-3">
+        <a href="/Settings?tab=modules" class="text-decoration-none small"><i class="bi bi-arrow-left me-1"></i>Modules</a>
+    </div>
+    @if (!Model.IsModuleEnabled("api"))
+    {
+        <div class="alert alert-warning" style="max-width: 1080px;">
+            The Public API module is disabled. <a href="/Settings?tab=modules">Enable it</a> to configure.
+        </div>
+    }
+    else
+    {
+        <div class="card mb-3" style="max-width: 820px;">
+            <div class="card-header fw-semibold"><i class="bi bi-key me-2"></i>Public API</div>
+            <div class="card-body small">
+                <p class="mb-2">
+                    Other systems can read consumable stock and record usage. Send a key in the
+                    <code>X-Api-Key</code> header (or as a Bearer token). Reusable items and kits are not available.
+                </p>
+                <div class="mb-2">Base address: <code id="ak-base"></code></div>
+                <a href="/api/docs" target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-book me-1"></i>Open API documentation
+                </a>
+            </div>
+        </div>
+
+        <div class="card mb-3" style="max-width: 820px;">
+            <div class="card-header fw-semibold">Create key</div>
+            <div class="card-body">
+                <div class="input-group" style="max-width: 460px;">
+                    <input type="text" id="ak-name" class="form-control" maxlength="60" placeholder="What is this key for? e.g. Kitchen scale" />
+                    <button type="button" class="btn btn-primary" onclick="createApiKey()"><i class="bi bi-plus-lg me-1"></i>Create</button>
+                </div>
+                <span id="ak-add-status" class="small"></span>
+            </div>
+        </div>
+
+        <div id="ak-reveal" class="alert alert-success d-none" style="max-width: 1080px;">
+            <div class="fw-semibold mb-1"><i class="bi bi-exclamation-triangle me-1"></i><span id="ak-reveal-title">New key</span></div>
+            <div class="small mb-2">Copy it now. For security it is not stored in a readable form and will not be shown again.</div>
+            <div class="input-group">
+                <input type="text" id="ak-reveal-key" class="form-control font-monospace" readonly onclick="this.select()" />
+                <button type="button" class="btn btn-outline-secondary" onclick="copyApiKey()"><i class="bi bi-clipboard me-1"></i><span id="ak-copy-label">Copy</span></button>
+            </div>
+            <div id="ak-reveal-note" class="small mt-2"></div>
+        </div>
+
+        <div class="card" style="max-width: 1080px;">
+            <div class="card-header d-flex align-items-center justify-content-between">
+                <span class="fw-semibold">Keys</span>
+                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="loadApiKeys()" title="Reload"><i class="bi bi-arrow-repeat"></i></button>
+            </div>
+            <div class="card-body">
+                <div id="ak-error" class="alert alert-danger d-none"></div>
+                <div id="ak-empty" class="text-center text-muted py-3 d-none">No keys yet.</div>
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle">
+                        <thead><tr><th>Name</th><th>Key</th><th>Created</th><th>Last used</th><th>Status</th><th></th></tr></thead>
+                        <tbody id="ak-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+}
+
 @section Scripts {
 <script>
 document.addEventListener('DOMContentLoaded', function () {
@@ -2587,6 +2654,93 @@ async function addWebhook() {
 async function deleteWebhook(id){ if(!confirm('Delete this endpoint?'))return; try{ var r=await fetch('/api/webhooks/'+id+'/delete',{method:'POST'}); if(r.ok)loadWebhooks(); }catch{} }
 async function testWebhook(id){ try{ var r=await fetch('/api/webhooks/'+id+'/test',{method:'POST'}); var d=await r.json(); alert(d.ok?('Sent: HTTP '+d.status):('Failed: '+(d.error||('HTTP '+d.status)))); loadWebhooks(); }catch{ alert('Network error.'); } }
 document.addEventListener('DOMContentLoaded', loadWebhooks);
+</script>
+}
+@if (Model.Tab == "modules" && Model.ModuleSection == "api" && Model.IsModuleEnabled("api"))
+{
+<script>
+function akEsc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function akShowKey(title, key, note) {
+    document.getElementById('ak-reveal-title').textContent = title;
+    document.getElementById('ak-reveal-key').value = key;
+    document.getElementById('ak-reveal-note').textContent = note || '';
+    document.getElementById('ak-copy-label').textContent = 'Copy';
+    document.getElementById('ak-reveal').classList.remove('d-none');
+    document.getElementById('ak-reveal').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+function copyApiKey() {
+    var input = document.getElementById('ak-reveal-key');
+    input.select();
+    var done = function () { document.getElementById('ak-copy-label').textContent = 'Copied'; };
+    if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(input.value).then(done, function () { document.execCommand('copy'); done(); });
+    else { document.execCommand('copy'); done(); }
+}
+async function loadApiKeys() {
+    var err=document.getElementById('ak-error'), empty=document.getElementById('ak-empty'), tbody=document.getElementById('ak-tbody');
+    err.classList.add('d-none'); empty.classList.add('d-none'); tbody.innerHTML='';
+    try {
+        var res = await fetch('/api/apikeys');
+        if (!res.ok) throw new Error();
+        var rows = await res.json();
+        if (!rows.length) { empty.classList.remove('d-none'); return; }
+        tbody.innerHTML = rows.map(function(k){
+            var used = k.lastUsedAt ? akEsc(window.fmtUtc(k.lastUsedAt,'datetime')) : '<span class="text-muted">never</span>';
+            var status = k.enabled ? '<span class="badge text-bg-success">Active</span>' : '<span class="badge text-bg-secondary">Disabled</span>';
+            if (k.graceActive) status += ' <span class="badge text-bg-warning" title="The previous key still works until this time">Old key valid until ' + akEsc(window.fmtUtc(k.graceExpiresAt,'datetime')) + '</span>';
+            var rotated = k.rotatedAt ? '<div class="text-muted" style="font-size:.75rem">Rotated ' + akEsc(window.fmtUtc(k.rotatedAt,'date')) + '</div>' : '';
+            return '<tr>'+
+                '<td class="fw-semibold">'+akEsc(k.name)+'</td>'+
+                '<td><code>'+akEsc(k.prefix)+'&hellip;</code>'+rotated+'</td>'+
+                '<td class="small">'+akEsc(window.fmtUtc(k.createdAt,'date'))+'</td>'+
+                '<td class="small">'+used+'</td>'+
+                '<td>'+status+'</td>'+
+                '<td class="text-end text-nowrap">'+
+                    '<button class="btn btn-sm btn-outline-secondary me-1" onclick="rotateApiKey('+k.id+')" title="Rotate: issue a new key"><i class="bi bi-arrow-repeat"></i></button>'+
+                    '<button class="btn btn-sm btn-outline-secondary me-1" onclick="setApiKeyEnabled('+k.id+','+(!k.enabled)+')" title="'+(k.enabled?'Disable':'Enable')+'"><i class="bi '+(k.enabled?'bi-pause-circle':'bi-play-circle')+'"></i></button>'+
+                    '<button class="btn btn-sm btn-outline-danger" onclick="deleteApiKey('+k.id+')" title="Delete"><i class="bi bi-trash"></i></button>'+
+                '</td></tr>';
+        }).join('');
+    } catch { err.textContent='Could not load keys.'; err.classList.remove('d-none'); }
+}
+async function createApiKey() {
+    var nameEl=document.getElementById('ak-name'), status=document.getElementById('ak-add-status');
+    var name=nameEl.value.trim();
+    if(!name){ status.innerHTML='<span class="text-danger">Enter a name.</span>'; return; }
+    status.innerHTML='';
+    try {
+        var res = await fetch('/api/apikeys', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name:name }) });
+        var d = await res.json().catch(function(){return {};});
+        if (res.ok) { nameEl.value=''; akShowKey('New key created: '+name, d.key, ''); loadApiKeys(); }
+        else status.innerHTML='<span class="text-danger">'+akEsc(d.error||'Create failed.')+'</span>';
+    } catch { status.innerHTML='<span class="text-danger">Network error.</span>'; }
+}
+async function rotateApiKey(id) {
+    var hours = prompt('Rotate this key?\n\nA new key will be issued. How many hours should the OLD key keep working so you can switch over? Enter 0 to cut it off immediately.', '24');
+    if (hours === null) return;
+    var n = parseInt(hours, 10);
+    if (isNaN(n) || n < 0) { alert('Enter a whole number of hours, 0 or more.'); return; }
+    try {
+        var res = await fetch('/api/apikeys/'+id+'/rotate', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ graceHours:n }) });
+        var d = await res.json().catch(function(){return {};});
+        if (!res.ok) { alert(d.error || 'Rotate failed.'); return; }
+        akShowKey('Key rotated', d.key, d.oldKeyValidUntil ? 'The old key keeps working until '+window.fmtUtc(d.oldKeyValidUntil,'datetime')+'.' : 'The old key stopped working immediately.');
+        loadApiKeys();
+    } catch { alert('Network error.'); }
+}
+async function setApiKeyEnabled(id, enabled) {
+    try {
+        var r = await fetch('/api/apikeys/'+id+'/enabled', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ enabled:enabled }) });
+        if (r.ok) loadApiKeys();
+    } catch {}
+}
+async function deleteApiKey(id) {
+    if (!confirm('Delete this key? Anything using it will stop working.')) return;
+    try { var r = await fetch('/api/apikeys/'+id+'/delete', { method:'POST' }); if (r.ok) loadApiKeys(); } catch {}
+}
+document.addEventListener('DOMContentLoaded', function () {
+    document.getElementById('ak-base').textContent = location.origin + '/api/v1';
+    loadApiKeys();
+});
 </script>
 }
 @if (Model.Tab == "notifications")

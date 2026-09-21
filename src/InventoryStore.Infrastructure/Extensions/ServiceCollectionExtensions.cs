@@ -29,6 +29,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IItemCostRepository, ItemCostRepository>();
         services.AddScoped<IStockMovementRepository, StockMovementRepository>();
         services.AddScoped<IWebhookEndpointRepository, WebhookEndpointRepository>();
+        services.AddScoped<IApiKeyRepository, ApiKeyRepository>();
         services.AddScoped<IKitRepository, KitRepository>();
         services.AddScoped<IVendorRepository, VendorRepository>();
         services.AddScoped<IMaintenanceRepository, MaintenanceRepository>();

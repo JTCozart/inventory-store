@@ -67,6 +67,7 @@ public class DatabaseInitializer
         await EnsureItemCostsTableAsync(conn);
         await EnsureStockMovementsTableAsync(conn);
         await EnsureWebhookEndpointsTableAsync(conn);
+        await EnsureApiKeysTableAsync(conn);
 
         // Kit ("bundle") support: a per-kit AllowPartial flag, the member + checkout-group tables,
         // and a link column so a checkout record can belong to a kit checkout.
@@ -395,6 +396,26 @@ public class DatabaseInitializer
                 LastStatus TEXT    NULL,
                 LastSentAt TEXT    NULL
             );";
+        await cmd.ExecuteNonQueryAsync();
+    }
+
+    private static async Task EnsureApiKeysTableAsync(SqliteConnection conn)
+    {
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+            CREATE TABLE IF NOT EXISTS ApiKeys (
+                Id                   INTEGER PRIMARY KEY AUTOINCREMENT,
+                Name                 TEXT    NOT NULL,
+                KeyHash              TEXT    NOT NULL,
+                Prefix               TEXT    NOT NULL,
+                Enabled              INTEGER NOT NULL DEFAULT 1,
+                CreatedAt            TEXT    NOT NULL,
+                LastUsedAt           TEXT    NULL,
+                RotatedAt            TEXT    NULL,
+                PreviousKeyHash      TEXT    NULL,
+                PreviousKeyExpiresAt TEXT    NULL
+            );
+            CREATE UNIQUE INDEX IF NOT EXISTS IX_ApiKeys_KeyHash ON ApiKeys (KeyHash);";
         await cmd.ExecuteNonQueryAsync();
     }
 
