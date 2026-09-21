@@ -154,11 +154,30 @@
     <p>What's new, improved, and fixed in each version of Inventory Store.</p>
   </div>
 
+  <section class="release" id="v20260921-1836">
+    <div class="release-head">
+      <h2>v20260921.1836</h2>
+      <span class="release-date">September 21, 2026</span>
+      <span class="release-latest">Latest</span>
+    </div>
+
+    <div class="release-group">
+      <span class="release-group-label label-new">New</span>
+      <ul>
+        <li><strong>Connect other systems to your stock.</strong> A new optional Public API module lets other tools, such as a scale, a script, or a spreadsheet, look up your consumable items and record how much was used, without anyone signing in. Turn it on under Settings, then Modules, then Public API. It works with consumable items only, so reusable items and kits stay out of reach.</li>
+        <li><strong>Keys you can manage.</strong> Create a separate named key for each system that needs access. A key is shown once when you make it, and only a scrambled copy is kept. Each key shows when it was last used, so you can spot ones that are no longer needed, and you can disable or delete any key at any time.</li>
+        <li><strong>Swap keys without any downtime.</strong> Rotating a key gives you a brand new one. You choose how many hours the old key keeps working, so you have time to update the other system, or you can cut the old one off straight away.</li>
+        <li><strong>Clear messages when something goes wrong.</strong> If another system asks to use more than you have in stock, it gets a plain answer saying how many were asked for and how many are actually available, along with a short code it can react to. Other problems, like an unknown item or a wrong key, get their own clear answers too.</li>
+        <li><strong>Built-in documentation.</strong> A ready-made help page lists everything the API can do and lets you try each request right from your browser. Open it from the Public API settings page. It is only available while the module is switched on.</li>
+        <li><strong>Everything is recorded.</strong> Usage and restocks made through the API show up in the activity log and usage history, labelled with the name of the key that made them. Low stock alerts and webhooks work the same as for changes made in the app.</li>
+      </ul>
+    </div>
+  </section>
+
   <section class="release" id="v20260808-1001">
     <div class="release-head">
       <h2>v20260808.1001</h2>
       <span class="release-date">August 8, 2026</span>
-      <span class="release-latest">Latest</span>
     </div>
 
     <div class="release-group">
