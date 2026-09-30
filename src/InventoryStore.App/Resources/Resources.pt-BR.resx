@@ -1,0 +1,538 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+
+  <!-- Navegação -->
+  <data name="DashboardTitle" xml:space="preserve">
+    <value>Painel</value>
+  </data>
+  <data name="Inventory" xml:space="preserve">
+    <value>Inventário</value>
+  </data>
+  <data name="Clients" xml:space="preserve">
+    <value>Clientes</value>
+  </data>
+  <data name="Reports" xml:space="preserve">
+    <value>Relatórios</value>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>Configurações</value>
+  </data>
+  <data name="UserGuide" xml:space="preserve">
+    <value>Guia do Usuário</value>
+  </data>
+  <data name="Terminal" xml:space="preserve">
+    <value>Terminal</value>
+  </data>
+  <data name="Logout" xml:space="preserve">
+    <value>Sair</value>
+  </data>
+  <data name="MyAccount" xml:space="preserve">
+    <value>Minha Conta</value>
+  </data>
+
+  <!-- Atribuição de Consumíveis -->
+  <data name="AssignConsumables" xml:space="preserve">
+    <value>Atribuir Consumíveis</value>
+  </data>
+  <data name="AssignConsumablesTitle" xml:space="preserve">
+    <value>Atribuição de Consumíveis</value>
+  </data>
+  <data name="AssignConsumablesDesc" xml:space="preserve">
+    <value>Atribua materiais consumíveis a clientes cadastrados para controle e histórico.</value>
+  </data>
+  <data name="User" xml:space="preserve">
+    <value>Usuário</value>
+  </data>
+  <data name="ConsumableItem" xml:space="preserve">
+    <value>Item Consumível</value>
+  </data>
+  <data name="Quantity" xml:space="preserve">
+    <value>Quantidade</value>
+  </data>
+  <data name="AssignedAt" xml:space="preserve">
+    <value>Data de Atribuição</value>
+  </data>
+  <data name="Actions" xml:space="preserve">
+    <value>Ações</value>
+  </data>
+  <data name="Assign" xml:space="preserve">
+    <value>Atribuir</value>
+  </data>
+  <data name="Revoke" xml:space="preserve">
+    <value>Revogar</value>
+  </data>
+  <data name="NewAssignment" xml:space="preserve">
+    <value>Nova Atribuição</value>
+  </data>
+  <data name="NoAssignments" xml:space="preserve">
+    <value>Nenhuma atribuição encontrada.</value>
+  </data>
+  <data name="SelectClient" xml:space="preserve">
+    <value>Selecionar cliente...</value>
+  </data>
+  <data name="SelectConsumable" xml:space="preserve">
+    <value>Selecionar consumível...</value>
+  </data>
+  <data name="AssignmentSaved" xml:space="preserve">
+    <value>Atribuição salva com sucesso.</value>
+  </data>
+  <data name="AssignmentRevoked" xml:space="preserve">
+    <value>Atribuição revogada com sucesso.</value>
+  </data>
+  <data name="InsufficientStock" xml:space="preserve">
+    <value>Estoque insuficiente para esta atribuição.</value>
+  </data>
+  <data name="AssignedConsumables" xml:space="preserve">
+    <value>Consumíveis Atribuídos</value>
+  </data>
+  <data name="AssignConsumable" xml:space="preserve">
+    <value>Atribuir Consumível</value>
+  </data>
+  <data name="NoConsumablesAssigned" xml:space="preserve">
+    <value>Nenhum consumível atribuído.</value>
+  </data>
+  <data name="RevokeAssignmentConfirm" xml:space="preserve">
+    <value>Deseja revogar esta atribuição e devolver os itens ao estoque?</value>
+  </data>
+  <data name="AddClient" xml:space="preserve">
+    <value>Adicionar Cliente</value>
+  </data>
+  <data name="EditClient" xml:space="preserve">
+    <value>Editar Cliente</value>
+  </data>
+  <data name="DeleteClient" xml:space="preserve">
+    <value>Excluir Cliente</value>
+  </data>
+  <data name="SearchClientPlaceholder" xml:space="preserve">
+    <value>Buscar por nome ou telefone…</value>
+  </data>
+  <data name="NoClientsFound" xml:space="preserve">
+    <value>Nenhum cliente encontrado.</value>
+  </data>
+  <data name="Phone" xml:space="preserve">
+    <value>Telefone</value>
+  </data>
+  <data name="DateOfBirth" xml:space="preserve">
+    <value>Data de Nascimento</value>
+  </data>
+  <data name="Address" xml:space="preserve">
+    <value>Endereço</value>
+  </data>
+  <data name="CheckoutHistory" xml:space="preserve">
+    <value>Histórico de Retiradas</value>
+  </data>
+
+  <!-- Inventário -->
+  <data name="InStock" xml:space="preserve">
+    <value>Em Estoque</value>
+  </data>
+  <data name="Available" xml:space="preserve">
+    <value>Disponível</value>
+  </data>
+  <data name="CheckedOut" xml:space="preserve">
+    <value>Em Uso</value>
+  </data>
+  <data name="MinQty" xml:space="preserve">
+    <value>Qtd. Mínima</value>
+  </data>
+  <data name="LowStock" xml:space="preserve">
+    <value>Estoque Baixo</value>
+  </data>
+  <data name="Location" xml:space="preserve">
+    <value>Localização</value>
+  </data>
+  <data name="Category" xml:space="preserve">
+    <value>Categoria</value>
+  </data>
+  <data name="Description" xml:space="preserve">
+    <value>Descrição</value>
+  </data>
+  <data name="Tags" xml:space="preserve">
+    <value>Etiquetas</value>
+  </data>
+  <data name="SKU" xml:space="preserve">
+    <value>SKU / Código de Barras</value>
+  </data>
+  <data name="Expiry" xml:space="preserve">
+    <value>Validade</value>
+  </data>
+  <data name="AdjustStock" xml:space="preserve">
+    <value>Ajustar Estoque</value>
+  </data>
+  <data name="CheckOut" xml:space="preserve">
+    <value>Retirar</value>
+  </data>
+  <data name="CheckIn" xml:space="preserve">
+    <value>Devolver</value>
+  </data>
+  <data name="Notes" xml:space="preserve">
+    <value>Observações</value>
+  </data>
+  <data name="Client" xml:space="preserve">
+    <value>Cliente</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>Salvar</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Cancelar</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>Fechar</value>
+  </data>
+  <data name="Edit" xml:space="preserve">
+    <value>Editar</value>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>Excluir</value>
+  </data>
+  <data name="Loading" xml:space="preserve">
+    <value>Carregando...</value>
+  </data>
+  <data name="Name" xml:space="preserve">
+    <value>Nome</value>
+  </data>
+  <data name="TotalQuantity" xml:space="preserve">
+    <value>Quantidade Total</value>
+  </data>
+  <data name="QuickScan" xml:space="preserve">
+    <value>Leitura Rápida</value>
+  </data>
+  <data name="ToggleTheme" xml:space="preserve">
+    <value>Alternar Tema</value>
+  </data>
+  <data name="General" xml:space="preserve">
+    <value>Geral</value>
+  </data>
+  <data name="Details" xml:space="preserve">
+    <value>Detalhes</value>
+  </data>
+  <data name="Safety" xml:space="preserve">
+    <value>Segurança</value>
+  </data>
+  <data name="Cost" xml:space="preserve">
+    <value>Custo</value>
+  </data>
+  <data name="Maintenance" xml:space="preserve">
+    <value>Manutenção</value>
+  </data>
+  <data name="ActiveCheckouts" xml:space="preserve">
+    <value>Retiradas Ativas</value>
+  </data>
+  <data name="LostItems" xml:space="preserve">
+    <value>Itens Perdidos</value>
+  </data>
+  <data name="Warning" xml:space="preserve">
+    <value>Aviso</value>
+  </data>
+  <data name="Search" xml:space="preserve">
+    <value>Buscar</value>
+  </data>
+  <data name="ProductDetails" xml:space="preserve">
+    <value>Detalhes do Produto</value>
+  </data>
+  <data name="ProductLookup" xml:space="preserve">
+    <value>Busca de Produto</value>
+  </data>
+  <data name="SafetyDataSheetInfo" xml:space="preserve">
+    <value>Informações de Segurança (FISPQ)</value>
+  </data>
+  <data name="ViewSDS" xml:space="preserve">
+    <value>Ver FISPQ</value>
+  </data>
+  <data name="UnitCost" xml:space="preserve">
+    <value>Custo Unitário</value>
+  </data>
+  <data name="LineValue" xml:space="preserve">
+    <value>Valor da Linha</value>
+  </data>
+  <data name="LastMaintained" xml:space="preserve">
+    <value>Última Manutenção</value>
+  </data>
+  <data name="NextDue" xml:space="preserve">
+    <value>Próxima Manutenção</value>
+  </data>
+  <data name="Consumable" xml:space="preserve">
+    <value>Consumível</value>
+  </data>
+  <data name="Reusable" xml:space="preserve">
+    <value>Reutilizável</value>
+  </data>
+  <data name="Kit" xml:space="preserve">
+    <value>Kit</value>
+  </data>
+
+  <!-- Login / Auth -->
+  <data name="Login" xml:space="preserve">
+    <value>Entrar</value>
+  </data>
+  <data name="Username" xml:space="preserve">
+    <value>Usuário</value>
+  </data>
+  <data name="Password" xml:space="preserve">
+    <value>Senha</value>
+  </data>
+  <data name="ForgotPassword" xml:space="preserve">
+    <value>Esqueceu a senha?</value>
+  </data>
+  <data name="ResetPassword" xml:space="preserve">
+    <value>Redefinir Senha</value>
+  </data>
+
+  <!-- Idioma -->
+  <data name="Language" xml:space="preserve">
+    <value>Idioma</value>
+  </data>
+  <data name="English" xml:space="preserve">
+    <value>English</value>
+  </data>
+  <data name="PortugueseBrazil" xml:space="preserve">
+    <value>Português (Brasil)</value>
+  </data>
+
+  <!-- Relatórios -->
+  <data name="Export" xml:space="preserve">
+    <value>Exportar</value>
+  </data>
+  <data name="Print" xml:space="preserve">
+    <value>Imprimir</value>
+  </data>
+  <data name="DateRange" xml:space="preserve">
+    <value>Período</value>
+  </data>
+  <data name="From" xml:space="preserve">
+    <value>De</value>
+  </data>
+  <data name="To" xml:space="preserve">
+    <value>Até</value>
+  </data>
+
+  <!-- Configurações -->
+  <data name="General_Settings" xml:space="preserve">
+    <value>Configurações Gerais</value>
+  </data>
+  <data name="Security" xml:space="preserve">
+    <value>Segurança</value>
+  </data>
+  <data name="Notifications" xml:space="preserve">
+    <value>Notificações</value>
+  </data>
+  <data name="Modules" xml:space="preserve">
+    <value>Módulos</value>
+  </data>
+  <data name="PublicAPI" xml:space="preserve">
+    <value>API Pública</value>
+  </data>
+  <data name="Apply" xml:space="preserve">
+    <value>Aplicar</value>
+  </data>
+  <data name="Enabled" xml:space="preserve">
+    <value>Habilitado</value>
+  </data>
+  <data name="Disabled" xml:space="preserve">
+    <value>Desabilitado</value>
+  </data>
+  <data name="InitialSetup" xml:space="preserve">
+    <value>Configuração Inicial</value>
+  </data>
+  <data name="WelcomeToInventoryStore" xml:space="preserve">
+    <value>Bem-vindo ao Inventory Store</value>
+  </data>
+  <data name="CreateAdminAccountDesc" xml:space="preserve">
+    <value>Crie uma conta de administrador para começar.</value>
+  </data>
+  <data name="FirstName" xml:space="preserve">
+    <value>Nome</value>
+  </data>
+  <data name="LastName" xml:space="preserve">
+    <value>Sobrenome</value>
+  </data>
+  <data name="Email" xml:space="preserve">
+    <value>E-mail</value>
+  </data>
+  <data name="Optional" xml:space="preserve">
+    <value>(opcional)</value>
+  </data>
+  <data name="Required" xml:space="preserve">
+    <value>Obrigatório.</value>
+  </data>
+  <data name="ConfirmPassword" xml:space="preserve">
+    <value>Confirmar Senha</value>
+  </data>
+  <data name="TimeZone" xml:space="preserve">
+    <value>Fuso Horário</value>
+  </data>
+  <data name="UseDeviceTimeZone" xml:space="preserve">
+    <value>Usar o fuso horário do dispositivo de cada usuário</value>
+  </data>
+  <data name="TimeZoneHelp" xml:space="preserve">
+    <value>Os horários no aplicativo são exibidos neste fuso. Você pode alterá-lo depois nas Configurações.</value>
+  </data>
+  <data name="CreateAdminAccount" xml:space="preserve">
+    <value>Criar Conta de Administrador</value>
+  </data>
+  <data name="ResetLinkSent" xml:space="preserve">
+    <value>Se essa conta existir e possuir um e-mail cadastrado, enviamos um link de redefinição para ela.</value>
+  </data>
+  <data name="BackToSignIn" xml:space="preserve">
+    <value>Voltar para o login</value>
+  </data>
+  <data name="EnterUsernameOrEmailHelp" xml:space="preserve">
+    <value>Digite seu usuário ou e-mail e enviaremos um link para redefinir sua senha.</value>
+  </data>
+  <data name="UsernameOrEmail" xml:space="preserve">
+    <value>Usuário ou e-mail</value>
+  </data>
+  <data name="SendResetLink" xml:space="preserve">
+    <value>Enviar link de redefinição</value>
+  </data>
+  <data name="LinkInvalidOrExpired" xml:space="preserve">
+    <value>Este link é inválido ou expirou.</value>
+  </data>
+  <data name="RequestNewLink" xml:space="preserve">
+    <value>Solicitar um novo link</value>
+  </data>
+  <data name="NewPassword" xml:space="preserve">
+    <value>Nova Senha</value>
+  </data>
+  <data name="ForgotPasswordTrayHelp" xml:space="preserve">
+    <value>Esqueceu a senha? Use &lt;strong&gt;Redefinir Senha do Administrador&lt;/strong&gt; no ícone da bandeja do sistema.</value>
+  </data>
+  <data name="EnterSKUOrScan" xml:space="preserve">
+    <value>Digite o SKU / escaneie</value>
+  </data>
+  <data name="Scan" xml:space="preserve">
+    <value>Escanear</value>
+  </data>
+  <data name="ScanBarcode" xml:space="preserve">
+    <value>Escanear código de barras</value>
+  </data>
+  <data name="Items" xml:space="preserve">
+    <value>Itens</value>
+  </data>
+  <data name="TotalItems" xml:space="preserve">
+    <value>Total de Itens</value>
+  </data>
+  <data name="AvailableToCheckout" xml:space="preserve">
+    <value>Disponível para Retirada</value>
+  </data>
+  <data name="FilterByNameOrCategory" xml:space="preserve">
+    <value>Filtrar por nome ou categoria…</value>
+  </data>
+  <data name="CouldNotLoadItems" xml:space="preserve">
+    <value>Não foi possível carregar os itens.</value>
+  </data>
+  <data name="NoReusableItemsMatch" xml:space="preserve">
+    <value>Nenhum item reutilizável corresponde ao filtro.</value>
+  </data>
+  <data name="AddItem" xml:space="preserve">
+    <value>Adicionar Item</value>
+  </data>
+  <data name="ViewReport" xml:space="preserve">
+    <value>Ver relatório</value>
+  </data>
+  <data name="AllStockLevelsOk" xml:space="preserve">
+    <value>Todos os níveis de estoque estão OK.</value>
+  </data>
+  <data name="AvailableShort" xml:space="preserve">
+    <value>Disp.</value>
+  </data>
+  <data name="MinShort" xml:space="preserve">
+    <value>Mín.</value>
+  </data>
+  <data name="NoItemsCheckedOut" xml:space="preserve">
+    <value>Nenhum item retirado no momento.</value>
+  </data>
+  <data name="With" xml:space="preserve">
+    <value>Com</value>
+  </data>
+  <data name="Days" xml:space="preserve">
+    <value>Dias</value>
+  </data>
+  <data name="DaysOverdueHelp" xml:space="preserve">
+    <value>Linhas destacadas em amarelo estão atrasadas (&gt;7 dias)</value>
+  </data>
+  <data name="NoLostItems" xml:space="preserve">
+    <value>Nenhum item perdido registrado.</value>
+  </data>
+  <data name="LastWith" xml:space="preserve">
+    <value>Último com</value>
+  </data>
+  <data name="RecentActivity" xml:space="preserve">
+    <value>Atividade Recente</value>
+  </data>
+  <data name="FullLog" xml:space="preserve">
+    <value>Registro completo</value>
+  </data>
+  <data name="NoActivityRecorded" xml:space="preserve">
+    <value>Nenhuma atividade registrada ainda.</value>
+  </data>
+  <data name="Item" xml:space="preserve">
+    <value>Item</value>
+  </data>
+  <data name="Date" xml:space="preserve">
+    <value>Data</value>
+  </data>
+  <data name="EditItem" xml:space="preserve">
+    <value>Editar Item</value>
+  </data>
+  <data name="SigningIn" xml:space="preserve">
+    <value>Entrando…</value>
+  </data>
+  <data name="UsernamePasswordRequired" xml:space="preserve">
+    <value>Usuário e senha são obrigatórios.</value>
+  </data>
+  <data name="InvalidUsernameOrPassword" xml:space="preserve">
+    <value>Usuário ou senha inválidos.</value>
+  </data>
+  <data name="LoginFailed" xml:space="preserve">
+    <value>Falha no login. Verifique suas credenciais.</value>
+  </data>
+  <data name="NetworkError" xml:space="preserve">
+    <value>Erro de rede. Tente novamente.</value>
+  </data>
+  <data name="ShowingRange" xml:space="preserve">
+    <value>Exibindo {0}–{1} de {2}</value>
+  </data>
+  <data name="FailedToLoadClient" xml:space="preserve">
+    <value>Falha ao carregar cliente.</value>
+  </data>
+  <data name="Returned" xml:space="preserve">
+    <value>Devolvido</value>
+  </data>
+  <data name="Active" xml:space="preserve">
+    <value>Ativo</value>
+  </data>
+</root>

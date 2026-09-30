@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Extensions.Localization;
+using InventoryStore.App.Resources;
 
 namespace InventoryStore.App.Pages.Auth;
 
@@ -15,6 +17,7 @@ public class LoginModel : PageModel
     private readonly INtfyService _ntfy;
     private readonly IEmailSender _emailSender;
     private readonly InventoryStore.App.Modules.IModuleRegistry _modules;
+    private readonly IStringLocalizer<InventoryStore.App.Resources.Resources> _localizer;
 
     [BindProperty]
     public LoginInputModel Input { get; set; } = new();
@@ -25,12 +28,13 @@ public class LoginModel : PageModel
     public bool ShowForgotPasswordLink { get; set; }
 
     public LoginModel(IUserAuthService authService, INtfyService ntfy, IEmailSender emailSender,
-        InventoryStore.App.Modules.IModuleRegistry modules)
+        InventoryStore.App.Modules.IModuleRegistry modules, IStringLocalizer<InventoryStore.App.Resources.Resources> localizer)
     {
         _authService  = authService;
         _ntfy         = ntfy;
         _emailSender  = emailSender;
         _modules      = modules;
+        _localizer    = localizer;
     }
 
     public async Task<IActionResult> OnGetAsync(string? returnUrl = null, string? success = null)
@@ -49,11 +53,11 @@ public class LoginModel : PageModel
         var password = Request.Form["password"].ToString();
 
         if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
-            return BadRequest("Username and password are required.");
+            return BadRequest(_localizer["UsernamePasswordRequired"].Value);
 
         var user = await _authService.ValidateCredentialsAsync(username, password);
         if (user is null)
-            return BadRequest("Invalid username or password.");
+            return BadRequest(_localizer["InvalidUsernameOrPassword"].Value);
 
         var claims = new List<Claim>
         {

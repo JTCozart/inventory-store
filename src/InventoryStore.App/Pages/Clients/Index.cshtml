@@ -1,25 +1,30 @@
 @page
 @model InventoryStore.App.Pages.Clients.IndexModel
 @{
-    ViewData["Title"] = "Clients";
+    ViewData["Title"] = Localizer["Clients"];
     ViewData["ActivePage"] = "Clients";
 
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-    <h1 class="h3 mb-0">Clients</h1>
+    <h1 class="h3 mb-0">@Localizer["Clients"]</h1>
     @if (Model.CanManage)
     {
-        <button class="btn btn-primary btn-sm" onclick="openClientEdit(null)">
-            <i class="bi bi-person-plus me-1"></i> Add Client
-        </button>
+        <div class="d-flex gap-2">
+            <a href="/Consumables/Assignments" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-person-check me-1"></i> @Localizer["AssignConsumables"]
+            </a>
+            <button class="btn btn-primary btn-sm" onclick="openClientEdit(null)">
+                <i class="bi bi-person-plus me-1"></i> @Localizer["AddClient"]
+            </button>
+        </div>
     }
 </div>
 
 <div class="card mb-3">
     <div class="card-body py-2">
         <form method="get" class="d-flex gap-2">
-            <input type="search" name="q" value="@Model.Query" class="form-control" style="max-width:300px" placeholder="Search by name or phone…" />
+            <input type="search" name="q" value="@Model.Query" class="form-control" style="max-width:300px" placeholder="@Localizer["SearchClientPlaceholder"]" />
             <button type="submit" class="btn btn-outline-secondary"><i class="bi bi-search"></i></button>
             @if (!string.IsNullOrEmpty(Model.Query))
             {
@@ -33,7 +38,7 @@
 {
     <div class="text-center py-5 text-muted">
         <i class="bi bi-people display-4"></i>
-        <p class="mt-2">No clients found.</p>
+        <p class="mt-2">@Localizer["NoClientsFound"]</p>
     </div>
 }
 else
@@ -43,10 +48,10 @@ else
             <table class="table table-hover mb-0">
                 <thead class="table-light">
                     <tr>
-                        <th>Name</th>
-                        <th class="d-none d-md-table-cell">Phone</th>
-                        <th class="d-none d-lg-table-cell">Date of Birth</th>
-                        <th class="d-none d-lg-table-cell">Address</th>
+                        <th>@Localizer["Name"]</th>
+                        <th class="d-none d-md-table-cell">@Localizer["Phone"]</th>
+                        <th class="d-none d-lg-table-cell">@Localizer["DateOfBirth"]</th>
+                        <th class="d-none d-lg-table-cell">@Localizer["Address"]</th>
                         <th></th>
                     </tr>
                 </thead>
@@ -61,12 +66,12 @@ else
                                 </div>
                             </td>
                             <td class="text-muted small d-none d-md-table-cell align-middle">@(c.Phone ?? "—")</td>
-                            <td class="text-muted small d-none d-lg-table-cell align-middle">@(c.DateOfBirth?.ToString("MMM d, yyyy") ?? "—")</td>
+                            <td class="text-muted small d-none d-lg-table-cell align-middle">@(c.DateOfBirth?.ToString("dd/MM/yyyy") ?? "—")</td>
                             <td class="text-muted small d-none d-lg-table-cell align-middle">@(c.Address ?? "—")</td>
                             <td class="text-end align-middle" onclick="event.stopPropagation()">
                                 @if (Model.CanManage)
                                 {
-                                    <button class="btn btn-sm btn-outline-danger" onclick="confirmDeleteClient(@c.Id, '@Html.Raw(c.DisplayName.Replace("'","\\\'"))')" title="Delete"><i class="bi bi-trash"></i></button>
+                                    <button class="btn btn-sm btn-outline-danger" onclick="confirmDeleteClient(@c.Id, '@Html.Raw(c.DisplayName.Replace("'","\\\'"))')" title="@Localizer["Delete"]"><i class="bi bi-trash"></i></button>
                                 }
                             </td>
                         </tr>
@@ -75,7 +80,7 @@ else
             </table>
         </div>
     </div>
-    <div class="text-muted small mt-2">@Model.Clients.Count() client@(Model.Clients.Count() == 1 ? "" : "s")</div>
+    <div class="text-muted small mt-2">@Model.Clients.Count() @(Model.Clients.Count() == 1 ? "cliente" : "clientes")</div>
 }
 
 <!-- View Modal (contact card style) -->
@@ -92,10 +97,10 @@ else
                 @if (Model.CanManage)
                 {
                     <button class="btn btn-sm btn-outline-primary" id="view-edit-btn">
-                        <i class="bi bi-pencil me-1"></i>Edit
+                        <i class="bi bi-pencil me-1"></i>@Localizer["Edit"]
                     </button>
                 }
-                <button class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button class="btn btn-sm btn-secondary" data-bs-dismiss="modal">@Localizer["Close"]</button>
             </div>
         </div>
     </div>
@@ -106,48 +111,48 @@ else
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header py-2">
-                <h5 class="modal-title fs-6" id="edit-modal-title">Client</h5>
+                <h5 class="modal-title fs-6" id="edit-modal-title">@Localizer["Client"]</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <div id="edit-alert" class="d-none alert py-2 px-3 mb-3" role="alert"></div>
                 <div class="row g-2">
                     <div class="col-6">
-                        <label class="form-label small mb-1">First Name <span class="text-danger">*</span></label>
+                        <label class="form-label small mb-1">@Localizer["FirstName"] <span class="text-danger">*</span></label>
                         <input id="edit-firstname" type="text" class="form-control form-control-sm" />
-                        <div id="edit-firstname-err" class="text-danger small d-none mt-1">Required.</div>
+                        <div id="edit-firstname-err" class="text-danger small d-none mt-1">@Localizer["Required"]</div>
                     </div>
                     <div class="col-6">
-                        <label class="form-label small mb-1">Last Name</label>
+                        <label class="form-label small mb-1">@Localizer["LastName"]</label>
                         <input id="edit-lastname" type="text" class="form-control form-control-sm" />
                     </div>
                     <div class="col-6">
-                        <label class="form-label small mb-1">Phone</label>
+                        <label class="form-label small mb-1">@Localizer["Phone"]</label>
                         <input id="edit-phone" type="tel" class="form-control form-control-sm" />
                     </div>
                     <div class="col-6">
-                        <label class="form-label small mb-1">Email</label>
+                        <label class="form-label small mb-1">@Localizer["Email"]</label>
                         <input id="edit-email" type="email" class="form-control form-control-sm" />
                     </div>
                     <div class="col-6">
-                        <label class="form-label small mb-1">Date of Birth</label>
+                        <label class="form-label small mb-1">@Localizer["DateOfBirth"]</label>
                         <input id="edit-dob" type="date" class="form-control form-control-sm" />
                     </div>
                     <div class="col-12">
-                        <label class="form-label small mb-1">Address</label>
+                        <label class="form-label small mb-1">@Localizer["Address"]</label>
                         <input id="edit-address" type="text" class="form-control form-control-sm" />
                     </div>
                     <div class="col-12">
-                        <label class="form-label small mb-1">Notes</label>
+                        <label class="form-label small mb-1">@Localizer["Notes"]</label>
                         <textarea id="edit-notes" class="form-control form-control-sm" rows="3"></textarea>
                     </div>
                 </div>
             </div>
             <div class="modal-footer py-2">
                 <button class="btn btn-sm btn-primary" id="btn-save-client" onclick="saveClient()">
-                    <i class="bi bi-floppy me-1"></i>Save
+                    <i class="bi bi-floppy me-1"></i>@Localizer["Save"]
                 </button>
-                <button class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button class="btn btn-sm btn-secondary" data-bs-dismiss="modal">@Localizer["Cancel"]</button>
             </div>
         </div>
     </div>
@@ -158,15 +163,15 @@ else
     <div class="modal-dialog modal-sm">
         <div class="modal-content">
             <div class="modal-header py-2">
-                <h5 class="modal-title fs-6">Delete Client</h5>
+                <h5 class="modal-title fs-6">@Localizer["DeleteClient"]</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body small">
-                Delete <strong id="delete-client-name"></strong>? This cannot be undone.
+                Excluir <strong id="delete-client-name"></strong>? Esta ação não pode ser desfeita.
             </div>
             <div class="modal-footer py-2">
-                <button class="btn btn-sm btn-danger" onclick="deleteClient()">Delete</button>
-                <button class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteClient()">@Localizer["Delete"]</button>
+                <button class="btn btn-sm btn-secondary" data-bs-dismiss="modal">@Localizer["Cancel"]</button>
             </div>
         </div>
     </div>
@@ -232,8 +237,9 @@ window.openClientView = function(id) {
             var name  = c.displayName || (c.firstName + (c.lastName ? ' ' + c.lastName : ''));
             var ini   = mkInitials(name);
             var color = avatarColor(name);
+            var culture = window.APP_CULTURE || undefined;
             var dob   = c.dateOfBirth
-                ? new Date(c.dateOfBirth + 'T00:00:00').toLocaleDateString('en-US', {year:'numeric',month:'long',day:'numeric'})
+                ? new Date(c.dateOfBirth + 'T00:00:00').toLocaleDateString(culture, {year:'numeric',month:'long',day:'numeric'})
                 : null;
             var emailHtml = c.email
                 ? '<a href="mailto:' + escHtml(c.email) + '">' + escHtml(c.email) + '</a>'
@@ -245,21 +251,21 @@ window.openClientView = function(id) {
             var historyHtml = '';
             if (history.length) {
                 var rows = history.map(function(r) {
-                    var date   = new Date(r.checkedOutAt).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'});
+                    var date   = new Date(r.checkedOutAt).toLocaleDateString(culture, {month:'short', day:'numeric', year:'numeric'});
                     var status = r.isLost
-                        ? '<span class="badge bg-danger">Lost</span>'
+                        ? '<span class="badge bg-danger">@Localizer["Lost"]</span>'
                         : r.checkedInAt
-                            ? '<span class="badge bg-secondary">Returned</span>'
-                            : '<span class="badge bg-success">Active</span>';
+                            ? '<span class="badge bg-secondary">@Localizer["Returned"]</span>'
+                            : '<span class="badge bg-success">@Localizer["Active"]</span>';
                     return '<tr><td class="small fw-semibold">' + escHtml(r.itemName) + '</td>' +
                            '<td class="small text-muted">' + date + '</td>' +
                            '<td>' + status + '</td></tr>';
                 }).join('');
                 historyHtml =
                     '<div class="border-top px-3 pt-3 pb-2">' +
-                    '<div class="small fw-semibold text-muted text-uppercase mb-2" style="letter-spacing:.05em">Checkout History</div>' +
+                    '<div class="small fw-semibold text-muted text-uppercase mb-2" style="letter-spacing:.05em">@Localizer["CheckoutHistory"]</div>' +
                     '<table class="table table-sm mb-0"><thead><tr>' +
-                    '<th class="small">Item</th><th class="small">Date</th><th class="small">Status</th>' +
+                    '<th class="small">@Localizer["Item"]</th><th class="small">@Localizer["Date"]</th><th class="small">@Localizer["Status"]</th>' +
                     '</tr></thead><tbody>' + rows + '</tbody></table></div>';
             }
 
@@ -270,23 +276,23 @@ window.openClientView = function(id) {
                     '<div class="contact-card-hero-name">' + escHtml(name) + '</div>' +
                 '</div>' +
                 '<div class="contact-card-fields">' +
-                    contactField('telephone', 'Phone', c.phone, false) +
-                    contactField('envelope', 'Email', emailHtml, true) +
-                    contactField('geo-alt', 'Address', mapsHtml, true) +
-                    contactField('cake', 'Date of Birth', dob, false) +
-                    contactField('journal-text', 'Notes', c.notes, false) +
+                    contactField('telephone', '@Localizer["Phone"]', c.phone, false) +
+                    contactField('envelope', '@Localizer["Email"]', emailHtml, true) +
+                    contactField('geo-alt', '@Localizer["Address"]', mapsHtml, true) +
+                    contactField('cake', '@Localizer["DateOfBirth"]', dob, false) +
+                    contactField('journal-text', '@Localizer["Notes"]', c.notes, false) +
                 '</div>' +
                 historyHtml;
         })
         .catch(function() {
             document.getElementById('view-modal-body').innerHTML =
-                _closeRow + '<p class="text-danger small p-3">Failed to load client.</p>';
+                _closeRow + '<p class="text-danger small p-3">@Localizer["FailedToLoadClient"]</p>';
         });
 };
 
 window.openClientEdit = function(id) {
     _editClientId = id;
-    document.getElementById('edit-modal-title').textContent = id ? 'Edit Client' : 'Add Client';
+    document.getElementById('edit-modal-title').textContent = id ? '@Localizer["EditClient"]' : '@Localizer["AddClient"]';
     document.getElementById('edit-alert').classList.add('d-none');
     document.getElementById('edit-firstname-err').classList.add('d-none');
     ['edit-firstname','edit-lastname','edit-phone','edit-email','edit-dob','edit-address','edit-notes'].forEach(function(x) {

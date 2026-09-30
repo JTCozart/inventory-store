@@ -34,21 +34,21 @@
             </a>
             <div id="topnav-links">
                 <a href="/" class="topnav-link @(ViewData["ActivePage"]?.ToString() == "Dashboard" ? "active" : "")">
-                    <i class="bi bi-speedometer2"></i> Dashboard
+                    <i class="bi bi-speedometer2"></i> @Localizer["DashboardTitle"]
                 </a>
                 <a href="/Inventory" class="topnav-link @(ViewData["ActivePage"]?.ToString() == "Inventory" ? "active" : "")">
-                    <i class="bi bi-boxes"></i> Inventory
+                    <i class="bi bi-boxes"></i> @Localizer["Inventory"]
                 </a>
                 <a href="/Clients" class="topnav-link @(ViewData["ActivePage"]?.ToString() == "Clients" ? "active" : "")">
-                    <i class="bi bi-people"></i> Clients
+                    <i class="bi bi-people"></i> @Localizer["Clients"]
                 </a>
                 @if (!User.IsInRole("Staff"))
                 {
                     <a href="/Reports" class="topnav-link @(ViewData["ActivePage"]?.ToString() == "Reports" ? "active" : "")">
-                        <i class="bi bi-bar-chart"></i> Reports
+                        <i class="bi bi-bar-chart"></i> @Localizer["Reports"]
                     </a>
                     <a href="/Settings" class="topnav-link @(ViewData["ActivePage"]?.ToString() == "Settings" ? "active" : "")">
-                        <i class="bi bi-sliders"></i> Settings
+                        <i class="bi bi-sliders"></i> @Localizer["Settings"]
                     </a>
                 }
             </div>
@@ -61,20 +61,36 @@
                     <span class="d-none d-lg-inline">v@(UpdateInfo.LatestVersion)</span>
                 </a>
             }
-            <a href="/UserGuide" class="topnav-btn @(ViewData["ActivePage"]?.ToString() == "UserGuide" ? "active" : "")" title="User Guide" style="text-decoration:none; display:flex; align-items:center;">
+            <a href="/UserGuide" class="topnav-btn @(ViewData["ActivePage"]?.ToString() == "UserGuide" ? "active" : "")" title="@Localizer["UserGuide"]" style="text-decoration:none; display:flex; align-items:center;">
                 <i class="bi bi-book"></i>
             </a>
-            <button id="theme-toggle" class="topnav-btn" onclick="toggleTheme()" title="Toggle theme">
+            <button id="theme-toggle" class="topnav-btn" onclick="toggleTheme()" title="@Localizer["ToggleTheme"]">
                 <i id="theme-icon" class="bi bi-moon"></i>
             </button>
+            <div class="dropdown" title="Idioma / Language">
+                <button class="topnav-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-translate"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><h6 class="dropdown-header">Idioma / Language</h6></li>
+                    <li><a class="dropdown-item @(System.Globalization.CultureInfo.CurrentUICulture.Name.StartsWith("pt") ? "active" : "")"
+                           href="?culture=pt-BR&returnUrl=@Uri.EscapeDataString(Context.Request.Path + Context.Request.QueryString)">
+                        🇧🇷 @Localizer["PortugueseBrazil"]
+                    </a></li>
+                    <li><a class="dropdown-item @(System.Globalization.CultureInfo.CurrentUICulture.Name.StartsWith("en") ? "active" : "")"
+                           href="?culture=en&returnUrl=@Uri.EscapeDataString(Context.Request.Path + Context.Request.QueryString)">
+                        🇺🇸 @Localizer["English"]
+                    </a></li>
+                </ul>
+            </div>
             <div class="topnav-divider"></div>
             @if (User.IsInRole("Admin") || User.IsInRole("Manager"))
             {
-                <a href="/Terminal" class="topnav-btn text-decoration-none" title="Terminal (touch checkout)">
+                <a href="/Terminal" class="topnav-btn text-decoration-none" title="@Localizer["Terminal"]">
                     <i class="bi bi-tablet-landscape"></i>
                 </a>
             }
-            <button class="topnav-btn" onclick="quickScan()" title="Quick Scan">
+            <button class="topnav-btn" onclick="quickScan()" title="@Localizer["QuickScan"]">
                 <i class="bi bi-upc-scan"></i>
             </button>
             <div class="topnav-divider"></div>
@@ -85,9 +101,9 @@
                 <ul class="dropdown-menu dropdown-menu-end">
                     <li><span class="dropdown-header">@System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase((User.Identity?.Name ?? "").ToLower())</span></li>
                     <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item" href="/Settings?tab=account"><i class="bi bi-person me-2"></i>My Account</a></li>
+                    <li><a class="dropdown-item" href="/Settings?tab=account"><i class="bi bi-person me-2"></i>@Localizer["MyAccount"]</a></li>
                     <li><form method="post" asp-page="/Auth/Logout" class="d-inline w-100">
-                        <button type="submit" class="dropdown-item w-100 text-start"><i class="bi bi-box-arrow-left me-2"></i>Logout</button>
+                        <button type="submit" class="dropdown-item w-100 text-start"><i class="bi bi-box-arrow-left me-2"></i>@Localizer["Logout"]</button>
                     </form></li>
                 </ul>
             </div>
@@ -98,37 +114,37 @@
 
         <div id="mobile-nav">
             <a href="/" class="@(ViewData["ActivePage"]?.ToString() == "Dashboard" ? "active" : "")">
-                <i class="bi bi-speedometer2"></i> Dashboard
+                <i class="bi bi-speedometer2"></i> @Localizer["DashboardTitle"]
             </a>
             <a href="/Inventory" class="@(ViewData["ActivePage"]?.ToString() == "Inventory" ? "active" : "")">
-                <i class="bi bi-boxes"></i> Inventory
+                <i class="bi bi-boxes"></i> @Localizer["Inventory"]
             </a>
             <a href="/Clients" class="@(ViewData["ActivePage"]?.ToString() == "Clients" ? "active" : "")">
-                <i class="bi bi-people"></i> Clients
+                <i class="bi bi-people"></i> @Localizer["Clients"]
             </a>
             @if (!User.IsInRole("Staff"))
             {
                 <a href="/Reports" class="@(ViewData["ActivePage"]?.ToString() == "Reports" ? "active" : "")">
-                    <i class="bi bi-bar-chart"></i> Reports
+                    <i class="bi bi-bar-chart"></i> @Localizer["Reports"]
                 </a>
                 <a href="/Settings" class="@(ViewData["ActivePage"]?.ToString() == "Settings" ? "active" : "")">
-                    <i class="bi bi-sliders"></i> Settings
+                    <i class="bi bi-sliders"></i> @Localizer["Settings"]
                 </a>
             }
             <a href="/UserGuide" class="@(ViewData["ActivePage"]?.ToString() == "UserGuide" ? "active" : "")">
-                <i class="bi bi-book"></i> User Guide
+                <i class="bi bi-book"></i> @Localizer["UserGuide"]
             </a>
             @if (User.IsInRole("Admin") || User.IsInRole("Manager"))
             {
                 <a href="/Terminal">
-                    <i class="bi bi-tablet-landscape"></i> Terminal
+                    <i class="bi bi-tablet-landscape"></i> @Localizer["Terminal"]
                 </a>
             }
             <a href="#" onclick="toggleMobileNav(); quickScan(); return false;">
-                <i class="bi bi-upc-scan"></i> Quick Scan
+                <i class="bi bi-upc-scan"></i> @Localizer["QuickScan"]
             </a>
             <a href="#" onclick="toggleTheme(); return false;">
-                <i id="mobile-theme-icon" class="bi bi-moon"></i> Toggle Theme
+                <i id="mobile-theme-icon" class="bi bi-moon"></i> @Localizer["ToggleTheme"]
             </a>
         </div>
 
@@ -144,6 +160,23 @@
 }
 else
 {
+    <div class="position-absolute top-0 end-0 p-3" style="z-index: 1050;">
+        <div class="dropdown" title="Idioma / Language">
+            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-translate me-1"></i>@(System.Globalization.CultureInfo.CurrentUICulture.Name.StartsWith("pt") ? "Português" : "English")
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+                <li><a class="dropdown-item @(System.Globalization.CultureInfo.CurrentUICulture.Name.StartsWith("pt") ? "active" : "")"
+                       href="?culture=pt-BR&returnUrl=@Uri.EscapeDataString(Context.Request.Path + Context.Request.QueryString)">
+                    🇧🇷 @Localizer["PortugueseBrazil"]
+                </a></li>
+                <li><a class="dropdown-item @(System.Globalization.CultureInfo.CurrentUICulture.Name.StartsWith("en") ? "active" : "")"
+                       href="?culture=en&returnUrl=@Uri.EscapeDataString(Context.Request.Path + Context.Request.QueryString)">
+                    🇺🇸 @Localizer["English"]
+                </a></li>
+            </ul>
+        </div>
+    </div>
     <main class="container-fluid">
         @RenderBody()
     </main>
@@ -152,8 +185,9 @@ else
 <div id="toast-container" class="position-fixed bottom-0 end-0 p-3" style="z-index:1200"></div>
 <!-- Configured display time zone (IANA id, "" = use the viewer's own device zone). The browser is
      the single authority that renders UTC timestamps into this zone. -->
-<script>window.APP_TZ = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(AppTimeZone.Id));</script>
+<script>window.APP_TZ = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(AppTimeZone.Id)); window.APP_CULTURE = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(System.Globalization.CultureInfo.CurrentUICulture.Name));</script>
 <script src="~/lib/bootstrap/js/bootstrap.bundle.min.js"></script>
+<script src="~/js/i18n-pt.js" asp-append-version="true"></script>
 <script src="~/js/site.js"></script>
 <script src="~/js/pwa.js"></script>
 @if (User.Identity?.IsAuthenticated == true)

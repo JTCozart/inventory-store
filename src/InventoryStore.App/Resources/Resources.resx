@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+
+  <data name="DashboardTitle" xml:space="preserve"><value>Dashboard</value></data>
+  <data name="Inventory" xml:space="preserve"><value>Inventory</value></data>
+  <data name="Clients" xml:space="preserve"><value>Clients</value></data>
+  <data name="Reports" xml:space="preserve"><value>Reports</value></data>
+  <data name="Settings" xml:space="preserve"><value>Settings</value></data>
+  <data name="UserGuide" xml:space="preserve"><value>User Guide</value></data>
+  <data name="Terminal" xml:space="preserve"><value>Terminal</value></data>
+  <data name="Logout" xml:space="preserve"><value>Logout</value></data>
+  <data name="MyAccount" xml:space="preserve"><value>My Account</value></data>
+  <data name="AssignConsumables" xml:space="preserve"><value>Assign Consumables</value></data>
+  <data name="AssignConsumablesTitle" xml:space="preserve"><value>Consumable Assignments</value></data>
+  <data name="AssignConsumablesDesc" xml:space="preserve"><value>Assign consumable items to registered clients for usage tracking.</value></data>
+  <data name="User" xml:space="preserve"><value>User</value></data>
+  <data name="ConsumableItem" xml:space="preserve"><value>Consumable Item</value></data>
+  <data name="Quantity" xml:space="preserve"><value>Quantity</value></data>
+  <data name="AssignedAt" xml:space="preserve"><value>Assigned At</value></data>
+  <data name="Actions" xml:space="preserve"><value>Actions</value></data>
+  <data name="Assign" xml:space="preserve"><value>Assign</value></data>
+  <data name="Revoke" xml:space="preserve"><value>Revoke</value></data>
+  <data name="NewAssignment" xml:space="preserve"><value>New Assignment</value></data>
+  <data name="NoAssignments" xml:space="preserve"><value>No assignments found.</value></data>
+  <data name="SelectClient" xml:space="preserve"><value>Select client...</value></data>
+  <data name="SelectConsumable" xml:space="preserve"><value>Select consumable...</value></data>
+  <data name="AssignmentSaved" xml:space="preserve"><value>Assignment saved successfully.</value></data>
+  <data name="AssignmentRevoked" xml:space="preserve"><value>Assignment revoked successfully.</value></data>
+  <data name="InsufficientStock" xml:space="preserve"><value>Insufficient stock for this assignment.</value></data>
+  <data name="AssignedConsumables" xml:space="preserve"><value>Assigned Consumables</value></data>
+  <data name="AssignConsumable" xml:space="preserve"><value>Assign Consumable</value></data>
+  <data name="NoConsumablesAssigned" xml:space="preserve"><value>No consumables assigned.</value></data>
+  <data name="RevokeAssignmentConfirm" xml:space="preserve"><value>Are you sure you want to revoke this assignment and return items to stock?</value></data>
+  <data name="AddClient" xml:space="preserve"><value>Add Client</value></data>
+  <data name="EditClient" xml:space="preserve"><value>Edit Client</value></data>
+  <data name="DeleteClient" xml:space="preserve"><value>Delete Client</value></data>
+  <data name="SearchClientPlaceholder" xml:space="preserve"><value>Search by name or phone…</value></data>
+  <data name="NoClientsFound" xml:space="preserve"><value>No clients found.</value></data>
+  <data name="Phone" xml:space="preserve"><value>Phone</value></data>
+  <data name="DateOfBirth" xml:space="preserve"><value>Date of Birth</value></data>
+  <data name="Address" xml:space="preserve"><value>Address</value></data>
+  <data name="CheckoutHistory" xml:space="preserve"><value>Checkout History</value></data>
+  <data name="InStock" xml:space="preserve"><value>In Stock</value></data>
+  <data name="Available" xml:space="preserve"><value>Available</value></data>
+  <data name="CheckedOut" xml:space="preserve"><value>Checked Out</value></data>
+  <data name="MinQty" xml:space="preserve"><value>Min Qty</value></data>
+  <data name="LowStock" xml:space="preserve"><value>Low Stock</value></data>
+  <data name="Location" xml:space="preserve"><value>Location</value></data>
+  <data name="Category" xml:space="preserve"><value>Category</value></data>
+  <data name="Description" xml:space="preserve"><value>Description</value></data>
+  <data name="Tags" xml:space="preserve"><value>Tags</value></data>
+  <data name="SKU" xml:space="preserve"><value>SKU / Barcode</value></data>
+  <data name="Expiry" xml:space="preserve"><value>Expiry</value></data>
+  <data name="AdjustStock" xml:space="preserve"><value>Adjust Stock</value></data>
+  <data name="CheckOut" xml:space="preserve"><value>Check Out</value></data>
+  <data name="CheckIn" xml:space="preserve"><value>Check In</value></data>
+  <data name="Notes" xml:space="preserve"><value>Notes</value></data>
+  <data name="Client" xml:space="preserve"><value>Client</value></data>
+  <data name="Save" xml:space="preserve"><value>Save</value></data>
+  <data name="Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="Close" xml:space="preserve"><value>Close</value></data>
+  <data name="Edit" xml:space="preserve"><value>Edit</value></data>
+  <data name="Delete" xml:space="preserve"><value>Delete</value></data>
+  <data name="Loading" xml:space="preserve"><value>Loading...</value></data>
+  <data name="Name" xml:space="preserve"><value>Name</value></data>
+  <data name="TotalQuantity" xml:space="preserve"><value>Total Quantity</value></data>
+  <data name="QuickScan" xml:space="preserve"><value>Quick Scan</value></data>
+  <data name="ToggleTheme" xml:space="preserve"><value>Toggle Theme</value></data>
+  <data name="General" xml:space="preserve"><value>General</value></data>
+  <data name="Details" xml:space="preserve"><value>Details</value></data>
+  <data name="Safety" xml:space="preserve"><value>Safety</value></data>
+  <data name="Cost" xml:space="preserve"><value>Cost</value></data>
+  <data name="Maintenance" xml:space="preserve"><value>Maintenance</value></data>
+  <data name="ActiveCheckouts" xml:space="preserve"><value>Active Checkouts</value></data>
+  <data name="LostItems" xml:space="preserve"><value>Lost Items</value></data>
+  <data name="Warning" xml:space="preserve"><value>Warning</value></data>
+  <data name="Search" xml:space="preserve"><value>Search</value></data>
+  <data name="ProductDetails" xml:space="preserve"><value>Product Details</value></data>
+  <data name="ProductLookup" xml:space="preserve"><value>Product Lookup</value></data>
+  <data name="SafetyDataSheetInfo" xml:space="preserve"><value>Safety Data Sheet Info</value></data>
+  <data name="ViewSDS" xml:space="preserve"><value>View SDS Info</value></data>
+  <data name="UnitCost" xml:space="preserve"><value>Unit Cost</value></data>
+  <data name="LineValue" xml:space="preserve"><value>Line Value</value></data>
+  <data name="LastMaintained" xml:space="preserve"><value>Last Maintained</value></data>
+  <data name="NextDue" xml:space="preserve"><value>Next Due</value></data>
+  <data name="Consumable" xml:space="preserve"><value>Consumable</value></data>
+  <data name="Reusable" xml:space="preserve"><value>Reusable</value></data>
+  <data name="Kit" xml:space="preserve"><value>Kit</value></data>
+  <data name="Login" xml:space="preserve"><value>Sign In</value></data>
+  <data name="Username" xml:space="preserve"><value>Username</value></data>
+  <data name="Password" xml:space="preserve"><value>Password</value></data>
+  <data name="ForgotPassword" xml:space="preserve"><value>Forgot your password?</value></data>
+  <data name="ResetPassword" xml:space="preserve"><value>Reset Password</value></data>
+  <data name="Language" xml:space="preserve"><value>Language</value></data>
+  <data name="English" xml:space="preserve"><value>English</value></data>
+  <data name="PortugueseBrazil" xml:space="preserve"><value>Português (Brasil)</value></data>
+  <data name="Export" xml:space="preserve"><value>Export</value></data>
+  <data name="Print" xml:space="preserve"><value>Print</value></data>
+  <data name="DateRange" xml:space="preserve"><value>Date Range</value></data>
+  <data name="From" xml:space="preserve"><value>From</value></data>
+  <data name="To" xml:space="preserve"><value>To</value></data>
+  <data name="General_Settings" xml:space="preserve"><value>General Settings</value></data>
+  <data name="Security" xml:space="preserve"><value>Security</value></data>
+  <data name="Notifications" xml:space="preserve"><value>Notifications</value></data>
+  <data name="Modules" xml:space="preserve"><value>Modules</value></data>
+  <data name="PublicAPI" xml:space="preserve"><value>Public API</value></data>
+  <data name="Apply" xml:space="preserve"><value>Apply</value></data>
+  <data name="Enabled" xml:space="preserve"><value>Enabled</value></data>
+  <data name="Disabled" xml:space="preserve"><value>Disabled</value></data>
+  <data name="InitialSetup" xml:space="preserve"><value>Initial Setup</value></data>
+  <data name="WelcomeToInventoryStore" xml:space="preserve"><value>Welcome to Inventory Store</value></data>
+  <data name="CreateAdminAccountDesc" xml:space="preserve"><value>Create an admin account to get started.</value></data>
+  <data name="FirstName" xml:space="preserve"><value>First Name</value></data>
+  <data name="LastName" xml:space="preserve"><value>Last Name</value></data>
+  <data name="Email" xml:space="preserve"><value>Email</value></data>
+  <data name="Optional" xml:space="preserve"><value>(optional)</value></data>
+  <data name="Required" xml:space="preserve"><value>Required.</value></data>
+  <data name="ConfirmPassword" xml:space="preserve"><value>Confirm Password</value></data>
+  <data name="TimeZone" xml:space="preserve"><value>Time Zone</value></data>
+  <data name="UseDeviceTimeZone" xml:space="preserve"><value>Use each viewer's device time zone</value></data>
+  <data name="TimeZoneHelp" xml:space="preserve"><value>Times across the app are shown in this zone. You can change it later in Settings.</value></data>
+  <data name="CreateAdminAccount" xml:space="preserve"><value>Create Admin Account</value></data>
+  <data name="ResetLinkSent" xml:space="preserve"><value>If that account exists and has an email on file, we've sent a password reset link to it.</value></data>
+  <data name="BackToSignIn" xml:space="preserve"><value>Back to sign in</value></data>
+  <data name="EnterUsernameOrEmailHelp" xml:space="preserve"><value>Enter your username or email and we'll email you a link to reset your password.</value></data>
+  <data name="UsernameOrEmail" xml:space="preserve"><value>Username or email</value></data>
+  <data name="SendResetLink" xml:space="preserve"><value>Send reset link</value></data>
+  <data name="LinkInvalidOrExpired" xml:space="preserve"><value>This link is invalid or has expired.</value></data>
+  <data name="RequestNewLink" xml:space="preserve"><value>Request a new link</value></data>
+  <data name="NewPassword" xml:space="preserve"><value>New Password</value></data>
+  <data name="ForgotPasswordTrayHelp" xml:space="preserve"><value>Forgot your password? Use &lt;strong&gt;Reset Admin Password&lt;/strong&gt; in the system tray icon.</value></data>
+  <data name="EnterSKUOrScan" xml:space="preserve"><value>Enter SKU / scan</value></data>
+  <data name="Scan" xml:space="preserve"><value>Scan</value></data>
+  <data name="ScanBarcode" xml:space="preserve"><value>Scan barcode</value></data>
+  <data name="Items" xml:space="preserve"><value>Items</value></data>
+  <data name="TotalItems" xml:space="preserve"><value>Total Items</value></data>
+  <data name="AvailableToCheckout" xml:space="preserve"><value>Available to Checkout</value></data>
+  <data name="FilterByNameOrCategory" xml:space="preserve"><value>Filter by name or category…</value></data>
+  <data name="CouldNotLoadItems" xml:space="preserve"><value>Could not load items.</value></data>
+  <data name="NoReusableItemsMatch" xml:space="preserve"><value>No reusable items match the filter.</value></data>
+  <data name="AddItem" xml:space="preserve"><value>Add Item</value></data>
+  <data name="ViewReport" xml:space="preserve"><value>View report</value></data>
+  <data name="AllStockLevelsOk" xml:space="preserve"><value>All stock levels OK.</value></data>
+  <data name="AvailableShort" xml:space="preserve"><value>Avail</value></data>
+  <data name="MinShort" xml:space="preserve"><value>Min</value></data>
+  <data name="NoItemsCheckedOut" xml:space="preserve"><value>No items currently checked out.</value></data>
+  <data name="With" xml:space="preserve"><value>With</value></data>
+  <data name="Days" xml:space="preserve"><value>Days</value></data>
+  <data name="DaysOverdueHelp" xml:space="preserve"><value>Rows highlighted yellow are overdue (&gt;7 days)</value></data>
+  <data name="NoLostItems" xml:space="preserve"><value>No lost items recorded.</value></data>
+  <data name="LastWith" xml:space="preserve"><value>Last With</value></data>
+  <data name="RecentActivity" xml:space="preserve"><value>Recent Activity</value></data>
+  <data name="FullLog" xml:space="preserve"><value>Full log</value></data>
+  <data name="NoActivityRecorded" xml:space="preserve"><value>No activity recorded yet.</value></data>
+  <data name="Item" xml:space="preserve"><value>Item</value></data>
+  <data name="Date" xml:space="preserve"><value>Date</value></data>
+  <data name="EditItem" xml:space="preserve"><value>Edit Item</value></data>
+  <data name="SigningIn" xml:space="preserve"><value>Signing in…</value></data>
+  <data name="UsernamePasswordRequired" xml:space="preserve"><value>Username and password are required.</value></data>
+  <data name="InvalidUsernameOrPassword" xml:space="preserve"><value>Invalid username or password.</value></data>
+  <data name="LoginFailed" xml:space="preserve"><value>Login failed. Please try again.</value></data>
+  <data name="NetworkError" xml:space="preserve"><value>Network error. Please try again.</value></data>
+  <data name="ShowingRange" xml:space="preserve"><value>Showing {0}–{1} of {2}</value></data>
+  <data name="FailedToLoadClient" xml:space="preserve"><value>Failed to load client.</value></data>
+  <data name="Returned" xml:space="preserve"><value>Returned</value></data>
+  <data name="Active" xml:space="preserve"><value>Active</value></data>
+</root>
