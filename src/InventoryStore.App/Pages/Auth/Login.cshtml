@@ -59,10 +59,9 @@ document.getElementById('login-form').addEventListener('submit', async function 
     e.preventDefault();
     var btn = document.getElementById('login-btn');
     var errorEl = document.getElementById('login-error');
-    var isPt = (window.APP_CULTURE || '').startsWith('pt');
 
     btn.disabled = true;
-    btn.textContent = isPt ? 'Entrando…' : 'Signing in…';
+    btn.textContent = '@Localizer["SigningIn"]';
     errorEl.classList.add('d-none');
 
     var body = new URLSearchParams({
@@ -85,21 +84,16 @@ document.getElementById('login-form').addEventListener('submit', async function 
             window.location.href = data.redirect || '/';
         } else {
             var msg = await response.text();
-            if (msg.indexOf('Username and password are required') !== -1) {
-                msg = isPt ? 'Usuário e senha são obrigatórios.' : msg;
-            } else if (msg.indexOf('Invalid username or password') !== -1) {
-                msg = isPt ? 'Usuário ou senha inválidos.' : msg;
-            }
-            errorEl.textContent = msg || (isPt ? 'Falha no login. Verifique suas credenciais.' : 'Login failed. Please try again.');
+            errorEl.textContent = msg || '@Localizer["LoginFailed"]';
             errorEl.classList.remove('d-none');
             btn.disabled = false;
-            btn.textContent = isPt ? 'Entrar' : 'Sign In';
+            btn.textContent = '@Localizer["Login"]';
         }
     } catch (err) {
-        errorEl.textContent = isPt ? 'Erro de rede. Tente novamente.' : 'Network error. Please try again.';
+        errorEl.textContent = '@Localizer["NetworkError"]';
         errorEl.classList.remove('d-none');
         btn.disabled = false;
-        btn.textContent = isPt ? 'Entrar' : 'Sign In';
+        btn.textContent = '@Localizer["Login"]';
     }
 });
 </script>

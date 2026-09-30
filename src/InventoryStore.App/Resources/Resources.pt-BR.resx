@@ -508,4 +508,31 @@
   <data name="EditItem" xml:space="preserve">
     <value>Editar Item</value>
   </data>
+  <data name="SigningIn" xml:space="preserve">
+    <value>Entrando…</value>
+  </data>
+  <data name="UsernamePasswordRequired" xml:space="preserve">
+    <value>Usuário e senha são obrigatórios.</value>
+  </data>
+  <data name="InvalidUsernameOrPassword" xml:space="preserve">
+    <value>Usuário ou senha inválidos.</value>
+  </data>
+  <data name="LoginFailed" xml:space="preserve">
+    <value>Falha no login. Verifique suas credenciais.</value>
+  </data>
+  <data name="NetworkError" xml:space="preserve">
+    <value>Erro de rede. Tente novamente.</value>
+  </data>
+  <data name="ShowingRange" xml:space="preserve">
+    <value>Exibindo {0}–{1} de {2}</value>
+  </data>
+  <data name="FailedToLoadClient" xml:space="preserve">
+    <value>Falha ao carregar cliente.</value>
+  </data>
+  <data name="Returned" xml:space="preserve">
+    <value>Devolvido</value>
+  </data>
+  <data name="Active" xml:space="preserve">
+    <value>Ativo</value>
+  </data>
 </root>

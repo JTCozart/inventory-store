@@ -378,7 +378,7 @@ function renderAvailItems() {
             : '<span class="text-muted">—</span>';
         var avClass = item.availableQuantity > 0 ? 'text-success' : 'text-muted';
         var disabled = item.availableQuantity <= 0 ? ' disabled' : '';
-        var coLabel = (window.APP_CULTURE || '').startsWith('pt') ? 'Retirar' : 'Check Out';
+        var coLabel = '@Localizer["CheckOut"]';
         return '<tr>' +
             '<td class="py-1"><span class="fw-semibold">' + escHtml(item.name) + '</span>' +
             (item.location ? '<div class="text-muted" style="font-size:.75rem">' + escHtml(item.location) + '</div>' : '') +
@@ -387,10 +387,10 @@ function renderAvailItems() {
             '<td class="py-1 text-end"><button class="btn btn-sm btn-outline-success py-0 px-2"' + disabled + ' onclick="lookupById(' + item.id + ')">' + coLabel + '</button></td>' +
             '</tr>';
     }).join('');
-    var isPt = (window.APP_CULTURE || '').startsWith('pt');
-    document.getElementById('avail-range-label').textContent = isPt
-        ? ('Exibindo ' + (start + 1) + '–' + end + ' de ' + total)
-        : ('Showing ' + (start + 1) + '–' + end + ' of ' + total);
+    document.getElementById('avail-range-label').textContent = '@Localizer["ShowingRange"]'
+        .replace('{0}', start + 1)
+        .replace('{1}', end)
+        .replace('{2}', total);
     document.getElementById('avail-page-label').textContent = availPage + ' / ' + totalPages;
     document.getElementById('avail-prev').disabled = availPage <= 1;
     document.getElementById('avail-next').disabled = availPage >= totalPages;

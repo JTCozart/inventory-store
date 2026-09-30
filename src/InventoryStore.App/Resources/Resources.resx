@@ -187,4 +187,13 @@
   <data name="Item" xml:space="preserve"><value>Item</value></data>
   <data name="Date" xml:space="preserve"><value>Date</value></data>
   <data name="EditItem" xml:space="preserve"><value>Edit Item</value></data>
+  <data name="SigningIn" xml:space="preserve"><value>Signing in…</value></data>
+  <data name="UsernamePasswordRequired" xml:space="preserve"><value>Username and password are required.</value></data>
+  <data name="InvalidUsernameOrPassword" xml:space="preserve"><value>Invalid username or password.</value></data>
+  <data name="LoginFailed" xml:space="preserve"><value>Login failed. Please try again.</value></data>
+  <data name="NetworkError" xml:space="preserve"><value>Network error. Please try again.</value></data>
+  <data name="ShowingRange" xml:space="preserve"><value>Showing {0}–{1} of {2}</value></data>
+  <data name="FailedToLoadClient" xml:space="preserve"><value>Failed to load client.</value></data>
+  <data name="Returned" xml:space="preserve"><value>Returned</value></data>
+  <data name="Active" xml:space="preserve"><value>Active</value></data>
 </root>

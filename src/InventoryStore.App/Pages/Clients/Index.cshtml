@@ -96,9 +96,6 @@ else
             <div class="modal-footer py-2">
                 @if (Model.CanManage)
                 {
-                    <a class="btn btn-sm btn-outline-success" id="view-assign-btn" href="#" title="@Localizer["AssignConsumable"]">
-                        <i class="bi bi-box-seam me-1"></i>@Localizer["AssignConsumable"]
-                    </a>
                     <button class="btn btn-sm btn-outline-primary" id="view-edit-btn">
                         <i class="bi bi-pencil me-1"></i>@Localizer["Edit"]
                     </button>
@@ -229,24 +226,20 @@ window.openClientView = function(id) {
         _closeRow + '<div class="text-center pb-5"><span class="spinner-border spinner-border-sm text-muted"></span></div>';
     var editBtn = document.getElementById('view-edit-btn');
     if (editBtn) editBtn.onclick = function() { getViewModal().hide(); openClientEdit(id); };
-    var assignBtn = document.getElementById('view-assign-btn');
-    if (assignBtn) assignBtn.href = '/Consumables/Assignments?clientId=' + id;
     getViewModal().show();
 
     Promise.all([
         fetch('/api/clients/' + id, { credentials: 'include' }).then(r => r.json()),
-        fetch('/api/clients/' + id + '/history', { credentials: 'include' }).then(r => r.json()).catch(() => []),
-        fetch('/api/clients/' + id + '/consumables', { credentials: 'include' }).then(r => r.json()).catch(() => [])
+        fetch('/api/clients/' + id + '/history', { credentials: 'include' }).then(r => r.json()).catch(() => [])
     ]).then(function(results) {
-            var c           = results[0];
-            var history     = results[1] || [];
-            var consumables = results[2] || [];
+            var c       = results[0];
+            var history = results[1] || [];
             var name  = c.displayName || (c.firstName + (c.lastName ? ' ' + c.lastName : ''));
             var ini   = mkInitials(name);
             var color = avatarColor(name);
-            var isPt  = (window.APP_CULTURE || '').startsWith('pt');
+            var culture = window.APP_CULTURE || undefined;
             var dob   = c.dateOfBirth
-                ? new Date(c.dateOfBirth + 'T00:00:00').toLocaleDateString(isPt ? 'pt-BR' : 'en-US', {year:'numeric',month:'long',day:'numeric'})
+                ? new Date(c.dateOfBirth + 'T00:00:00').toLocaleDateString(culture, {year:'numeric',month:'long',day:'numeric'})
                 : null;
             var emailHtml = c.email
                 ? '<a href="mailto:' + escHtml(c.email) + '">' + escHtml(c.email) + '</a>'
@@ -258,49 +251,22 @@ window.openClientView = function(id) {
             var historyHtml = '';
             if (history.length) {
                 var rows = history.map(function(r) {
-                    var date   = new Date(r.checkedOutAt).toLocaleDateString(isPt ? 'pt-BR' : 'en-US', {month:'short', day:'numeric', year:'numeric'});
+                    var date   = new Date(r.checkedOutAt).toLocaleDateString(culture, {month:'short', day:'numeric', year:'numeric'});
                     var status = r.isLost
-                        ? '<span class="badge bg-danger">' + (isPt ? 'Perdido' : 'Lost') + '</span>'
+                        ? '<span class="badge bg-danger">@Localizer["Lost"]</span>'
                         : r.checkedInAt
-                            ? '<span class="badge bg-secondary">' + (isPt ? 'Devolvido' : 'Returned') + '</span>'
-                            : '<span class="badge bg-success">' + (isPt ? 'Ativo' : 'Active') + '</span>';
+                            ? '<span class="badge bg-secondary">@Localizer["Returned"]</span>'
+                            : '<span class="badge bg-success">@Localizer["Active"]</span>';
                     return '<tr><td class="small fw-semibold">' + escHtml(r.itemName) + '</td>' +
                            '<td class="small text-muted">' + date + '</td>' +
                            '<td>' + status + '</td></tr>';
                 }).join('');
                 historyHtml =
                     '<div class="border-top px-3 pt-3 pb-2">' +
-                    '<div class="small fw-semibold text-muted text-uppercase mb-2" style="letter-spacing:.05em">' + (isPt ? 'Histórico de Retiradas' : 'Checkout History') + '</div>' +
+                    '<div class="small fw-semibold text-muted text-uppercase mb-2" style="letter-spacing:.05em">@Localizer["CheckoutHistory"]</div>' +
                     '<table class="table table-sm mb-0"><thead><tr>' +
-                    '<th class="small">' + (isPt ? 'Item' : 'Item') + '</th><th class="small">' + (isPt ? 'Data' : 'Date') + '</th><th class="small">Status</th>' +
+                    '<th class="small">@Localizer["Item"]</th><th class="small">@Localizer["Date"]</th><th class="small">@Localizer["Status"]</th>' +
                     '</tr></thead><tbody>' + rows + '</tbody></table></div>';
-            }
-
-            var consumablesHtml = '';
-            if (consumables.length) {
-                var cRows = consumables.map(function(r) {
-                    var date = new Date(r.assignedAt).toLocaleDateString(isPt ? 'pt-BR' : 'en-US', {month:'short', day:'numeric', year:'numeric'});
-                    return '<tr><td class="small fw-semibold">' + escHtml(r.itemName) + '</td>' +
-                           '<td class="small"><span class="badge bg-secondary">' + r.quantity + '</span></td>' +
-                           '<td class="small text-muted">' + date + '</td></tr>';
-                }).join('');
-                consumablesHtml =
-                    '<div class="border-top px-3 pt-3 pb-2">' +
-                    '<div class="d-flex justify-content-between align-items-center mb-2">' +
-                        '<div class="small fw-semibold text-muted text-uppercase" style="letter-spacing:.05em">' + (isPt ? 'Consumíveis Atribuídos' : 'Assigned Consumables') + '</div>' +
-                        '<a href="/Consumables/Assignments?clientId=' + id + '" class="small text-primary text-decoration-none"><i class="bi bi-plus-circle me-1"></i>' + (isPt ? 'Atribuir' : 'Assign') + '</a>' +
-                    '</div>' +
-                    '<table class="table table-sm mb-0"><thead><tr>' +
-                    '<th class="small">' + (isPt ? 'Item' : 'Item') + '</th><th class="small">' + (isPt ? 'Qtd' : 'Qty') + '</th><th class="small">' + (isPt ? 'Data' : 'Date') + '</th>' +
-                    '</tr></thead><tbody>' + cRows + '</tbody></table></div>';
-            } else {
-                consumablesHtml =
-                    '<div class="border-top px-3 pt-3 pb-2">' +
-                    '<div class="d-flex justify-content-between align-items-center mb-1">' +
-                        '<div class="small fw-semibold text-muted text-uppercase" style="letter-spacing:.05em">' + (isPt ? 'Consumíveis Atribuídos' : 'Assigned Consumables') + '</div>' +
-                        '<a href="/Consumables/Assignments?clientId=' + id + '" class="small text-primary text-decoration-none"><i class="bi bi-plus-circle me-1"></i>' + (isPt ? 'Atribuir' : 'Assign') + '</a>' +
-                    '</div>' +
-                    '<p class="text-muted small mb-0">' + (isPt ? 'Nenhum consumível atribuído.' : 'No consumables assigned.') + '</p></div>';
             }
 
             document.getElementById('view-modal-body').innerHTML =
@@ -310,19 +276,17 @@ window.openClientView = function(id) {
                     '<div class="contact-card-hero-name">' + escHtml(name) + '</div>' +
                 '</div>' +
                 '<div class="contact-card-fields">' +
-                    contactField('telephone', isPt ? 'Telefone' : 'Phone', c.phone, false) +
-                    contactField('envelope', isPt ? 'E-mail' : 'Email', emailHtml, true) +
-                    contactField('geo-alt', isPt ? 'Endereço' : 'Address', mapsHtml, true) +
-                    contactField('cake', isPt ? 'Data de Nascimento' : 'Date of Birth', dob, false) +
-                    contactField('journal-text', isPt ? 'Observações' : 'Notes', c.notes, false) +
+                    contactField('telephone', '@Localizer["Phone"]', c.phone, false) +
+                    contactField('envelope', '@Localizer["Email"]', emailHtml, true) +
+                    contactField('geo-alt', '@Localizer["Address"]', mapsHtml, true) +
+                    contactField('cake', '@Localizer["DateOfBirth"]', dob, false) +
+                    contactField('journal-text', '@Localizer["Notes"]', c.notes, false) +
                 '</div>' +
-                historyHtml +
-                consumablesHtml;
+                historyHtml;
         })
         .catch(function() {
-            var isPt = (window.APP_CULTURE || '').startsWith('pt');
             document.getElementById('view-modal-body').innerHTML =
-                _closeRow + '<p class="text-danger small p-3">' + (isPt ? 'Falha ao carregar cliente.' : 'Failed to load client.') + '</p>';
+                _closeRow + '<p class="text-danger small p-3">@Localizer["FailedToLoadClient"]</p>';
         });
 };
 
