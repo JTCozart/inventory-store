@@ -1,7 +1,10 @@
 using InventoryStore.App.Api;
 using InventoryStore.App.Extensions;
-using InventoryStore.App.Services;
 using InventoryStore.App.Modules;
+using InventoryStore.App.Services;
+using Microsoft.Extensions.Options;
+using System.Globalization;
+using Microsoft.AspNetCore.Localization;
 using InventoryStore.Application.Interfaces.Services;
 using InventoryStore.Domain.Interfaces.Repositories;
 using InventoryStore.Infrastructure.Data;
@@ -471,6 +474,21 @@ internal class Program
         Directory.CreateDirectory(Path.GetDirectoryName(dbPath)!);
 
         services.AddInfrastructure($"Data Source={dbPath}");
+        // Localization services
+        services.AddLocalization();
+        services.Configure<RequestLocalizationOptions>(options =>
+        {
+            var supportedCultures = new[] { new CultureInfo("en"), new CultureInfo("pt-BR") };
+            options.DefaultRequestCulture = new RequestCulture("en");
+            options.SupportedCultures = supportedCultures;
+            options.SupportedUICultures = supportedCultures;
+            options.RequestCultureProviders = new IRequestCultureProvider[]
+            {
+                new QueryStringRequestCultureProvider(),
+                new CookieRequestCultureProvider(),
+                new AcceptLanguageHeaderRequestCultureProvider()
+            };
+        });
         // Emit every DateTime as explicit UTC (trailing 'Z') so the browser — the single authority
         // for time-zone rendering — parses them correctly. Covers MVC/Razor JsonResult responses…
         services.AddRazorPages().AddJsonOptions(o =>
@@ -689,6 +707,23 @@ internal class Program
         }
 
         app.UseStaticFiles();
+        app.UseRequestLocalization();
+        app.Use(async (ctx, next) =>
+        {
+            if (ctx.Request.Query.TryGetValue("culture", out var qCulture) && !string.IsNullOrWhiteSpace(qCulture))
+            {
+                var c = qCulture.ToString();
+                if (c == "pt-BR" || c == "en")
+                {
+                    ctx.Response.Cookies.Append(
+                        CookieRequestCultureProvider.DefaultCookieName,
+                        CookieRequestCultureProvider.MakeCookieValue(new RequestCulture(c)),
+                        new Microsoft.AspNetCore.Http.CookieOptions { Expires = DateTimeOffset.UtcNow.AddYears(1), IsEssential = true, Path = "/" }
+                    );
+                }
+            }
+            await next();
+        });
         app.UseRouting();
         app.UseAuthentication();
         app.UseAuthorization();

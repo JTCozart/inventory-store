@@ -57,6 +57,21 @@
                 </div>
             </div>
             <div class="d-flex align-items-center gap-2">
+                <div class="dropdown" title="Idioma / Language">
+                    <button class="btn btn-outline-secondary term-btn px-3 dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-translate"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item @(System.Globalization.CultureInfo.CurrentUICulture.Name.StartsWith("pt") ? "active" : "")"
+                               href="?culture=pt-BR">
+                            🇧🇷 Português
+                        </a></li>
+                        <li><a class="dropdown-item @(System.Globalization.CultureInfo.CurrentUICulture.Name.StartsWith("en") ? "active" : "")"
+                               href="?culture=en">
+                            🇺🇸 English
+                        </a></li>
+                    </ul>
+                </div>
                 <button class="btn btn-outline-secondary term-btn px-3" onclick="termToggleTheme()" title="Toggle theme">
                     <i id="term-theme-icon" class="bi bi-moon"></i>
                 </button>
@@ -206,7 +221,8 @@
     <script src="~/js/barcode-scanner.js" asp-append-version="true"></script>
     <!-- Configured display time zone + shared fmtUtc helper (site.js) so the terminal renders times
          through the same single client-side authority as the rest of the app. -->
-    <script>window.APP_TZ = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(AppTimeZone.Id));</script>
+    <script>window.APP_TZ = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(AppTimeZone.Id)); window.APP_CULTURE = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(System.Globalization.CultureInfo.CurrentUICulture.Name));</script>
+    <script src="~/js/i18n-pt.js" asp-append-version="true"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
     <script src="~/js/tag-input.js" asp-append-version="true"></script>
     <script src="~/js/terminal.js" asp-append-version="true"></script>

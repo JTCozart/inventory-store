@@ -2,7 +2,7 @@
 @model LoginModel
 @inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
 @{
-    ViewData["Title"] = "Login";
+    ViewData["Title"] = Localizer["Login"];
     Layout = "_Layout";
 }
 
@@ -24,29 +24,29 @@
                 <input type="hidden" id="af-token" name="__RequestVerificationToken" value="@Antiforgery.GetAndStoreTokens(HttpContext).RequestToken" />
                 <input type="hidden" id="returnUrl" value="@Model.ReturnUrl" />
                 <div class="mb-3">
-                    <label for="username" class="form-label">Username</label>
+                    <label for="username" class="form-label">@Localizer["Username"]</label>
                     <input id="username" name="username" class="form-control"
                            autocomplete="username" autofocus />
                 </div>
                 <div class="mb-4">
-                    <label for="password" class="form-label">Password</label>
+                    <label for="password" class="form-label">@Localizer["Password"]</label>
                     <input id="password" name="password" class="form-control"
                            type="password" autocomplete="current-password" />
                 </div>
                 <button id="login-btn" type="submit" class="btn btn-primary w-100">
-                    Sign In
+                    @Localizer["Login"]
                 </button>
             </form>
             @if (Model.ShowForgotPasswordLink)
             {
                 <p class="text-center text-muted small mt-3 mb-0">
-                    <a href="/Auth/ForgotPassword">Forgot your password?</a>
+                    <a href="/Auth/ForgotPassword">@Localizer["ForgotPassword"]</a>
                 </p>
             }
             else
             {
                 <p class="text-center text-muted small mt-3 mb-0">
-                    Forgot your password? Use <strong>Reset Admin Password</strong> in the system tray icon.
+                    @Html.Raw(Localizer["ForgotPasswordTrayHelp"].Value)
                 </p>
             }
         </div>
@@ -59,9 +59,10 @@ document.getElementById('login-form').addEventListener('submit', async function 
     e.preventDefault();
     var btn = document.getElementById('login-btn');
     var errorEl = document.getElementById('login-error');
+    var isPt = (window.APP_CULTURE || '').startsWith('pt');
 
     btn.disabled = true;
-    btn.textContent = 'Signing in…';
+    btn.textContent = isPt ? 'Entrando…' : 'Signing in…';
     errorEl.classList.add('d-none');
 
     var body = new URLSearchParams({
@@ -84,16 +85,21 @@ document.getElementById('login-form').addEventListener('submit', async function 
             window.location.href = data.redirect || '/';
         } else {
             var msg = await response.text();
-            errorEl.textContent = msg || 'Login failed. Please try again.';
+            if (msg.indexOf('Username and password are required') !== -1) {
+                msg = isPt ? 'Usuário e senha são obrigatórios.' : msg;
+            } else if (msg.indexOf('Invalid username or password') !== -1) {
+                msg = isPt ? 'Usuário ou senha inválidos.' : msg;
+            }
+            errorEl.textContent = msg || (isPt ? 'Falha no login. Verifique suas credenciais.' : 'Login failed. Please try again.');
             errorEl.classList.remove('d-none');
             btn.disabled = false;
-            btn.textContent = 'Sign In';
+            btn.textContent = isPt ? 'Entrar' : 'Sign In';
         }
     } catch (err) {
-        errorEl.textContent = 'Network error. Please try again.';
+        errorEl.textContent = isPt ? 'Erro de rede. Tente novamente.' : 'Network error. Please try again.';
         errorEl.classList.remove('d-none');
         btn.disabled = false;
-        btn.textContent = 'Sign In';
+        btn.textContent = isPt ? 'Entrar' : 'Sign In';
     }
 });
 </script>
