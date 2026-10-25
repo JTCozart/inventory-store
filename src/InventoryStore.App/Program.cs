@@ -1,5 +1,6 @@
 using InventoryStore.App.Api;
 using InventoryStore.App.Extensions;
+using InventoryStore.App.Logging;
 using InventoryStore.App.Services;
 using InventoryStore.App.Modules;
 using InventoryStore.Application.Interfaces.Services;
@@ -43,7 +44,7 @@ internal record WebhookInput(string Url, string? Events, string? Secret);
 internal record UsageReportRequest(string? HowHeard, bool OptOut);
 
 // Fetches product metadata from the three public APIs. Shared by the barcode-lookup
-// endpoint and the metadata-explorer refresh action. Pure fetch — no DB access.
+// endpoint and the metadata-explorer refresh action. Pure fetch, no DB access.
 internal static class BarcodeMetadataFetcher
 {
     public static async Task<List<ProductMetadata>> FetchAsync(System.Net.Http.HttpClient http, string barcode)
@@ -133,7 +134,7 @@ internal static class BarcodeMetadataFetcher
 
 // Fetches chemical safety data from PubChem (free, keyless). Resolves a chemical name to a
 // PubChem CID, then pulls GHS classification (signal word, pictograms, hazard / precautionary
-// statements) and CAS number. Pure fetch — no DB access. Used by the optional SDS module.
+// statements) and CAS number. Pure fetch, no DB access. Used by the optional SDS module.
 internal static class PubChemSdsFetcher
 {
     private const string Base = "https://pubchem.ncbi.nlm.nih.gov/rest";
@@ -306,14 +307,9 @@ internal class Program
     [STAThread]
     static void Main(string[] args)
     {
-        // log4net.config references ${INVENTORYSTORE_LOG_DIR} for the rolling log file's
-        // location -- set it before ConfigureLogging(...AddLog4Net...) runs in CreateHostBuilder.
-        // Matches AppPaths.DataDir so logs land next to the database and follow the same
-        // INVENTORYSTORE_DATA override.
-        Environment.SetEnvironmentVariable("INVENTORYSTORE_LOG_DIR", InventoryStore.App.Utilities.AppPaths.DataDir);
 
 #if LINUX
-        // Linux runs headless as a systemd service — no tray companion.
+        // Linux runs headless as a systemd service, no tray companion.
         // UseSystemd (unlike UseWindowsService) does not set the content root, so
         // pin it to the executable's directory; otherwise static files (wwwroot)
         // and appsettings.json are resolved against the service's working dir ("/").
@@ -363,8 +359,10 @@ internal class Program
 
     static IHostBuilder CreateHostBuilder(string[] args) =>
         Host.CreateDefaultBuilder(args)
-            .ConfigureLogging(logging =>
-                logging.AddLog4Net(Path.Combine(AppContext.BaseDirectory, "log4net.config")))
+            // Central log file for the PulseWatch agent (GitHub folder, .claude/logging.md). If that folder
+            // is not writable the old location, next to the database, is used instead.
+            .ConfigureLogging(logging => logging.AddCentralLog4Net("inventorystore",
+                fallbackRoot: Path.Combine(InventoryStore.App.Utilities.AppPaths.DataDir, "logs")))
             .ConfigureWebHostDefaults(web =>
             {
                 var proxy = InventoryStore.App.Utilities.ProxyOptions.Current;
@@ -471,8 +469,8 @@ internal class Program
         Directory.CreateDirectory(Path.GetDirectoryName(dbPath)!);
 
         services.AddInfrastructure($"Data Source={dbPath}");
-        // Emit every DateTime as explicit UTC (trailing 'Z') so the browser — the single authority
-        // for time-zone rendering — parses them correctly. Covers MVC/Razor JsonResult responses…
+        // Emit every DateTime as explicit UTC (trailing 'Z') so the browser (the single authority
+        // for time-zone rendering) parses them correctly. Covers MVC/Razor JsonResult responses…
         services.AddRazorPages().AddJsonOptions(o =>
             o.JsonSerializerOptions.Converters.Add(new InventoryStore.App.Infrastructure.UtcDateTimeConverter()));
         // …and the minimal-API endpoints that return via Results.Ok.
@@ -524,7 +522,7 @@ internal class Program
             c.Timeout = TimeSpan.FromSeconds(15);
         });
         services.AddScoped<InventoryStore.App.Email.EmailSender>();
-        // Same instance behind the Application-layer interface, mirroring the AppTimeZone pattern —
+        // Same instance behind the Application-layer interface, mirroring the AppTimeZone pattern:
         // Settings page needs the concrete type's "send test email" overload; AuthenticationService
         // only needs the interface.
         services.AddScoped<InventoryStore.Application.Interfaces.Services.IEmailSender>(
@@ -961,7 +959,7 @@ internal class Program
                 var sheet = await PubChemSdsFetcher.FetchAsync(http, name);
                 if (sheet is null)
                 {
-                    // Brand / product / common names often aren't indexed — offer chemical-name suggestions.
+                    // Brand / product / common names often aren't indexed, so offer chemical-name suggestions.
                     var suggestions = await PubChemSdsFetcher.SuggestAsync(http, name);
                     return Results.Ok(new
                     {
@@ -1149,7 +1147,7 @@ internal class Program
                 var usedByItem = consumes.GroupBy(m => m.InventoryItemId)
                     .ToDictionary(g => g.Key, g => g.Sum(m => m.Quantity));
 
-                // Consumables only — reusables don't deplete the same way.
+                // Consumables only: reusables don't deplete the same way.
                 var items = await db.InventoryItems.OfType<ConsumableItem>().ToListAsync();
 
                 var rows = new List<(double Sort, object Row)>();
