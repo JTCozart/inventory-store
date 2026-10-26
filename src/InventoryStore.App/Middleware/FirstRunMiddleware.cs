@@ -1,3 +1,4 @@
+using InventoryStore.App.Api;
 using InventoryStore.Application.Interfaces.Services;
 
 namespace InventoryStore.App.Middleware;
@@ -20,7 +21,8 @@ public class FirstRunMiddleware
                         || path.StartsWith("/lib", StringComparison.OrdinalIgnoreCase)
                         || path.EndsWith(".ico", StringComparison.OrdinalIgnoreCase);
 
-        if (!isSetupPath && !isStaticFile && await authService.IsSetupRequiredAsync())
+        if (!isSetupPath && !isStaticFile && !HealthEndpoints.IsHealthRequest(context.Request.Path)
+            && await authService.IsSetupRequiredAsync())
         {
             context.Response.Redirect("/Auth/Setup");
             return;

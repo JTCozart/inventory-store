@@ -59,3 +59,9 @@ CodeCoverage/
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
+
+## Test results
+TestResults/
+
+## Local assistant notes (deployment details that do not belong in a public repo)
+CLAUDE.md

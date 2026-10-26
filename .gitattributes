@@ -1,0 +1,5 @@
+*.sh text eol=lf
+deploy/*.service text eol=lf
+deploy/*.timer text eol=lf
+deploy/app.conf text eol=lf
+wwwroot/lib/** -text

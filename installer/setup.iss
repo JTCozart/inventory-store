@@ -1,5 +1,5 @@
 ; Inventory Store - Inno Setup script
-; Build: ISCC /DAppVersion="20260606.1430" /DAppSemVer="1.0606.1430" setup.iss
+; Build: ISCC /DAppVersion="26.0606.1430" /DAppSemVer="1.0606.1430" setup.iss
 
 #ifndef AppVersion
   #define AppVersion "0.0.0.0"

@@ -15,8 +15,8 @@
 
 [CmdletBinding()]
 param(
-    # Defaults to yyyyMMdd.HHmm, matching the release tag format (vYYYYMMDD.HHMM).
-    [string]$Version = (Get-Date -Format 'yyyyMMdd.HHmm')
+    # Defaults to yy.MMdd.HHmm, matching the release tag format (vYY.MMDD.HHMM).
+    [string]$Version = (Get-Date -Format 'yy.MMdd.HHmm')
 )
 
 $ErrorActionPreference = 'Stop'

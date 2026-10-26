@@ -236,14 +236,20 @@ iscc /DAppVersion="$v" /DAppSemVer="1.$v" installer/setup.iss
 
 ### Release
 
-Push a tag in the format `vYYYYMMDD.HHMM` to trigger the GitHub Actions release workflow:
+Push a tag in the format `vYY.MMDD.HHMM` to trigger the GitHub Actions release workflow. Add `-rc` for a prerelease:
 
 ```bash
-git tag v20260606.1430
-git push origin v20260606.1430
+git tag -a v26.0606.1430-rc -m "v26.0606.1430-rc"
+git push origin v26.0606.1430-rc
+pwsh deploy/promote-release.ps1 v26.0606.1430-rc    # later: make the prerelease the stable release
 ```
 
-GitHub Actions will build the installer and create a release automatically.
+The workflow runs the tests, builds the Windows installer and the Linux archive, and creates the release. A prerelease
+is not offered as an update to anyone: the in-app update check and `update.sh` only look at the latest stable release.
+Tags in the old `vYYYYMMDD.HHMM` format no longer trigger a release.
+
+The extra `inventorystore-hosted.tar.gz` asset is for hosted deployments that install releases automatically; it is not
+needed for the steps above.
 
 ---
 

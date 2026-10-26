@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using InventoryStore.Application.Services;
 
 namespace InventoryStore.App.Services;
 
@@ -45,7 +46,7 @@ public class UpdateCheckService : BackgroundService
 
     private static string? ReadAssemblyVersion()
     {
-        // The release workflow stamps this (-p:InformationalVersion=YYYYMMDD.HHMM) on both the
+        // The release workflow stamps this (-p:InformationalVersion=YY.MMDD.HHMM) on both the
         // Windows and Linux builds. Unset in local dev, where it defaults to the assembly version
         // ("1.0.0"); treat that as no version so dev shows "dev". May carry a "+<commit>" suffix.
         var info = typeof(UpdateCheckService).Assembly
@@ -106,12 +107,5 @@ public class UpdateCheckService : BackgroundService
         }
     }
 
-    private static bool IsNewer(string latest, string current)
-    {
-        // Tags are vYYYYMMDD.HHMM — strip 'v' and compare lexicographically (date format sorts correctly)
-        if (current == "dev") return false;
-        var l = latest.TrimStart('v');
-        var c = current.TrimStart('v');
-        return string.Compare(l, c, StringComparison.Ordinal) > 0;
-    }
+    private static bool IsNewer(string latest, string current) => ReleaseVersion.IsNewer(latest, current);
 }

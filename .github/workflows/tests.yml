@@ -1,0 +1,45 @@
+# Runs the tests on every push and pull request.
+# Copy to .github/workflows/tests.yml and change only the env block. Kit copy: .claude/deploy-kit.
+
+name: Tests
+
+on:
+  push:
+  pull_request:
+
+env:
+  # Only the test project and what it references (Domain, Application). The solution also holds the WinForms tray,
+  # which cannot build on a Linux runner.
+  SOLUTION: tests/InventoryStore.Tests/InventoryStore.Tests.csproj
+  TEST_PROJECT: tests/InventoryStore.Tests/InventoryStore.Tests.csproj
+  # Exact version on purpose, same reason as release.yml.
+  DOTNET_SDK: "9.0.320"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: ${{ env.DOTNET_SDK }}
+
+      - name: Restore
+        run: dotnet restore "$SOLUTION"
+
+      - name: Build
+        run: dotnet build "$SOLUTION" --no-restore --configuration Release
+
+      - name: Test
+        run: dotnet test "$TEST_PROJECT" --no-build --configuration Release --logger "trx;LogFileName=test-results.trx"
+
+      - name: Publish test results
+        if: always()
+        uses: dorny/test-reporter@v1
+        with:
+          name: xUnit Tests
+          path: "**/test-results.trx"
+          reporter: dotnet-trx

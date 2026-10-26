@@ -653,7 +653,7 @@ internal class Program
             {
                 app.Use(async (ctx, next) =>
                 {
-                    if (!ctx.Request.IsHttps)
+                    if (!ctx.Request.IsHttps && !HealthEndpoints.IsHealthRequest(ctx.Request.Path))
                     {
                         var target = $"https://{ctx.Request.Host}" +
                                      $"{ctx.Request.PathBase}{ctx.Request.Path}{ctx.Request.QueryString}";
@@ -715,6 +715,7 @@ internal class Program
 
         app.UseEndpoints(endpoints =>
         {
+            endpoints.MapHealthEndpoint();
             endpoints.MapRazorPages();
 
             // ── Public API (API-key auth) + its key management ────────────

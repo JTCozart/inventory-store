@@ -1,27 +1,55 @@
+# Builds and publishes a release when a version tag is pushed.
+#
+#   git tag -a v26.1026.0900-rc -m "v26.1026.0900-rc"   prerelease: only servers on CHANNEL=prerelease install it
+#   git tag -a v26.1026.0900 -m "v26.1026.0900"         stable: every server installs it
+#   git push origin <tag>
+#
+# A prerelease is promoted without a rebuild: pwsh deploy/promote-release.ps1 v26.1026.0900-rc
+# A tag whose commit is not on the default branch is always published as a prerelease.
+#
+# One release carries three downloads:
+#   InventoryStore-Setup-<version>.exe               Windows installer
+#   InventoryStore-linux-x64-<version>.tar.gz        for people who host it themselves (linux/install.sh, linux/update.sh)
+#   inventorystore-hosted.tar.gz                     our hosted servers: the deploy kit, installed by their update timer
+# The hosted name must not contain "linux-x64": linux/update.sh picks the first asset that does.
+#
+# This is a custom version of the kit's release-dotnet.yml (two jobs, WinForms tray). The kit scripts are the same.
+
 name: Release
 
 on:
   push:
     tags:
-      - 'v[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9].[0-9][0-9][0-9][0-9]*'
+      - "v[0-9][0-9].[0-9][0-9][0-9][0-9].[0-9][0-9][0-9][0-9]"
+      - "v[0-9][0-9].[0-9][0-9][0-9][0-9].[0-9][0-9][0-9][0-9]-rc"
+
+env:
+  # Exact version on purpose. "9.0.x" resolves through an aka.ms redirect that returned HTTP 409 on 2026-10-25 and
+  # failed a release before it built anything. Bump by hand when a newer SDK is wanted.
+  DOTNET_SDK: "9.0.320"
 
 jobs:
   build-linux:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set version
         id: ver
         run: |
-          tag="${{ github.ref_name }}"          # v20260606.2119
+          tag="${{ github.ref_name }}"          # v26.1026.0900 or v26.1026.0900-rc
           echo "VERSION=${tag#v}" >> "$GITHUB_OUTPUT"
           echo "ASM_VERSION=1.0.0.${{ github.run_number }}" >> "$GITHUB_OUTPUT"
 
-      - name: Setup .NET 8
-        uses: actions/setup-dotnet@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: '8.0.x'
+          dotnet-version: ${{ env.DOTNET_SDK }}
+
+      # Gates the release. A tag pushed at a red commit fails here, before anything is published, and the
+      # Windows job below needs this one, so no installer or release is made either.
+      - name: Test
+        run: dotnet test tests/InventoryStore.Tests/InventoryStore.Tests.csproj --configuration Release
 
       - name: Publish (linux-x64)
         run: |
@@ -33,7 +61,7 @@ jobs:
             -p:InformationalVersion="${{ steps.ver.outputs.VERSION }}" \
             -o publish/linux-app
 
-      - name: Stage release archive
+      - name: Stage the self-hosting archive
         run: |
           name="InventoryStore-linux-x64-${{ steps.ver.outputs.VERSION }}"
           mkdir -p "stage/$name/app"
@@ -42,11 +70,29 @@ jobs:
           chmod +x "stage/$name/install.sh" "stage/$name/update.sh" "stage/$name/autobackup.sh" "stage/$name/setup-autobackup.sh" "stage/$name/app/InventoryStore.App"
           tar czf "$name.tar.gz" -C stage "$name"
 
-      - name: Upload tarball artifact
+      # CR is stripped so a CRLF checkout cannot break a shebang on the server.
+      - name: Stage the hosted-server bundle
+        run: |
+          mkdir -p stage/inventorystore
+          cp -r publish/linux-app/. stage/inventorystore/
+          for f in install.sh autoupdate.sh setup-autodeploy.sh autobackup.sh setup-autobackup.sh preflight-backup.sh app.conf; do
+            sed 's/\r$//' "deploy/$f" > "stage/inventorystore/$f"
+          done
+          sed 's/\r$//' linux/inventorystore.service > stage/inventorystore/inventorystore.service
+          printf '%s' "${GITHUB_REF_NAME}" > stage/inventorystore/VERSION
+          for f in InventoryStore.App install.sh autoupdate.sh app.conf inventorystore.service VERSION; do
+            [ -s "stage/inventorystore/$f" ] || { echo "::error::Missing or empty in the hosted bundle: $f"; exit 1; }
+          done
+          chmod +x stage/inventorystore/InventoryStore.App
+          tar czf inventorystore-hosted.tar.gz -C stage inventorystore
+
+      - name: Upload tarball artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: linux-tarball
-          path: InventoryStore-linux-x64-*.tar.gz
+          name: linux-tarballs
+          path: |
+            InventoryStore-linux-x64-*.tar.gz
+            inventorystore-hosted.tar.gz
 
   build-installer:
     runs-on: windows-latest
@@ -55,22 +101,22 @@ jobs:
       contents: write
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
-      - name: Download Linux tarball
+      - name: Download Linux tarballs
         uses: actions/download-artifact@v4
         with:
-          name: linux-tarball
+          name: linux-tarballs
           path: linux-release
 
       - name: Set version
         id: ver
         shell: pwsh
         run: |
-          $tag    = "${{ github.ref_name }}"                  # v20260606.2119
-          $ver    = $tag.TrimStart('v')                       # 20260606.2119
+          $tag    = "${{ github.ref_name }}"                  # v26.1026.0900 or v26.1026.0900-rc
+          $ver    = $tag.TrimStart('v')                       # 26.1026.0900
           $asmVer = "1.0.0.${{ github.run_number }}"         # 1.0.0.42
           echo "VERSION=$ver"        >> $env:GITHUB_OUTPUT
           echo "ASM_VERSION=$asmVer" >> $env:GITHUB_OUTPUT
@@ -79,20 +125,20 @@ jobs:
         id: channel
         shell: bash
         run: |
+          prerelease=false
+          case "${{ github.ref_name }}" in *-rc) prerelease=true ;; esac
           default="${{ github.event.repository.default_branch }}"
           git fetch --no-tags origin "$default"
-          if git merge-base --is-ancestor "$GITHUB_SHA" "origin/$default"; then
-            echo "Tag is on $default: full release."
-            echo "prerelease=false" >> "$GITHUB_OUTPUT"
-          else
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" "origin/$default"; then
             echo "Tag is not on $default: marking as pre-release."
-            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+            prerelease=true
           fi
+          echo "prerelease=$prerelease" >> "$GITHUB_OUTPUT"
 
-      - name: Setup .NET 8
-        uses: actions/setup-dotnet@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: '8.0.x'
+          dotnet-version: ${{ env.DOTNET_SDK }}
 
       - name: Restore
         run: dotnet restore InventoryStore.sln
@@ -159,7 +205,10 @@ jobs:
             To have a fresh copy of your data saved automatically every night, run `sudo ./setup-autobackup.sh` once.
 
             The web interface is available at **http://localhost:5050** after installation.
+
+            `inventorystore-hosted.tar.gz` is used by our own hosted servers and is not needed for the steps above.
           files: |
             installer/Output/InventoryStore-Setup-*.exe
             linux-release/InventoryStore-linux-x64-*.tar.gz
+            linux-release/inventorystore-hosted.tar.gz
           generate_release_notes: false
