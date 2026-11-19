@@ -1,0 +1,68 @@
+/* Inventory Store pages on the shared Cozart marketing theme (theme.css). Loaded after each page's own CSS. */
+:root {
+  --blue: var(--mk-primary);
+  --blue-d: var(--mk-primary-hover);
+  --dark: var(--mk-navy);
+  --gray: var(--mk-muted);
+  --light: var(--mk-tint);
+  --border: var(--mk-border);
+  --radius: var(--mk-radius);
+}
+body { font-family: var(--mk-font-body); color: var(--mk-text); }
+h1, h2, h3, h4 { font-family: var(--mk-font-heading); color: var(--mk-navy); letter-spacing: -0.02em; }
+.site-footer h2, .site-footer h3 { color: #fff; }
+.it-badge { border-radius: var(--mk-radius); }
+.brand .it-badge { width: 36px; height: 36px; }
+
+/* The user guide is also shown inside the app, where the site chrome is hidden */
+html.in-iframe > body > .site-header,
+html.in-iframe > body > .site-footer { display: none !important; }
+.sidebar-nav { top: 76px; height: calc(100vh - 76px); }
+
+/* Home and services hero */
+.hero {
+  padding: 110px 24px 90px;
+  background:
+    radial-gradient(70% 90% at 85% 10%, rgba(33, 150, 243, 0.55), transparent 60%),
+    radial-gradient(60% 80% at 0% 100%, rgba(25, 118, 210, 0.45), transparent 60%),
+    linear-gradient(135deg, #00296c 0%, #003a91 55%, #0b5cc4 100%);
+}
+.hero h1 { color: #fff; }
+.hero h1 span { color: #8cc8ff; }
+.hero > p, .hero p { color: rgba(255, 255, 255, 0.88); }
+.hero-tag { background: transparent !important; color: #cfe5ff !important; border: 1px solid rgba(255, 255, 255, 0.35) !important; border-radius: var(--mk-radius) !important; }
+.btn-primary, .btn-secondary { border-radius: var(--mk-radius); font-family: var(--mk-font-heading); font-weight: 700; }
+.hero .btn-primary { background: #fff; color: var(--mk-navy); }
+.hero .btn-primary:hover { background: var(--mk-tint); }
+.hero .btn-secondary { background: transparent; color: #fff; border: 1px solid rgba(255, 255, 255, 0.7); }
+.hero .btn-secondary:hover { background: #fff; color: var(--mk-navy); }
+.ui-preview { border-radius: var(--mk-radius-lg); box-shadow: 0 30px 70px rgba(0, 14, 36, 0.35); }
+
+/* Sections */
+.section-tag { color: var(--mk-primary); font-family: var(--mk-font-heading); font-size: 1.05rem; font-weight: 600; letter-spacing: -0.01em; text-transform: none; }
+.feature-card, .step, .tier-card, .faq-item, .pilot-banner, .form-embed { border-radius: var(--mk-radius); }
+.feature-icon { background: var(--mk-primary) !important; color: #fff !important; border-radius: var(--mk-radius) !important; }
+.tier-card.featured { box-shadow: 0 0 0 2px var(--mk-primary-bright), var(--mk-shadow-hover); }
+.tier-flag { border-radius: var(--mk-radius); }
+.cta-section { background: var(--mk-tint); }
+.cta-section h2 { color: var(--mk-navy); }
+.cta-section p { color: var(--mk-muted); }
+
+/* Release notes and user guide headers become a blue band */
+.page-hero, .content-hero {
+  margin: 0 0 2.5rem;
+  padding: 56px 32px 48px;
+  border-bottom: 0;
+  border-radius: var(--mk-radius-lg);
+  background:
+    radial-gradient(70% 90% at 85% 10%, rgba(33, 150, 243, 0.55), transparent 60%),
+    linear-gradient(135deg, #00296c 0%, #003a91 55%, #0b5cc4 100%);
+}
+.page-hero h1, .content-hero h1 { color: #fff; }
+.page-hero p, .content-hero p { color: rgba(255, 255, 255, 0.85); }
+html.in-iframe .content-hero { padding-top: 1.5rem; }
+.callout { border-radius: 0 var(--mk-radius) var(--mk-radius) 0; }
+.content pre { border-radius: var(--mk-radius); background: var(--mk-ink); }
+
+/* Centred hero: the theme caps the heading width, so centre that box too */
+.hero h1 { margin-left: auto; margin-right: auto; }
